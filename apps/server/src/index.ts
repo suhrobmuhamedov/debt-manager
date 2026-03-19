@@ -51,28 +51,52 @@ app.use(cors({
 // Compression middleware
 app.use(compression());
 
-// Session middleware - with error handling
-let sessionStore: any = undefined;
-try {
-  const connection = mysql.createPool(process.env.DATABASE_URL!);
-  sessionStore = new MySQLStore({
-    pool: connection,
-    secret: process.env.SESSION_SECRET!
-  });
-  
+// Session middleware - use MemoryStore locally when Railway internal DB host is not resolvable
+const isRailwayRuntime = Boolean(process.env.RAILWAY_ENVIRONMENT || process.env.RAILWAY_PROJECT_ID);
+const dbUrl = process.env.DATABASE_URL || '';
+const isRailwayInternalHost = dbUrl.includes('mysql.railway.internal');
+
+if (!isRailwayRuntime && isRailwayInternalHost) {
+  console.warn('Using in-memory sessions locally because mysql.railway.internal is only reachable inside Railway.');
   app.use(session({
-    secret: process.env.SESSION_SECRET!,
-    store: sessionStore,
+    secret: process.env.SESSION_SECRET || 'dev-session-secret',
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: false, // Set to true in production with HTTPS
-      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+      secure: false,
+      maxAge: 30 * 24 * 60 * 60 * 1000,
     },
   }));
-} catch (error) {
-  console.error('Session store initialization failed:', error);
-  // Continue without session store - health check still works
+} else {
+  try {
+    const connection = mysql.createPool(dbUrl);
+    const sessionStore = new MySQLStore({
+      pool: connection,
+      secret: process.env.SESSION_SECRET!
+    });
+
+    app.use(session({
+      secret: process.env.SESSION_SECRET!,
+      store: sessionStore,
+      resave: false,
+      saveUninitialized: false,
+      cookie: {
+        secure: false, // Set to true in production with HTTPS
+        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+      },
+    }));
+  } catch (error) {
+    console.error('Session store initialization failed, falling back to MemoryStore:', error);
+    app.use(session({
+      secret: process.env.SESSION_SECRET || 'dev-session-secret',
+      resave: false,
+      saveUninitialized: false,
+      cookie: {
+        secure: false,
+        maxAge: 30 * 24 * 60 * 60 * 1000,
+      },
+    }));
+  }
 }
 
 // tRPC middleware
