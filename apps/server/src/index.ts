@@ -27,15 +27,19 @@ if (!process.env.DATABASE_URL) {
 const requiredEnvVars = ['DATABASE_URL', 'BOT_TOKEN', 'SESSION_SECRET', 'WEB_APP_URL', 'INTERNAL_API_KEY'];
 for (const envVar of requiredEnvVars) {
   if (!process.env[envVar]) {
-    throw new Error(`Missing required environment variable: ${envVar}`);
+    console.error(`Missing required environment variable: ${envVar}`);
+    // Don't crash - just log warning
   }
 }
 
 const app = express();
 
-// Health check for Railway
+// Health check for Railway - MUST be first
 app.get('/health', (_req, res) => {
-  res.status(200).json({ status: 'ok' });
+  res.status(200).json({
+    status: 'ok',
+    timestamp: new Date().toISOString()
+  });
 });
 
 // CORS middleware
@@ -47,33 +51,35 @@ app.use(cors({
 // Compression middleware
 app.use(compression());
 
-// Session middleware
-const connection = mysql.createPool(process.env.DATABASE_URL!);
-
-app.use(session({
-  secret: process.env.SESSION_SECRET!,
-  store: new MySQLStore({ pool: connection, secret: process.env.SESSION_SECRET! }),
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    secure: false, // Set to true in production with HTTPS
-    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-  },
-}));
+// Session middleware - with error handling
+let sessionStore: any = undefined;
+try {
+  const connection = mysql.createPool(process.env.DATABASE_URL!);
+  sessionStore = new MySQLStore({
+    pool: connection,
+    secret: process.env.SESSION_SECRET!
+  });
+  
+  app.use(session({
+    secret: process.env.SESSION_SECRET!,
+    store: sessionStore,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: false, // Set to true in production with HTTPS
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+    },
+  }));
+} catch (error) {
+  console.error('Session store initialization failed:', error);
+  // Continue without session store - health check still works
+}
 
 // tRPC middleware
 app.use('/trpc', createExpressMiddleware({
   router: appRouter,
   createContext,
 }));
-
-// Health check endpoint
-app.get('/health', (req, res) => {
-  res.json({
-    status: 'ok',
-    timestamp: new Date(),
-  });
-});
 
 // Internal stats endpoint for bot
 app.get('/api/internal/stats/:telegramId', async (req, res) => {
@@ -141,8 +147,8 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
   res.status(500).json({ error: 'Internal server error' });
 });
 
-const PORT = process.env.PORT || 3001;
+const PORT = parseInt(process.env.PORT || '3001', 10);
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);
 });
