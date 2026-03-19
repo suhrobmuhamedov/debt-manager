@@ -11,8 +11,6 @@ import { eq, and, isNull } from 'drizzle-orm';
 import * as mysql from 'mysql2/promise';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
-// Import bot
-import './bot';
 // connect-mysql2 exports a factory requiring the express-session module
 const MySQLStore = require('connect-mysql2')(session);
 

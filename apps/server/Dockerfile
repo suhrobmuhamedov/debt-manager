@@ -1,4 +1,4 @@
-FROM node:20-alpine
+﻿FROM node:20-alpine
 
 WORKDIR /app
 
@@ -8,13 +8,14 @@ COPY package*.json ./
 # Copy server package files
 COPY apps/server/package*.json ./apps/server/
 
-# Install all dependencies
+# Copy server source and config
+COPY apps/server/src ./apps/server/src
+COPY apps/server/tsconfig.json ./apps/server/tsconfig.json
+
+# Install dependencies
 RUN npm install --workspace=apps/server
 
-# Copy all source code
-COPY . .
-
-# Build the server
+# Build server
 WORKDIR /app/apps/server
 RUN npm run build
 
