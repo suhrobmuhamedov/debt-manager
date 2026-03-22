@@ -10,6 +10,7 @@ export const useAuth = () => {
   useEffect(() => {
     const authenticate = async () => {
       if (!isTelegram()) {
+        setUser(null);
         setLoading(false);
         return;
       }
@@ -17,23 +18,24 @@ export const useAuth = () => {
       try {
         expandApp();
         const initData = getInitData();
+        if (!initData) {
+          console.error('Auth error: empty initData');
+          setUser(null);
+          return;
+        }
 
-        const user = await Promise.race([
-          telegramLogin.mutateAsync({ initData }),
-          new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Timeout')), 10000)
-          ),
-        ]);
-
+        const user = await telegramLogin.mutateAsync({ initData });
         setUser(user as any);
       } catch (error) {
         console.error('Auth error:', error);
+        setUser(null);
+      } finally {
         setLoading(false);
       }
     };
 
     authenticate();
-  }, []);
+  }, [setUser, setLoading, telegramLogin]);
 
   return { isAuthenticated, isLoading, isTelegram: isTelegram() };
 };

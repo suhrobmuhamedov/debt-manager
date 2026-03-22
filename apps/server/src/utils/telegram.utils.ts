@@ -26,7 +26,10 @@ function parseInitData(initData: string): Record<string, string> {
 export function verifyTelegramInitData(initData: string, botToken: string): TelegramUser | null {
   const data = parseInitData(initData);
   const hash = data.hash;
-  if (!hash) return null;
+  if (!hash) {
+    console.warn('Telegram initData validation failed: missing hash');
+    return null;
+  }
 
   delete data.hash;
 
@@ -41,7 +44,14 @@ export function verifyTelegramInitData(initData: string, botToken: string): Tele
     .update(dataCheckString)
     .digest('hex');
 
-  if (computedHash !== hash) return null;
+  if (computedHash !== hash) {
+    console.warn('Telegram initData validation failed: hash mismatch', {
+      keys: Object.keys(data).sort(),
+      auth_date: data.auth_date,
+      hasUser: Boolean(data.user),
+    });
+    return null;
+  }
 
   let user: TelegramUser | null = null;
 
@@ -49,6 +59,7 @@ export function verifyTelegramInitData(initData: string, botToken: string): Tele
     try {
       user = JSON.parse(data.user) as TelegramUser;
     } catch {
+      console.warn('Telegram initData validation failed: invalid user JSON');
       return null;
     }
   } else if (data.id) {
@@ -64,7 +75,10 @@ export function verifyTelegramInitData(initData: string, botToken: string): Tele
     };
   }
 
-  if (!user || typeof user.id !== 'number' || !user.first_name) return null;
+  if (!user || typeof user.id !== 'number' || !user.first_name) {
+    console.warn('Telegram initData validation failed: incomplete user payload');
+    return null;
+  }
 
   return user;
 }
