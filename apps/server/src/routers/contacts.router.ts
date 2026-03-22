@@ -5,6 +5,8 @@ import { protectedProcedure, router } from '../trpc';
 import { db } from '../db';
 import { contacts, debts } from '../db/schema';
 
+const phoneRegex = /^\+?\d{7,15}$/;
+
 export const contactsRouter = router({
   getAll: protectedProcedure.query(async ({ ctx }) => {
     const userId = ctx.userId!;
@@ -15,10 +17,11 @@ export const contactsRouter = router({
       .where(and(eq(contacts.userId, userId), isNull(contacts.deletedAt)))
       .orderBy(contacts.name);
 
-    const counts = await db
+    const stats = await db
       .select({
         contactId: debts.contactId,
         activeDebtsCount: sql<number>`COUNT(*)`,
+        totalAmount: sql<string>`COALESCE(SUM(${debts.amount} - ${debts.paidAmount}), 0)`,
       })
       .from(debts)
       .where(
@@ -30,14 +33,18 @@ export const contactsRouter = router({
       )
       .groupBy(debts.contactId);
 
-    const countByContactId = new Map<number, number>();
-    counts.forEach((row) => {
-      countByContactId.set(row.contactId, Number(row.activeDebtsCount));
+    const statsByContactId = new Map<number, { activeDebtsCount: number; totalAmount: number }>();
+    stats.forEach((row) => {
+      statsByContactId.set(row.contactId, {
+        activeDebtsCount: Number(row.activeDebtsCount),
+        totalAmount: Number(row.totalAmount),
+      });
     });
 
     return allContacts.map((contact) => ({
       ...contact,
-      activeDebtsCount: countByContactId.get(contact.id) ?? 0,
+      activeDebtsCount: statsByContactId.get(contact.id)?.activeDebtsCount ?? 0,
+      totalAmount: statsByContactId.get(contact.id)?.totalAmount ?? 0,
     }));
   }),
 
@@ -68,19 +75,45 @@ export const contactsRouter = router({
         .where(
           and(
             eq(debts.contactId, contact.id),
+            eq(debts.userId, userId),
             isNull(debts.deletedAt)
           )
         )
-        .orderBy(debts.createdAt);
+        .orderBy(sql`${debts.createdAt} DESC`);
 
-      return { contact, debts: contactDebts };
+      const stats = contactDebts.reduce(
+        (acc, debt) => {
+          const amount = Number(debt.amount);
+          const paidAmount = Number(debt.paidAmount);
+          const outstanding = Math.max(amount - paidAmount, 0);
+
+          if (debt.type === 'given') {
+            acc.totalGiven += outstanding;
+          }
+          if (debt.type === 'taken') {
+            acc.totalTaken += outstanding;
+          }
+          if (debt.status === 'pending' || debt.status === 'partial') {
+            acc.activeDebtsCount += 1;
+          }
+
+          return acc;
+        },
+        { totalGiven: 0, totalTaken: 0, activeDebtsCount: 0 }
+      );
+
+      return {
+        contact,
+        stats,
+        debts: contactDebts,
+      };
     }),
 
   create: protectedProcedure
     .input(
       z.object({
-        name: z.string().min(2).max(100),
-        phone: z.string().max(20).optional(),
+        name: z.string().trim().min(2).max(100),
+        phone: z.string().trim().min(7).max(15).regex(phoneRegex, 'Telefon raqam formati noto\'g\'ri'),
         note: z.string().max(500).optional(),
       })
     )
@@ -100,14 +133,14 @@ export const contactsRouter = router({
         .limit(1);
 
       if (existing) {
-        throw new TRPCError({ code: 'CONFLICT', message: 'Contacto nomi allaqachon mavjud' });
+        throw new TRPCError({ code: 'CONFLICT', message: 'Kontakt nomi allaqachon mavjud' });
       }
 
       await db.insert(contacts).values({
         userId,
-        name: input.name,
+        name: input.name.trim(),
         phone: input.phone,
-        note: input.note,
+        note: input.note?.trim() || null,
       });
 
       const [created] = await db
@@ -133,9 +166,17 @@ export const contactsRouter = router({
     .input(
       z.object({
         id: z.number(),
-        name: z.string().min(2).max(100).optional(),
-        phone: z.string().max(20).optional(),
+        name: z.string().trim().min(2).max(100).optional(),
+        phone: z
+          .string()
+          .trim()
+          .min(7)
+          .max(15)
+          .regex(phoneRegex, 'Telefon raqam formati noto\'g\'ri')
+          .optional(),
         note: z.string().max(500).optional(),
+      }).refine((value) => value.name !== undefined || value.phone !== undefined || value.note !== undefined, {
+        message: 'Kamida bitta maydon yuborilishi kerak',
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -172,18 +213,18 @@ export const contactsRouter = router({
           .limit(1);
 
         if (duplicate) {
-          throw new TRPCError({ code: 'CONFLICT', message: 'Contacto nomi allaqachon mavjud' });
+          throw new TRPCError({ code: 'CONFLICT', message: 'Kontakt nomi allaqachon mavjud' });
         }
       }
 
       await db
         .update(contacts)
         .set({
-          ...(input.name !== undefined ? { name: input.name } : {}),
+          ...(input.name !== undefined ? { name: input.name.trim() } : {}),
           ...(input.phone !== undefined ? { phone: input.phone } : {}),
-          ...(input.note !== undefined ? { note: input.note } : {}),
+          ...(input.note !== undefined ? { note: input.note?.trim() || null } : {}),
         })
-        .where(eq(contacts.id, input.id));
+        .where(and(eq(contacts.id, input.id), eq(contacts.userId, userId), isNull(contacts.deletedAt)));
 
       const [updated] = await db
         .select()
@@ -226,6 +267,7 @@ export const contactsRouter = router({
         .from(debts)
         .where(
           and(
+            eq(debts.userId, userId),
             eq(debts.contactId, input.id),
             inArray(debts.status, ['pending', 'partial']),
             isNull(debts.deletedAt)
@@ -242,7 +284,7 @@ export const contactsRouter = router({
       await db
         .update(contacts)
         .set({ deletedAt: new Date() })
-        .where(eq(contacts.id, input.id));
+        .where(and(eq(contacts.id, input.id), eq(contacts.userId, userId), isNull(contacts.deletedAt)));
 
       return { success: true };
     }),

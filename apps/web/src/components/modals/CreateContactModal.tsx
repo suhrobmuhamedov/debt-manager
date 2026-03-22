@@ -1,20 +1,52 @@
 import { useModalStore } from '../../store/modalStore';
+import { ContactForm, ContactFormValues } from '../contacts/ContactForm';
+import { trpc } from '../../lib/trpc';
+import { toast } from 'sonner';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from '../ui/sheet';
 
 export const CreateContactModal = () => {
-  const { close } = useModalStore();
+  const { type, close } = useModalStore();
+  const utils = trpc.useUtils();
+  const isOpen = type === 'CREATE_CONTACT';
+
+  const createContact = trpc.contacts.create.useMutation({
+    onSuccess: async () => {
+      await utils.contacts.getAll.invalidate();
+      toast.success('Kontakt muvaffaqiyatli qo\'shildi');
+      close();
+    },
+    onError: (error) => {
+      toast.error(error.message || 'Kontakt saqlashda xatolik yuz berdi');
+    },
+  });
+
+  const handleSubmit = async (values: ContactFormValues) => {
+    await createContact.mutateAsync(values);
+  };
 
   return (
-    <div className='fixed inset-0 bg-black/50 flex items-end z-50'>
-      <div className='bg-white w-full rounded-t-lg p-6 space-y-4'>
-        <h2 className='text-xl font-bold'>Yangi kontakt qo\'shish</h2>
-        <p className='text-gray-600'>Bu sahifa tez orada tayyor bo\'ladi</p>
-        <button
-          onClick={close}
-          className='w-full bg-gray-200 hover:bg-gray-300 text-gray-900 py-2 rounded-lg'
-        >
-          Yopish
-        </button>
-      </div>
-    </div>
+    <Sheet open={isOpen} onOpenChange={(open) => !open && close()}>
+      <SheetContent side="bottom" className="rounded-t-2xl pb-6">
+        <SheetHeader className="px-0">
+          <SheetTitle>Yangi kontakt</SheetTitle>
+          <SheetDescription>
+            Ism va telefon raqam majburiy. Qolgan maydonlar ixtiyoriy.
+          </SheetDescription>
+        </SheetHeader>
+
+        <ContactForm
+          submitLabel="Saqlash"
+          isSubmitting={createContact.isPending}
+          onCancel={close}
+          onSubmit={handleSubmit}
+        />
+      </SheetContent>
+    </Sheet>
   );
 };
