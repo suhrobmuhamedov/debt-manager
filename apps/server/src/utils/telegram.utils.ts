@@ -13,7 +13,10 @@ export type TelegramUser = {
 
 function parseInitData(initData: string): Record<string, string> {
   return initData.split('&').reduce<Record<string, string>>((acc, pair) => {
-    const [key, value] = pair.split('=');
+    const separatorIndex = pair.indexOf('=');
+    if (separatorIndex === -1) return acc;
+    const key = pair.slice(0, separatorIndex);
+    const value = pair.slice(separatorIndex + 1);
     if (!key || value === undefined) return acc;
     acc[key] = decodeURIComponent(value);
     return acc;
@@ -32,7 +35,7 @@ export function verifyTelegramInitData(initData: string, botToken: string): Tele
     .map((key) => `${key}=${data[key]}`)
     .join('\n');
 
-  const secretKey = crypto.createHash('sha256').update(botToken).digest();
+  const secretKey = crypto.createHmac('sha256', 'WebAppData').update(botToken).digest();
   const computedHash = crypto
     .createHmac('sha256', secretKey)
     .update(dataCheckString)
@@ -40,14 +43,28 @@ export function verifyTelegramInitData(initData: string, botToken: string): Tele
 
   if (computedHash !== hash) return null;
 
-  const id = Number(data.id);
-  if (Number.isNaN(id)) return null;
+  let user: TelegramUser | null = null;
 
-  return {
-    id,
-    first_name: data.first_name,
-    last_name: data.last_name,
-    username: data.username,
-    language_code: data.language_code,
-  };
+  if (data.user) {
+    try {
+      user = JSON.parse(data.user) as TelegramUser;
+    } catch {
+      return null;
+    }
+  } else if (data.id) {
+    const id = Number(data.id);
+    if (Number.isNaN(id)) return null;
+
+    user = {
+      id,
+      first_name: data.first_name,
+      last_name: data.last_name,
+      username: data.username,
+      language_code: data.language_code,
+    };
+  }
+
+  if (!user || typeof user.id !== 'number' || !user.first_name) return null;
+
+  return user;
 }
