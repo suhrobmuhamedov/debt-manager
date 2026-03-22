@@ -2,31 +2,16 @@
 
 WORKDIR /app
 
-# Copy root package files
-COPY package*.json ./
+# Install only server dependencies
+COPY package.json ./package.json
 
-# Copy server package files
-COPY apps/server/package*.json ./apps/server/
+RUN npm install
 
-# Install dependencies
-RUN npm install --workspace=apps/server
+COPY src ./src
+COPY tsconfig.json ./tsconfig.json
 
-# Copy server source code
-COPY apps/server/src ./apps/server/src
-
-# Copy server TypeScript config
-COPY apps/server/tsconfig.json ./apps/server/tsconfig.json
-
-# Change to server directory for build
-WORKDIR /app/apps/server
-
-# Build TypeScript
 RUN npm run build
-
-# Verify build output
-RUN ls -la dist/
 
 EXPOSE 3001
 
-# Use absolute path to avoid Railway override issues
-CMD ["node", "/app/apps/server/dist/index.js"]
+CMD ["node", "dist/index.js"]
