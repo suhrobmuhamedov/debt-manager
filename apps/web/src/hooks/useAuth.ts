@@ -5,41 +5,46 @@ import { isTelegram, getInitData, expandApp } from '../lib/telegram';
 
 export const useAuth = () => {
   const { setUser, setLoading, isAuthenticated, isLoading } = useAuthStore();
-  const telegramLogin = trpc.auth.telegramLogin.useMutation();
+  const mutateRef = useRef<any>(null);
   const startedRef = useRef(false);
+
+  const telegramLogin = trpc.auth.telegramLogin.useMutation({
+    onSuccess: (user) => {
+      setUser(user as any);
+      setLoading(false);
+    },
+    onError: (error) => {
+      console.error('Auth error:', error);
+      setUser(null);
+      setLoading(false);
+    },
+  });
+
+  mutateRef.current = telegramLogin.mutate;
 
   useEffect(() => {
     if (startedRef.current) return;
     startedRef.current = true;
 
-    const authenticate = async () => {
-      if (!isTelegram()) {
-        setUser(null);
-        setLoading(false);
-        return;
-      }
+    if (!isTelegram()) {
+      setUser(null);
+      setLoading(false);
+      return;
+    }
 
-      try {
-        expandApp();
-        const initData = getInitData();
-        if (!initData) {
-          console.error('Auth error: empty initData');
-          setUser(null);
-          return;
-        }
+    expandApp();
+    const initData = getInitData();
 
-        const user = await telegramLogin.mutateAsync({ initData });
-        setUser(user as any);
-      } catch (error) {
-        console.error('Auth error:', error);
-        setUser(null);
-      } finally {
-        setLoading(false);
-      }
-    };
+    if (!initData || initData === '') {
+      console.error('No initData from Telegram');
+      setUser(null);
+      setLoading(false);
+      return;
+    }
 
-    authenticate();
-  }, [setUser, setLoading, telegramLogin]);
+    console.log('Sending initData to server...');
+    mutateRef.current({ initData });
+  }, []);
 
   return { isAuthenticated, isLoading, isTelegram: isTelegram() };
 };

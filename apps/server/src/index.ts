@@ -36,14 +36,15 @@ const app = express();
 
 // CORS middleware - must run before other middleware
 app.use(cors({
-  origin: [
-    'https://debt-manager-web.vercel.app',
-    'https://debt-manager-web.vercel.app/',
-    'http://localhost:5173',
-  ],
+  origin: true,
   credentials: true,
   methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-trpc-source'],
+  allowedHeaders: [
+    'Content-Type',
+    'Authorization',
+    'x-trpc-source',
+    'cookie',
+  ],
 }));
 
 // Health check for Railway - MUST be first
@@ -63,15 +64,12 @@ const isProduction = process.env.NODE_ENV === 'production' || isRailwayRuntime;
 const dbUrl = process.env.DATABASE_URL || '';
 const isRailwayInternalHost = dbUrl.includes('mysql.railway.internal');
 
-if (isProduction) {
-  // Required so secure cookies work correctly behind Railway/Vercel proxies.
-  app.set('trust proxy', 1);
-}
+app.set('trust proxy', 1);
 
 const sessionCookie = {
   httpOnly: true,
   secure: isProduction,
-  sameSite: isProduction ? 'none' as const : 'lax' as const,
+  sameSite: 'none' as const,
   maxAge: 30 * 24 * 60 * 60 * 1000,
 };
 
