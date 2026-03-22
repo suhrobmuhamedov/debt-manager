@@ -11,6 +11,7 @@
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/express-session": "^1.18.2",
+    "@types/jsonwebtoken": "^9.0.0",
     "compression": "^1.8.1",
     "connect-mysql2": "^2.2.6",
     "cors": "^2.8.6",
@@ -19,6 +20,7 @@
     "drizzle-orm": "^0.45.1",
     "express": "^5.2.1",
     "express-session": "^1.19.0",
+    "jsonwebtoken": "^9.0.0",
     "mysql2": "^3.20.0",
     "zod": "^4.3.6"
   },

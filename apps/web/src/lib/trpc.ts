@@ -1,6 +1,7 @@
 import { createTRPCReact } from '@trpc/react-query';
 import { httpBatchLink } from '@trpc/client';
 import type { AppRouter } from '../../../server/src/routers/index';
+import { useAuthStore } from '../store/authStore';
 
 export const trpc = createTRPCReact<AppRouter>();
 
@@ -16,6 +17,10 @@ export const trpcClient = trpc.createClient({
   links: [
     httpBatchLink({
       url: `${getBaseUrl()}/trpc`,
+      headers: () => {
+        const token = useAuthStore.getState().token;
+        return token ? { 'x-auth-token': token } : {};
+      },
       fetch: (url, options) => {
         return fetch(url, {
           ...options,

@@ -1,7 +1,8 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import { eq } from 'drizzle-orm';
-import { protectedProcedure, publicProcedure, router } from '../trpc';
+import jwt from 'jsonwebtoken';
+import { protectedProcedure, publicProcedure, router, JWT_SECRET } from '../trpc';
 import { db } from '../db';
 import { users } from '../db/schema';
 import { verifyTelegramInitData } from '../utils/telegram.utils';
@@ -72,7 +73,13 @@ export const authRouter = router({
       // session.save() ni kutmasdan qaytarish
       ctx.req.session.save(() => {});
 
-      return user;
+      const token = jwt.sign(
+        { userId: user.id },
+        JWT_SECRET,
+        { expiresIn: '30d' }
+      );
+
+      return { ...user, token };
     }),
 
   logout: protectedProcedure.mutation(({ ctx }) => {
