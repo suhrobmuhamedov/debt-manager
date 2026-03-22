@@ -18,33 +18,31 @@ export const authRouter = router({
         });
       }
 
-      console.log('telegramLogin called, initData length:', input.initData.length);
-
       const telegramUser = verifyTelegramInitData(input.initData, botToken);
 
       if (!telegramUser) {
-        console.error('Invalid initData received');
         throw new TRPCError({
           code: 'UNAUTHORIZED',
           message: 'Invalid Telegram data'
         });
       }
 
-      console.log('Telegram user verified:', telegramUser.id);
-
-      // Mavjud userni qidirish
-      const existing = await db
+      // Timeout bilan DB query
+      const existingPromise = db
         .select()
         .from(users)
         .where(eq(users.telegramId, String(telegramUser.id)))
         .limit(1);
 
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('DB timeout')), 8000)
+      );
+
+      const existing = await Promise.race([existingPromise, timeoutPromise]) as any[];
+
       let user = existing[0];
 
-      // Yangi user yaratish
       if (!user) {
-        console.log('Creating new user for:', telegramUser.id);
-
         await db.insert(users).values({
           telegramId: String(telegramUser.id),
           firstName: telegramUser.first_name,
@@ -68,21 +66,11 @@ export const authRouter = router({
         user = created;
       }
 
-      // Session ga saqlash
+      // Session ni async saver emas, sync qilamiz
       ctx.req.session.userId = user.id;
 
-      await new Promise<void>((resolve, reject) => {
-        ctx.req.session.save((err) => {
-          if (err) {
-            console.error('Session save error:', err);
-            reject(err);
-          } else {
-            resolve();
-          }
-        });
-      });
-
-      console.log('User logged in:', user.id);
+      // session.save() ni kutmasdan qaytarish
+      ctx.req.session.save(() => {});
 
       return user;
     }),

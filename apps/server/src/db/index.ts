@@ -1,5 +1,5 @@
-import * as mysql from 'mysql2/promise';
 import { drizzle } from 'drizzle-orm/mysql2';
+import mysql from 'mysql2/promise';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
 import * as schema from './schema';
@@ -13,6 +13,14 @@ if (!process.env.DATABASE_URL) {
 	dotenv.config({ path: rootDotEnv });
 }
 
-const connection = mysql.createPool(process.env.DATABASE_URL!);
+const pool = mysql.createPool({
+	uri: process.env.DATABASE_URL,
+	connectionLimit: 5,
+	connectTimeout: 10000,
+	waitForConnections: true,
+	queueLimit: 0,
+	enableKeepAlive: true,
+	keepAliveInitialDelay: 0,
+});
 
-export const db = drizzle(connection, { schema, mode: 'default' });
+export const db = drizzle(pool, { schema, mode: 'default' });
