@@ -1,15 +1,14 @@
 FROM node:20-alpine
 WORKDIR /app
 
-COPY package*.json ./
-COPY apps/bot/package*.json ./apps/bot/
+# Faqat bot uchun sodda install
+COPY apps/bot/package.json ./package.json
 
-RUN npm install --workspace=apps/bot
+RUN npm install
 
-COPY apps/bot/ ./apps/bot/
-
-WORKDIR /app/apps/bot
+COPY apps/bot/src ./src
+COPY apps/bot/tsconfig.json ./tsconfig.json
 
 RUN npm run build
 
-CMD ["node", "/app/apps/bot/dist/index.js"]
+CMD ["node", "dist/index.js"]
