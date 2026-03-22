@@ -1,84 +1,67 @@
 import * as crypto from 'crypto';
-import * as dotenv from 'dotenv';
 
-dotenv.config();
-
-export type TelegramUser = {
+export interface TelegramUser {
   id: number;
   first_name: string;
   last_name?: string;
   username?: string;
   language_code?: string;
-};
-
-function parseInitData(initData: string): Record<string, string> {
-  return initData.split('&').reduce<Record<string, string>>((acc, pair) => {
-    const separatorIndex = pair.indexOf('=');
-    if (separatorIndex === -1) return acc;
-    const key = pair.slice(0, separatorIndex);
-    const value = pair.slice(separatorIndex + 1);
-    if (!key || value === undefined) return acc;
-    acc[key] = decodeURIComponent(value);
-    return acc;
-  }, {});
 }
 
-export function verifyTelegramInitData(initData: string, botToken: string): TelegramUser | null {
-  const data = parseInitData(initData);
-  const hash = data.hash;
-  if (!hash) {
-    console.warn('Telegram initData validation failed: missing hash');
-    return null;
-  }
+export function verifyTelegramInitData(
+  initData: string,
+  botToken: string
+): TelegramUser | null {
+  try {
+    // DEV MODE - test user qaytaradi
+    if (initData === 'dev_mode' || initData === '') {
+      return {
+        id: 123456789,
+        first_name: 'Test',
+        last_name: 'User',
+        username: 'testuser',
+        language_code: 'uz',
+      };
+    }
 
-  delete data.hash;
+    const urlParams = new URLSearchParams(initData);
+    const hash = urlParams.get('hash');
+    if (!hash) return null;
 
-  const dataCheckString = Object.keys(data)
-    .sort()
-    .map((key) => `${key}=${data[key]}`)
-    .join('\n');
+    // hash ni olib tashla
+    urlParams.delete('hash');
 
-  const secretKey = crypto.createHmac('sha256', 'WebAppData').update(botToken).digest();
-  const computedHash = crypto
-    .createHmac('sha256', secretKey)
-    .update(dataCheckString)
-    .digest('hex');
+    // Kalitlarni saralash
+    const dataCheckString = Array.from(urlParams.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([key, value]) => `${key}=${value}`)
+      .join('\n');
 
-  if (computedHash !== hash) {
-    console.warn('Telegram initData validation failed: hash mismatch', {
-      keys: Object.keys(data).sort(),
-      auth_date: data.auth_date,
-      hasUser: Boolean(data.user),
-    });
-    return null;
-  }
+    // HMAC hisoblash
+    const secretKey = crypto
+      .createHmac('sha256', 'WebAppData')
+      .update(botToken)
+      .digest();
 
-  let user: TelegramUser | null = null;
+    const computedHash = crypto
+      .createHmac('sha256', secretKey)
+      .update(dataCheckString)
+      .digest('hex');
 
-  if (data.user) {
-    try {
-      user = JSON.parse(data.user) as TelegramUser;
-    } catch {
-      console.warn('Telegram initData validation failed: invalid user JSON');
+    if (computedHash !== hash) {
+      console.error('Hash mismatch:', { computedHash, hash });
       return null;
     }
-  } else if (data.id) {
-    const id = Number(data.id);
-    if (Number.isNaN(id)) return null;
 
-    user = {
-      id,
-      first_name: data.first_name,
-      last_name: data.last_name,
-      username: data.username,
-      language_code: data.language_code,
-    };
-  }
+    // user ma'lumotini olish
+    const userString = urlParams.get('user');
+    if (!userString) return null;
 
-  if (!user || typeof user.id !== 'number' || !user.first_name) {
-    console.warn('Telegram initData validation failed: incomplete user payload');
+    const user = JSON.parse(decodeURIComponent(userString));
+    return user as TelegramUser;
+
+  } catch (error) {
+    console.error('verifyTelegramInitData error:', error);
     return null;
   }
-
-  return user;
 }
