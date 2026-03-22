@@ -59,8 +59,21 @@ app.use(compression());
 
 // Session middleware - use MemoryStore locally when Railway internal DB host is not resolvable
 const isRailwayRuntime = Boolean(process.env.RAILWAY_ENVIRONMENT || process.env.RAILWAY_PROJECT_ID);
+const isProduction = process.env.NODE_ENV === 'production' || isRailwayRuntime;
 const dbUrl = process.env.DATABASE_URL || '';
 const isRailwayInternalHost = dbUrl.includes('mysql.railway.internal');
+
+if (isProduction) {
+  // Required so secure cookies work correctly behind Railway/Vercel proxies.
+  app.set('trust proxy', 1);
+}
+
+const sessionCookie = {
+  httpOnly: true,
+  secure: isProduction,
+  sameSite: isProduction ? 'none' as const : 'lax' as const,
+  maxAge: 30 * 24 * 60 * 60 * 1000,
+};
 
 if (!isRailwayRuntime && isRailwayInternalHost) {
   console.warn('Using in-memory sessions locally because mysql.railway.internal is only reachable inside Railway.');
@@ -68,10 +81,7 @@ if (!isRailwayRuntime && isRailwayInternalHost) {
     secret: process.env.SESSION_SECRET || 'dev-session-secret',
     resave: false,
     saveUninitialized: false,
-    cookie: {
-      secure: false,
-      maxAge: 30 * 24 * 60 * 60 * 1000,
-    },
+    cookie: sessionCookie,
   }));
 } else {
   try {
@@ -86,10 +96,7 @@ if (!isRailwayRuntime && isRailwayInternalHost) {
       store: sessionStore,
       resave: false,
       saveUninitialized: false,
-      cookie: {
-        secure: false, // Set to true in production with HTTPS
-        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-      },
+      cookie: sessionCookie,
     }));
   } catch (error) {
     console.error('Session store initialization failed, falling back to MemoryStore:', error);
@@ -97,10 +104,7 @@ if (!isRailwayRuntime && isRailwayInternalHost) {
       secret: process.env.SESSION_SECRET || 'dev-session-secret',
       resave: false,
       saveUninitialized: false,
-      cookie: {
-        secure: false,
-        maxAge: 30 * 24 * 60 * 60 * 1000,
-      },
+      cookie: sessionCookie,
     }));
   }
 }
