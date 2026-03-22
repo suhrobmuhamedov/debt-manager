@@ -6,8 +6,7 @@ COPY apps/bot/package*.json ./apps/bot/
 
 RUN npm install --workspace=apps/bot
 
-COPY apps/bot/src ./apps/bot/src
-COPY apps/bot/tsconfig.json ./apps/bot/tsconfig.json
+COPY apps/bot/ ./apps/bot/
 
 WORKDIR /app/apps/bot
 
