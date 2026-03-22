@@ -5,6 +5,7 @@ import type { AppRouter } from '../../../server/src/routers/index';
 export const trpc = createTRPCReact<AppRouter>();
 
 const getBaseUrl = () => {
+  console.log('VITE_SERVER_URL:', import.meta.env.VITE_SERVER_URL);
   if (import.meta.env.VITE_SERVER_URL) {
     return import.meta.env.VITE_SERVER_URL;
   }

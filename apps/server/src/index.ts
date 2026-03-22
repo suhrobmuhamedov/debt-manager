@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import compression from 'compression';
 import session from 'express-session';
-import { createExpressMiddleware } from '@trpc/server/adapters/express';
+import * as trpcExpress from '@trpc/server/adapters/express';
 import { appRouter } from './routers';
 import { createContext } from './trpc';
 import { db } from './db';
@@ -34,6 +34,18 @@ for (const envVar of requiredEnvVars) {
 
 const app = express();
 
+// CORS middleware - must run before other middleware
+app.use(cors({
+  origin: [
+    'https://debt-manager-web.vercel.app',
+    'https://debt-manager-web.vercel.app/',
+    'http://localhost:5173',
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-trpc-source'],
+}));
+
 // Health check for Railway - MUST be first
 app.get('/health', (_req, res) => {
   res.status(200).json({
@@ -41,12 +53,6 @@ app.get('/health', (_req, res) => {
     timestamp: new Date().toISOString()
   });
 });
-
-// CORS middleware
-app.use(cors({
-  origin: process.env.WEB_APP_URL,
-  credentials: true,
-}));
 
 // Compression middleware
 app.use(compression());
@@ -100,7 +106,7 @@ if (!isRailwayRuntime && isRailwayInternalHost) {
 }
 
 // tRPC middleware
-app.use('/trpc', createExpressMiddleware({
+app.use('/trpc', trpcExpress.createExpressMiddleware({
   router: appRouter,
   createContext,
 }));
