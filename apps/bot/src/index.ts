@@ -1,5 +1,7 @@
 import { Telegraf } from 'telegraf';
 import * as dotenv from 'dotenv';
+import * as mysql from 'mysql2/promise';
+import type { RowDataPacket } from 'mysql2';
 import * as path from 'path';
 
 // Load environment variables
@@ -21,6 +23,9 @@ import { helpText } from './utils/keyboards';
 
 const bot = new Telegraf(process.env.BOT_TOKEN!);
 let isLaunching = false;
+let lockConnection: mysql.Connection | null = null;
+
+const BOT_LOCK_NAME = 'debt-manager-bot-poller';
 
 // Register commands
 bot.start(startCommand);
@@ -49,9 +54,64 @@ const isTelegramConflictError = (err: any) => {
   return err?.response?.error_code === 409 && err?.on?.method === 'getUpdates';
 };
 
+async function acquireBotLock() {
+  const databaseUrl = process.env.DATABASE_URL;
+  if (!databaseUrl) {
+    console.warn('DATABASE_URL topilmadi. Singleton lock ishlatilmaydi.');
+    return true;
+  }
+
+  while (true) {
+    try {
+      if (!lockConnection) {
+        lockConnection = await mysql.createConnection(databaseUrl);
+      }
+
+      const [rows] = await lockConnection.query<(RowDataPacket[] & Array<{ lockStatus: number | null }>)>(
+        'SELECT GET_LOCK(?, 0) AS lockStatus',
+        [BOT_LOCK_NAME]
+      );
+
+      if (rows[0]?.lockStatus === 1) {
+        console.log('Bot singleton lock olindi.');
+        return true;
+      }
+
+      console.warn('Bot singleton lock band. Boshqa instance aktiv. 10 soniyada qayta tekshiramiz...');
+    } catch (error) {
+      console.error('Bot singleton lock xatosi:', error);
+      if (lockConnection) {
+        try {
+          await lockConnection.end();
+        } catch {
+          // ignore close errors
+        }
+        lockConnection = null;
+      }
+    }
+
+    await sleep(10000);
+  }
+}
+
+async function releaseBotLock() {
+  if (!lockConnection) return;
+
+  try {
+    await lockConnection.query('DO RELEASE_LOCK(?)', [BOT_LOCK_NAME]);
+    await lockConnection.end();
+  } catch (error) {
+    console.error('Bot singleton lock release xatosi:', error);
+  } finally {
+    lockConnection = null;
+  }
+}
+
 async function launchBotWithRetry() {
   if (isLaunching) return;
   isLaunching = true;
+
+  await acquireBotLock();
 
   while (true) {
     try {
@@ -112,5 +172,12 @@ process.on('uncaughtException', (err: any) => {
 });
 
 // Graceful stop
-process.once('SIGINT', () => bot.stop('SIGINT'));
-process.once('SIGTERM', () => bot.stop('SIGTERM'));
+process.once('SIGINT', async () => {
+  bot.stop('SIGINT');
+  await releaseBotLock();
+});
+
+process.once('SIGTERM', async () => {
+  bot.stop('SIGTERM');
+  await releaseBotLock();
+});
