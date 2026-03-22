@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { trpc } from '../lib/trpc';
 import { useAuthStore } from '../store/authStore';
 import { isTelegram, getInitData, expandApp } from '../lib/telegram';
@@ -6,8 +6,12 @@ import { isTelegram, getInitData, expandApp } from '../lib/telegram';
 export const useAuth = () => {
   const { setUser, setLoading, isAuthenticated, isLoading } = useAuthStore();
   const telegramLogin = trpc.auth.telegramLogin.useMutation();
+  const startedRef = useRef(false);
 
   useEffect(() => {
+    if (startedRef.current) return;
+    startedRef.current = true;
+
     const authenticate = async () => {
       if (!isTelegram()) {
         setUser(null);
