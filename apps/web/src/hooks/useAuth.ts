@@ -36,7 +36,9 @@ export const useAuth = () => {
     const initData = getInitData();
 
     if (!initData || initData === '') {
-      console.error('No initData from Telegram');
+      console.error('❌ Auth failed: No initData from Telegram');
+      console.error('This means web_app button is not configured in BotFather');
+      console.error('OR the mini app was not launched via web_app button');
       setUser(null);
       setLoading(false);
       return;

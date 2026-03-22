@@ -8,7 +8,7 @@ import { formatCurrency } from '../lib/formatters';
 import { useModalStore } from '../store/modalStore';
 
 export const Dashboard = () => {
-  const { data: stats, isLoading } = trpc.dashboard.getStats.useQuery();
+  const { data: stats, isLoading, error } = trpc.dashboard.getStats.useQuery();
   const { open: openModal } = useModalStore();
 
   const handleCreateDebt = () => {
@@ -36,6 +36,20 @@ export const Dashboard = () => {
             {Array.from({ length: 3 }).map((_, i) => (
               <SkeletonCard key={i} />
             ))}
+          </div>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <AppLayout>
+        <div className="p-4">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <h3 className="text-red-900 font-bold">Xato: {error.message}</h3>
+            <p className="text-red-700 text-sm mt-2">Data: {error.data?.code || 'Unknown'}</p>
+            <p className="text-red-600 text-xs mt-2">Sahifani qayta yuklang yoki bot bilan qayta urinib ko'ring</p>
           </div>
         </div>
       </AppLayout>

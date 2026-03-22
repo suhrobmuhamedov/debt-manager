@@ -36,7 +36,18 @@ export function getInitData(): string {
   if (import.meta.env.DEV) {
     return 'dev_mode';
   }
-  return window.Telegram?.WebApp?.initData || '';
+  
+  const initData = window.Telegram?.WebApp?.initData || '';
+  
+  // Debug logging
+  if (!initData && typeof window !== 'undefined') {
+    console.warn('⚠️ initData EMPTY on mobile!');
+    console.warn('window.Telegram:', !!window.Telegram);
+    console.warn('window.Telegram.WebApp:', !!window.Telegram?.WebApp);
+    console.warn('Ensure: Bot launched via web_app button in BotFather!');
+  }
+  
+  return initData;
 }
 
 export function expandApp(): void {
