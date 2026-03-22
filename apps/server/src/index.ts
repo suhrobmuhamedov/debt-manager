@@ -28,7 +28,9 @@ app.use(cors({
   allowedHeaders: [
     'Content-Type',
     'Authorization',
+    'x-auth-token',
     'x-trpc-source',
+    'cookie',
   ],
 }));
 

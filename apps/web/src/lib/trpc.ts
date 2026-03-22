@@ -19,7 +19,12 @@ export const trpcClient = trpc.createClient({
       url: `${getBaseUrl()}/trpc`,
       headers: () => {
         const token = useAuthStore.getState().token;
-        return token ? { 'x-auth-token': token } : {};
+        return token
+          ? {
+              'x-auth-token': token,
+              Authorization: `Bearer ${token}`,
+            }
+          : {};
       },
       fetch: (url, options) => {
         return fetch(url, {
