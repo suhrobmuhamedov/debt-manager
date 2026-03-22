@@ -34,7 +34,7 @@ bot.action('show_balance', async (ctx) => {
 });
 
 bot.action('show_help', async (ctx) => {
-  await ctx.editMessageText(helpText, { parse_mode: 'Markdown' });
+  await ctx.editMessageText(helpText);
   await ctx.answerCbQuery();
 });
 

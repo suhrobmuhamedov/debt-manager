@@ -11,18 +11,18 @@ export const mainKeyboard = Markup.inlineKeyboard([
 ]);
 
 export const helpText = `
-🤖 *Debt Manager Bot* yordami
+🤖 Debt Manager Bot yordami
 
 Bu bot sizga qarzlarni boshqarishda yordam beradi:
 - Qarz berish va olishni kuzatish
 - To'lovlarni qayd qilish
 - Eslatmalar olish
 
-**Qanday ishlatish:**
+Qanday ishlatish:
 1. /start buyrug'ini bosing
 2. "📊 Ilovani ochish" tugmasini bosing
 3. Web ilovada qarzlarni qo'shing va boshqaring
 
-**Muammo bo'lsa:**
+Muammo bo'lsa:
 @Muhamedov_S ga yozing
 `;
