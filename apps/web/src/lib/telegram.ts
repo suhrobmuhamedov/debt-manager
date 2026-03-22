@@ -1,66 +1,76 @@
-// Telegram Web App SDK wrapper
+// Telegram WebApp SDK type
 declare global {
   interface Window {
     Telegram?: {
       WebApp: {
-        initData: string;
+        initData: string
         initDataUnsafe: {
-          user?: TelegramUser;
-        };
-        expand: () => void;
-        close: () => void;
-        ready: () => void;
+          user?: {
+            id: number
+            first_name: string
+            last_name?: string
+            username?: string
+            language_code?: string
+          }
+        }
+        ready: () => void
+        expand: () => void
+        close: () => void
         BackButton: {
-          show: () => void;
-          hide: () => void;
-          onClick: (callback: () => void) => void;
-          offClick: (callback: () => void) => void;
-        };
-      };
-    };
+          show: () => void
+          hide: () => void
+          onClick: (fn: () => void) => void
+        }
+        MainButton: {
+          show: () => void
+          hide: () => void
+        }
+      }
+    }
   }
 }
 
-export interface TelegramUser {
-  id: number;
-  first_name: string;
-  last_name?: string;
-  username?: string;
-  language_code?: string;
+export function isTelegram(): boolean {
+  // Development mode uchun - localhost da ham ishlaydi
+  if (import.meta.env.DEV) return true
+
+  return !!(window.Telegram?.WebApp?.initData || window.Telegram?.WebApp)
 }
 
-export const isTelegram = (): boolean => {
-  return typeof window !== 'undefined' && !!window.Telegram?.WebApp;
-};
+export function getTelegramUser() {
+  if (import.meta.env.DEV) {
+    // Development uchun test user
+    return {
+      id: 123456789,
+      first_name: 'Test',
+      last_name: 'User',
+      username: 'testuser',
+      language_code: 'uz',
+    }
+  }
+  return window.Telegram?.WebApp?.initDataUnsafe?.user || null
+}
 
-export const getTelegramUser = (): TelegramUser | null => {
-  if (!isTelegram()) return null;
-  return window.Telegram!.WebApp.initDataUnsafe.user || null;
-};
+export function getInitData(): string {
+  if (import.meta.env.DEV) {
+    return 'dev_mode'
+  }
+  return window.Telegram?.WebApp?.initData || ''
+}
 
-export const getInitData = (): string => {
-  if (!isTelegram()) return '';
-  return window.Telegram!.WebApp.initData;
-};
+export function expandApp(): void {
+  window.Telegram?.WebApp?.expand()
+}
 
-export const expandApp = (): void => {
-  if (!isTelegram()) return;
-  window.Telegram!.WebApp.expand();
-};
+export function readyApp(): void {
+  window.Telegram?.WebApp?.ready()
+}
 
-export const closeApp = (): void => {
-  if (!isTelegram()) return;
-  window.Telegram!.WebApp.close();
-};
+export function showBackButton(onClick: () => void): void {
+  window.Telegram?.WebApp?.BackButton?.show()
+  window.Telegram?.WebApp?.BackButton?.onClick(onClick)
+}
 
-export const showBackButton = (onClick: () => void): void => {
-  if (!isTelegram()) return;
-  window.Telegram!.WebApp.BackButton.show();
-  window.Telegram!.WebApp.BackButton.onClick(onClick);
-};
-
-export const hideBackButton = (): void => {
-  if (!isTelegram()) return;
-  window.Telegram!.WebApp.BackButton.hide();
-  window.Telegram!.WebApp.BackButton.offClick(() => {});
-};
+export function hideBackButton(): void {
+  window.Telegram?.WebApp?.BackButton?.hide()
+}
