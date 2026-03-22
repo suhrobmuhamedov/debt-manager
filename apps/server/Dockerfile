@@ -1,6 +1,6 @@
 ﻿FROM node:20-alpine
 
-WORKDIR /app
+WORKDIR /app/apps/server
 
 # Install only server dependencies
 COPY package.json ./package.json
@@ -12,6 +12,6 @@ COPY tsconfig.json ./tsconfig.json
 
 RUN npm run build
 
-EXPOSE 3001
+EXPOSE 8080
 
-CMD ["node", "dist/index.js"]
+CMD ["node", "/app/apps/server/dist/index.js"]
