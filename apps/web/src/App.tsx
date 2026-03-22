@@ -1,9 +1,8 @@
 import { Router, Route } from 'wouter';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { httpBatchLink } from '@trpc/client';
 import { useState } from 'react';
 import { Toaster } from 'sonner';
-import { trpc } from './lib/trpc';
+import { trpc, trpcClient } from './lib/trpc';
 import { AuthWrapper } from './components/common/AuthWrapper';
 import { ModalRenderer } from './components/modals/ModalRenderer';
 import { Dashboard } from './pages/Dashboard';
@@ -16,21 +15,6 @@ import { NotFound } from './pages/NotFound';
 
 function App() {
   const [queryClient] = useState(() => new QueryClient());
-  const [trpcClient] = useState(() =>
-    trpc.createClient({
-      links: [
-        httpBatchLink({
-          url: '/trpc',
-          fetch: (url, options) => {
-            return fetch(url, {
-              ...options,
-              credentials: 'include',
-            });
-          },
-        }),
-      ],
-    })
-  );
 
   return (
     <trpc.Provider client={trpcClient} queryClient={queryClient}>
