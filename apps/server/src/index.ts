@@ -8,33 +8,19 @@ import { createContext } from './trpc';
 import { db } from './db';
 import { users, debts } from './db/schema';
 import { eq, and, isNull } from 'drizzle-orm';
-import * as mysql from 'mysql2/promise';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
-// connect-mysql2 exports a factory requiring the express-session module
-const MySQLStore = require('connect-mysql2')(session);
 
-// Load environment variables
-const serverDotEnv = path.resolve(__dirname, '.env');
-const rootDotEnv = path.resolve(__dirname, '..', '..', '.env');
-
-dotenv.config({ path: serverDotEnv });
-if (!process.env.DATABASE_URL) {
-  dotenv.config({ path: rootDotEnv });
-}
-
-// Validate required env variables
-const requiredEnvVars = ['DATABASE_URL', 'BOT_TOKEN', 'SESSION_SECRET', 'WEB_APP_URL', 'INTERNAL_API_KEY'];
-for (const envVar of requiredEnvVars) {
-  if (!process.env[envVar]) {
-    console.error(`Missing required environment variable: ${envVar}`);
-    // Don't crash - just log warning
-  }
-}
+// Load env
+dotenv.config({ path: path.resolve(__dirname, '.env') });
+dotenv.config({ path: path.resolve(__dirname, '..', '..', '.env') });
 
 const app = express();
 
-// CORS middleware - must run before other middleware
+// Trust proxy — Railway uchun SHART
+app.set('trust proxy', 1);
+
+// CORS
 app.use(cors({
   origin: true,
   credentials: true,
@@ -43,80 +29,39 @@ app.use(cors({
     'Content-Type',
     'Authorization',
     'x-trpc-source',
-    'cookie',
   ],
 }));
 
-// Health check for Railway - MUST be first
+// Health check — ENG BIRINCHI
 app.get('/health', (_req, res) => {
-  res.status(200).json({
-    status: 'ok',
-    timestamp: new Date().toISOString()
-  });
+  res.status(200).json({ status: 'ok' });
 });
 
-// Compression middleware
+// Compression
 app.use(compression());
 
-// Session middleware - use MemoryStore locally when Railway internal DB host is not resolvable
-const isRailwayRuntime = Boolean(process.env.RAILWAY_ENVIRONMENT || process.env.RAILWAY_PROJECT_ID);
-const isProduction = process.env.NODE_ENV === 'production' || isRailwayRuntime;
-const dbUrl = process.env.DATABASE_URL || '';
-const isRailwayInternalHost = dbUrl.includes('mysql.railway.internal');
+// Session — MemoryStore (tez, sodda)
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'fallback-secret-key',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    httpOnly: true,
+    secure: true,
+    sameSite: 'none' as const,
+    maxAge: 30 * 24 * 60 * 60 * 1000,
+  },
+}));
 
-app.set('trust proxy', 1);
-
-const sessionCookie = {
-  httpOnly: true,
-  secure: isProduction,
-  sameSite: 'none' as const,
-  maxAge: 30 * 24 * 60 * 60 * 1000,
-};
-
-if (!isRailwayRuntime && isRailwayInternalHost) {
-  console.warn('Using in-memory sessions locally because mysql.railway.internal is only reachable inside Railway.');
-  app.use(session({
-    secret: process.env.SESSION_SECRET || 'dev-session-secret',
-    resave: false,
-    saveUninitialized: false,
-    cookie: sessionCookie,
-  }));
-} else {
-  try {
-    const connection = mysql.createPool(dbUrl);
-    const sessionStore = new MySQLStore({
-      pool: connection,
-      secret: process.env.SESSION_SECRET!
-    });
-
-    app.use(session({
-      secret: process.env.SESSION_SECRET!,
-      store: sessionStore,
-      resave: false,
-      saveUninitialized: false,
-      cookie: sessionCookie,
-    }));
-  } catch (error) {
-    console.error('Session store initialization failed, falling back to MemoryStore:', error);
-    app.use(session({
-      secret: process.env.SESSION_SECRET || 'dev-session-secret',
-      resave: false,
-      saveUninitialized: false,
-      cookie: sessionCookie,
-    }));
-  }
-}
-
-// tRPC middleware
+// tRPC
 app.use('/trpc', trpcExpress.createExpressMiddleware({
   router: appRouter,
   createContext,
 }));
 
-// Internal stats endpoint for bot
+// Internal API — bot uchun
 app.get('/api/internal/stats/:telegramId', async (req, res) => {
   try {
-    // Check API key
     const apiKey = req.headers['internal_api_key'];
     if (apiKey !== process.env.INTERNAL_API_KEY) {
       return res.status(401).json({ error: 'Unauthorized' });
@@ -127,45 +72,42 @@ app.get('/api/internal/stats/:telegramId', async (req, res) => {
       return res.status(400).json({ error: 'Invalid telegram ID' });
     }
 
-    // Find user by telegramId
     const [user] = await db
       .select()
       .from(users)
       .where(eq(users.telegramId, telegramId.toString()))
       .limit(1);
 
-    if (!user) {
-      return res.json({ found: false });
-    }
+    if (!user) return res.json({ found: false });
 
-    // Get all debts for the user
     const allDebts = await db
-      .select({
-        debt: debts,
-      })
+      .select()
       .from(debts)
-      .where(and(eq(debts.userId, user.id), isNull(debts.deletedAt)));
+      .where(and(
+        eq(debts.userId, user.id),
+        isNull(debts.deletedAt)
+      ));
 
-    // Calculate totals
     const totalGiven = allDebts
-      .filter(d => d.debt.type === 'given')
-      .reduce((sum, d) => sum + parseFloat(d.debt.amount), 0);
+      .filter(d => d.type === 'given')
+      .reduce((sum, d) => sum + parseFloat(d.amount), 0);
 
     const totalTaken = allDebts
-      .filter(d => d.debt.type === 'taken')
-      .reduce((sum, d) => sum + parseFloat(d.debt.amount), 0);
+      .filter(d => d.type === 'taken')
+      .reduce((sum, d) => sum + parseFloat(d.amount), 0);
 
-    // Counts
-    const pendingCount = allDebts.filter(d => d.debt.status === 'pending').length;
     const overdueCount = allDebts.filter(d =>
-      d.debt.returnDate && new Date(d.debt.returnDate) < new Date() && d.debt.status !== 'paid'
+      d.returnDate &&
+      new Date(d.returnDate) < new Date() &&
+      d.status !== 'paid'
     ).length;
 
     res.json({
+      found: true,
       totalGiven,
       totalTaken,
       overdueCount,
-      pendingCount,
+      pendingCount: allDebts.filter(d => d.status === 'pending').length,
     });
   } catch (error) {
     console.error('Internal stats error:', error);
@@ -173,14 +115,14 @@ app.get('/api/internal/stats/:telegramId', async (req, res) => {
   }
 });
 
-// Error handling middleware
-app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error(err);
+// Error handler
+app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  console.error('Server error:', err);
   res.status(500).json({ error: 'Internal server error' });
 });
 
-const PORT = parseInt(process.env.PORT || '3001', 10);
-
+// Start server
+const PORT = parseInt(process.env.PORT || '8080', 10);
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);
 });
