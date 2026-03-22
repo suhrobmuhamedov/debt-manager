@@ -9,44 +9,31 @@ export const useAuth = () => {
 
   useEffect(() => {
     const authenticate = async () => {
-      // Check if running in Telegram
       if (!isTelegram()) {
         setLoading(false);
         return;
       }
 
       try {
-        // Get Telegram init data
+        expandApp();
         const initData = getInitData();
-        if (!initData) {
-          setLoading(false);
-          return;
-        }
 
-        // Call login mutation
-        const user = await telegramLogin.mutateAsync({ initData });
+        const user = await Promise.race([
+          telegramLogin.mutateAsync({ initData }),
+          new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Timeout')), 10000)
+          ),
+        ]);
 
-        if (user) {
-          setUser(user);
-          // Expand the app to full screen
-          expandApp();
-        } else {
-          setUser(null);
-        }
+        setUser(user as any);
       } catch (error) {
-        console.error('Authentication failed:', error);
-        setUser(null);
-      } finally {
+        console.error('Auth error:', error);
         setLoading(false);
       }
     };
 
     authenticate();
-  }, [setUser, setLoading, telegramLogin]);
+  }, []);
 
-  return {
-    isAuthenticated,
-    isLoading,
-    isTelegram: isTelegram(),
-  };
+  return { isAuthenticated, isLoading, isTelegram: isTelegram() };
 };
