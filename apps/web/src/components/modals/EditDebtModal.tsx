@@ -129,7 +129,7 @@ export const EditDebtModal = () => {
           date: new Date(entry.paymentDate),
           amount: Number(entry.amount),
           kind: isIncrease ? ('increase' as const) : ('payment' as const),
-          title: isIncrease ? "Qarz miqdori oshirildi" : "To'lov qilindi",
+          title: isIncrease ? "Qarzga qo'shildi" : "Qisman qaytarildi",
         };
       });
 
@@ -152,8 +152,15 @@ export const EditDebtModal = () => {
         runningBalance = Math.max(0, runningBalance - entry.amount);
       }
 
+      const entryTitle = entry.kind === 'increase'
+        ? "Qarzga qo'shildi"
+        : runningBalance === 0
+          ? "To'landi"
+          : "Qisman qaytarildi";
+
       built.push({
         ...entry,
+        title: entryTitle,
         balance: runningBalance,
       });
     });
@@ -191,6 +198,19 @@ export const EditDebtModal = () => {
       amount: adjustment,
       action: adjustmentMode === 'add' ? 'increase' : 'payment',
       actionDate,
+    });
+  };
+
+  const handleFullRepay = () => {
+    if (!debtId || readOnlyMode || remainingAmount <= 0) {
+      return;
+    }
+
+    adjustDebtMutation.mutate({
+      debtId,
+      amount: remainingAmount,
+      action: 'payment',
+      actionDate: actionDate || new Date().toISOString().split('T')[0],
     });
   };
 
@@ -307,30 +327,41 @@ export const EditDebtModal = () => {
                     </div>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      disabled={readOnlyMode}
-                      onClick={() => setAdjustmentMode('subtract')}
-                      className="h-11 w-11 rounded-lg"
-                    >
-                      <Minus className="h-5 w-5" />
-                    </Button>
-                    <div className="flex-1 rounded-lg border border-sky-300/50 bg-sky-50/50 px-3 py-2 text-center dark:border-sky-600/40 dark:bg-sky-950/20">
-                      <p className="text-2xl font-bold text-foreground">{formatCurrency(remainingAmount, debt.currency || 'UZS')}</p>
-                      <p className="text-xs text-muted-foreground">Jami: {formatCurrency(totalAmount, debt.currency || 'UZS')} | To'langan: {formatCurrency(paidAmount, debt.currency || 'UZS')}</p>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        disabled={readOnlyMode}
+                        onClick={() => setAdjustmentMode('subtract')}
+                        className="h-11 w-11 rounded-lg"
+                      >
+                        <Minus className="h-5 w-5" />
+                      </Button>
+                      <div className="flex-1 rounded-lg border border-sky-300/50 bg-sky-50/50 px-3 py-2 text-center dark:border-sky-600/40 dark:bg-sky-950/20">
+                        <p className="text-2xl font-bold text-foreground">{formatCurrency(remainingAmount, debt.currency || 'UZS')}</p>
+                        <p className="text-xs text-muted-foreground">Jami: {formatCurrency(totalAmount, debt.currency || 'UZS')} | To'langan: {formatCurrency(paidAmount, debt.currency || 'UZS')}</p>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        disabled={readOnlyMode}
+                        onClick={() => setAdjustmentMode('add')}
+                        className="h-11 w-11 rounded-lg"
+                      >
+                        <Plus className="h-5 w-5" />
+                      </Button>
                     </div>
                     <Button
                       type="button"
-                      variant="outline"
-                      size="icon"
-                      disabled={readOnlyMode}
-                      onClick={() => setAdjustmentMode('add')}
-                      className="h-11 w-11 rounded-lg"
+                      variant="default"
+                      disabled={readOnlyMode || remainingAmount <= 0 || adjustDebtMutation.isPending}
+                      onClick={handleFullRepay}
+                      className="h-10 w-full bg-emerald-600 text-white hover:bg-emerald-700"
                     >
-                      <Plus className="h-5 w-5" />
+                      To'liq qaytarildi
                     </Button>
                   </div>
                 )}
@@ -384,7 +415,7 @@ export const EditDebtModal = () => {
                     type="button"
                     variant="ghost"
                     size="icon"
-                    disabled={readOnlyMode}
+                      disabled={readOnlyMode}
                     onClick={() => setShowReturnDatePicker(!showReturnDatePicker)}
                     className="h-8 w-8 rounded-lg"
                   >

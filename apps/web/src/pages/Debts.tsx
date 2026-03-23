@@ -12,7 +12,16 @@ export const Debts = () => {
   const { open } = useModalStore();
   const debtsQuery = trpc.debts.getAll.useQuery({ limit: 50 });
 
-  const items = debtsQuery.data?.items || [];
+  const items = (debtsQuery.data?.items || []).slice().sort((a, b) => {
+    const aPaid = a.status === 'paid' ? 1 : 0;
+    const bPaid = b.status === 'paid' ? 1 : 0;
+    if (aPaid !== bPaid) {
+      return aPaid - bPaid;
+    }
+    const aCreatedAt = new Date(a.createdAt ?? 0).getTime();
+    const bCreatedAt = new Date(b.createdAt ?? 0).getTime();
+    return bCreatedAt - aCreatedAt;
+  });
 
   return (
     <AppLayout>

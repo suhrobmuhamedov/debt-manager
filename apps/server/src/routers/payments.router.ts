@@ -47,7 +47,7 @@ export const paymentsRouter = router({
             debtId: input.debtId,
             amount: input.amount.toString(),
             paymentDate: new Date(input.actionDate),
-            note: input.action === 'increase' ? 'debt_increase:Qarz oshirildi' : 'debt_payment:To\'lov qilindi',
+            note: input.action === 'increase' ? 'debt_increase:Qarzga qo\'shildi' : 'debt_payment:Qisman qaytarildi',
           })
           .execute();
 
