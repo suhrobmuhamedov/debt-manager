@@ -14,23 +14,23 @@ export const BottomNav = () => {
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-gray-300 bg-white/98 px-4 py-2 backdrop-blur-sm dark:border-white/15 dark:bg-[#0d1018]/96">
-      <div className="flex justify-around items-center max-w-md mx-auto">
+    <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-black/6 bg-[rgba(255,255,255,0.75)] px-4 pt-2 pb-[calc(env(safe-area-inset-bottom)+8px)] backdrop-blur-[24px] backdrop-saturate-[180%] dark:border-white/8 dark:bg-[rgba(12,12,22,0.80)]">
+      <div className="mx-auto flex h-[72px] max-w-md items-center justify-around">
         {navItems.map((item) => {
           const isActive = location === item.path;
           return (
             <Link key={item.path} href={item.path}>
               <Button
-                variant={isActive ? 'default' : 'ghost'}
+                variant="ghost"
                 size="sm"
-                className={`flex flex-col items-center gap-1 h-auto py-2 px-3 ${
+                className={`h-auto min-w-16 flex-col items-center gap-1 rounded-xl px-2 py-2 ${
                   isActive
-                    ? 'bg-blue-500 text-white hover:bg-blue-600 dark:bg-blue-600 dark:text-white'
-                    : 'text-black hover:text-blue-600 dark:text-white dark:hover:text-blue-400'
+                    ? 'text-[#3b82f6] dark:text-[#3b82f6]'
+                    : 'text-black/45 dark:text-white/45'
                 }`}
               >
-                <span className="text-lg">{item.icon}</span>
-                <span className="text-xs">{item.label}</span>
+                <span className="text-2xl leading-none">{item.icon}</span>
+                <span className={`text-[11px] ${isActive ? 'font-semibold' : 'font-medium'}`}>{item.label}</span>
               </Button>
             </Link>
           );

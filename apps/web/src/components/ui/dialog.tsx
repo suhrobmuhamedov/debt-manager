@@ -61,7 +61,7 @@ function DialogContent({
       <DialogPrimitive.Content
         data-slot="dialog-content"
         className={cn(
-          "glass-surface fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-2xl p-4 text-sm ring-1 ring-white/40 outline-none sm:max-w-sm dark:ring-white/15 data-[state=open]:dialog-open data-[state=closed]:dialog-closed",
+          "glass-surface fixed top-1/2 left-1/2 z-50 grid w-full max-w-[360px] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-[24px] p-4 text-sm outline-none data-[state=open]:dialog-open data-[state=closed]:dialog-closed",
           className
         )}
         {...props}
@@ -107,7 +107,7 @@ function DialogFooter({
     <div
       data-slot="dialog-footer"
       className={cn(
-        "-mx-4 -mb-4 flex flex-col-reverse gap-2 rounded-b-2xl border-t border-white/60 bg-white/55 p-4 sm:flex-row sm:justify-end dark:border-white/15 dark:bg-slate-950/35",
+        "-mx-4 -mb-4 flex flex-col-reverse gap-2 rounded-b-[24px] border-t border-white/35 bg-white/12 p-4 sm:flex-row sm:justify-end dark:border-white/10 dark:bg-white/5",
         className
       )}
       {...props}

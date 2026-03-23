@@ -60,13 +60,13 @@ function SheetContent({
         data-slot="sheet-content"
         data-side={side}
         className={cn(
-          "glass-surface fixed z-50 flex flex-col gap-4 bg-clip-padding text-sm shadow-2xl transition duration-300 ease-out data-[side=bottom]:inset-x-0 data-[side=bottom]:bottom-0 data-[side=bottom]:h-auto data-[side=bottom]:border-t data-[side=bottom]:rounded-t-3xl data-[side=bottom]:pt-5 data-[side=left]:inset-y-0 data-[side=left]:left-0 data-[side=left]:h-full data-[side=left]:w-3/4 data-[side=left]:border-r data-[side=right]:inset-y-0 data-[side=right]:right-0 data-[side=right]:h-full data-[side=right]:w-3/4 data-[side=right]:border-l data-[side=top]:inset-x-0 data-[side=top]:top-0 data-[side=top]:h-auto data-[side=top]:border-b data-[side=left]:sm:max-w-sm data-[side=right]:sm:max-w-sm data-[state=open]:sheet-open data-[state=closed]:sheet-closed",
+          "glass-surface fixed z-50 flex flex-col gap-4 bg-clip-padding text-sm shadow-2xl transition duration-300 ease-out data-[side=bottom]:inset-x-0 data-[side=bottom]:bottom-0 data-[side=bottom]:h-auto data-[side=bottom]:border-t data-[side=bottom]:rounded-t-[28px] data-[side=bottom]:px-5 data-[side=bottom]:pb-6 data-[side=bottom]:pt-6 data-[side=left]:inset-y-0 data-[side=left]:left-0 data-[side=left]:h-full data-[side=left]:w-3/4 data-[side=left]:border-r data-[side=right]:inset-y-0 data-[side=right]:right-0 data-[side=right]:h-full data-[side=right]:w-3/4 data-[side=right]:border-l data-[side=top]:inset-x-0 data-[side=top]:top-0 data-[side=top]:h-auto data-[side=top]:border-b data-[side=left]:sm:max-w-sm data-[side=right]:sm:max-w-sm data-[state=open]:sheet-open data-[state=closed]:sheet-closed",
           className
         )}
         {...props}
       >
         {side === "bottom" ? (
-          <div className="pointer-events-none absolute top-2 left-1/2 h-1.5 w-14 -translate-x-1/2 rounded-full bg-gray-900/25 dark:bg-white/28" />
+          <div className="pointer-events-none absolute top-2 left-1/2 h-1 w-10 -translate-x-1/2 rounded-full bg-black/15 dark:bg-white/20" />
         ) : null}
         {children}
         {showCloseButton && (
