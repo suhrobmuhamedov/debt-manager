@@ -23,7 +23,7 @@ export const ContactCard = ({ contact, onClick, onAddDebt }: ContactCardProps) =
 	return (
 		<Card
 			onClick={() => onClick(contact.id)}
-			className="cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
+			className="cursor-pointer border-white/50 bg-white/40 backdrop-blur-2xl transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-white/20 dark:bg-slate-900/30"
 		>
 			<CardContent className="py-3">
 				<div className="flex items-center justify-between gap-3">
@@ -54,6 +54,7 @@ export const ContactCard = ({ contact, onClick, onAddDebt }: ContactCardProps) =
 							type="button"
 							variant="outline"
 							size="sm"
+							className="border-sky-300/60 bg-sky-50/60 text-sky-700 hover:bg-sky-100/70 dark:border-sky-500/40 dark:bg-sky-900/25 dark:text-sky-200"
 							onClick={(event) => {
 								event.stopPropagation();
 								onAddDebt(contact.id);

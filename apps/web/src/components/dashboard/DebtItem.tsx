@@ -29,11 +29,19 @@ export const DebtItem = ({
 }: DebtItemProps) => {
   const { t } = useTranslation();
   const isPaid = status === 'paid';
+  const paidIsTaken = isPaid && type === 'taken';
 
   const getStatusBadge = () => {
     switch (status) {
       case 'paid':
-        return <Badge variant="default" className="border-green-500 bg-green-600 text-white">To'langan</Badge>;
+        return (
+          <Badge
+            variant="default"
+            className={paidIsTaken ? 'border-red-500 bg-red-600 text-white' : 'border-green-500 bg-green-600 text-white'}
+          >
+            To'langan
+          </Badge>
+        );
       case 'partial':
         return <Badge variant="secondary" className="border-blue-500 bg-blue-600 text-white">Qisman</Badge>;
       case 'pending':
@@ -85,14 +93,22 @@ export const DebtItem = ({
         isOverdue
           ? 'border-red-400 bg-red-50/60 backdrop-blur-xl dark:border-red-600 dark:bg-red-950/20'
           : isPaid
-            ? 'relative overflow-hidden border-emerald-400/60 bg-emerald-50/45 backdrop-blur-2xl dark:border-emerald-500/40 dark:bg-emerald-950/30'
+            ? paidIsTaken
+              ? 'relative overflow-hidden border-red-400/60 bg-red-50/45 backdrop-blur-2xl dark:border-red-500/40 dark:bg-red-950/30'
+              : 'relative overflow-hidden border-emerald-400/60 bg-emerald-50/45 backdrop-blur-2xl dark:border-emerald-500/40 dark:bg-emerald-950/30'
           : 'border-white/50 bg-white/40 backdrop-blur-2xl dark:border-white/20 dark:bg-slate-900/30'
       }`}
       onClick={onClick}
     >
       {isPaid ? (
         <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-white/45 backdrop-blur-md dark:bg-slate-900/45">
-          <span className="rounded-full border border-emerald-500/60 bg-emerald-500/20 px-4 py-1.5 text-sm font-semibold text-emerald-700 dark:text-emerald-300">
+          <span
+            className={`rounded-full px-4 py-1.5 text-sm font-semibold ${
+              paidIsTaken
+                ? 'border border-red-500/60 bg-red-500/20 text-red-700 dark:text-red-300'
+                : 'border border-emerald-500/60 bg-emerald-500/20 text-emerald-700 dark:text-emerald-300'
+            }`}
+          >
             To'landi
           </span>
         </div>

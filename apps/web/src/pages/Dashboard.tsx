@@ -90,12 +90,10 @@ export const Dashboard = () => {
   return (
     <AppLayout>
       <div className="p-4 space-y-6">
-        <div className="relative overflow-hidden rounded-3xl border border-sky-100/40 bg-gradient-to-br from-sky-500/85 via-blue-500/80 to-cyan-500/75 p-5 text-white shadow-2xl shadow-sky-600/30 backdrop-blur-xl">
-          <div className="pointer-events-none absolute -right-12 -top-12 h-32 w-32 rounded-full bg-white/25 blur-2xl" />
-          <div className="pointer-events-none absolute -left-10 -bottom-16 h-36 w-36 rounded-full bg-cyan-200/30 blur-3xl" />
+        <div className="flex justify-center py-1">
           <button
             onClick={handleCreateDebt}
-            className="mx-auto flex h-14 items-center justify-center rounded-2xl border border-white/70 bg-white/65 px-8 text-base font-semibold text-sky-800 shadow-2xl shadow-cyan-900/25 backdrop-blur-xl transition hover:-translate-y-0.5 hover:bg-white/75"
+            className="flex h-14 items-center justify-center rounded-2xl border border-sky-200/70 bg-white/70 px-8 text-base font-semibold text-sky-800 shadow-2xl shadow-sky-700/20 backdrop-blur-xl transition hover:-translate-y-0.5 hover:bg-white/80 dark:border-sky-500/30 dark:bg-slate-900/55 dark:text-sky-200"
           >
             + {t('debts.add')}
           </button>

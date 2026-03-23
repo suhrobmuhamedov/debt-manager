@@ -28,19 +28,19 @@ export const StatCard = ({
   const getVariantStyles = () => {
     switch (variant) {
       case 'success':
-        return 'border-green-300 bg-green-50 dark:border-green-700/70 dark:bg-green-950/40';
+        return 'border-emerald-300/70 bg-emerald-50/40 backdrop-blur-2xl dark:border-emerald-600/40 dark:bg-emerald-950/25';
       case 'warning':
-        return 'border-yellow-300 bg-yellow-50 dark:border-yellow-700/70 dark:bg-yellow-950/40';
+        return 'border-amber-300/70 bg-amber-50/40 backdrop-blur-2xl dark:border-amber-600/40 dark:bg-amber-950/25';
       case 'danger':
-        return 'border-red-300 bg-red-50 dark:border-red-700/70 dark:bg-red-950/40';
+        return 'border-rose-300/70 bg-rose-50/40 backdrop-blur-2xl dark:border-rose-600/40 dark:bg-rose-950/25';
       default:
-        return 'border-gray-300 bg-white dark:border-gray-600 dark:bg-gray-800';
+        return 'border-white/60 bg-white/35 backdrop-blur-2xl dark:border-white/25 dark:bg-slate-900/35';
     }
   };
 
   return (
     <Card
-      className={`${getVariantStyles()} ${className || ''} transition-all hover:shadow-md ${onClick ? 'cursor-pointer hover:-translate-y-0.5 active:translate-y-0' : ''}`}
+      className={`${getVariantStyles()} ${className || ''} rounded-2xl transition-all hover:shadow-xl ${onClick ? 'cursor-pointer hover:-translate-y-1 active:translate-y-0' : ''}`}
       onClick={onClick}
       role={onClick ? 'button' : undefined}
       tabIndex={onClick ? 0 : undefined}
@@ -56,21 +56,21 @@ export const StatCard = ({
       }
     >
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-300">
+        <CardTitle className="text-sm font-medium text-slate-700 dark:text-slate-200">
           {title}
         </CardTitle>
         {icon && (
-          <div className="text-gray-400 dark:text-gray-500">
+          <div className="text-slate-500 dark:text-slate-300">
             {icon}
           </div>
         )}
       </CardHeader>
       <CardContent>
-        <div className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
+        <div className="mb-1 text-2xl font-bold text-slate-900 dark:text-white">
           {value}
         </div>
         {subtitle && (
-          <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+          <p className="mb-2 text-xs text-slate-600 dark:text-slate-300">
             {subtitle}
           </p>
         )}
