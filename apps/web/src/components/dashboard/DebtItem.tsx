@@ -82,8 +82,8 @@ export const DebtItem = ({
     <Card
       className={`cursor-pointer transition-all hover:shadow-md ${confirmationCardTone} ${
         isOverdue
-          ? 'border-red-400 bg-red-50 dark:border-red-600 dark:bg-red-950/30'
-          : 'border-gray-300 bg-white/90 dark:border-white/15 dark:bg-slate-900/75'
+          ? 'border-red-400 bg-red-50/60 backdrop-blur-xl dark:border-red-600 dark:bg-red-950/20'
+          : 'border-white/50 bg-white/40 backdrop-blur-2xl dark:border-white/20 dark:bg-slate-900/30'
       }`}
       onClick={onClick}
     >

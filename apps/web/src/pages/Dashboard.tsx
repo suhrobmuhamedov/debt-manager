@@ -78,16 +78,12 @@ export const Dashboard = () => {
       <div className="p-4 space-y-6">
         <div className="relative overflow-hidden rounded-2xl border border-sky-200/80 bg-gradient-to-br from-sky-500 via-blue-500 to-cyan-500 p-4 text-white shadow-xl shadow-sky-500/30">
           <div className="pointer-events-none absolute -right-10 -top-10 h-28 w-28 rounded-full bg-white/20 blur-xl" />
-          <div className="space-y-2">
-            <h2 className="text-lg font-bold">{t('dashboard.newDebt')}</h2>
-            <p className="text-sm text-white/90">{t('dashboard.firstDebtHint')}</p>
-            <button
-              onClick={handleCreateDebt}
-              className="mt-1 inline-flex h-11 items-center rounded-xl bg-white px-4 text-sm font-semibold text-sky-700 transition hover:bg-sky-50"
-            >
-              + {t('debts.add')}
-            </button>
-          </div>
+          <button
+            onClick={handleCreateDebt}
+            className="inline-flex h-12 items-center rounded-xl bg-white px-5 text-sm font-semibold text-sky-700 transition hover:bg-sky-50"
+          >
+            + {t('debts.add')}
+          </button>
         </div>
 
         {/* Stats Cards */}
