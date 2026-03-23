@@ -3,6 +3,7 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Textarea } from '../ui/textarea';
 import { isValidPhone, normalizePhone } from '../../lib/contact-utils';
+import { useTranslation } from 'react-i18next';
 
 export type ContactFormValues = {
 	name: string;
@@ -25,6 +26,7 @@ export const ContactForm = ({
 	onCancel,
 	onSubmit,
 }: ContactFormProps) => {
+	const { t } = useTranslation();
 	const [name, setName] = useState(initialValues?.name || '');
 	const [phone, setPhone] = useState(initialValues?.phone || '');
 	const [note, setNote] = useState(initialValues?.note || '');
@@ -38,13 +40,13 @@ export const ContactForm = ({
 		const nextErrors: { name?: string; phone?: string } = {};
 
 		if (name.trim().length < 2) {
-			nextErrors.name = 'Ism kamida 2 ta harfdan iborat bo\'lishi kerak';
+			nextErrors.name = t('contacts.nameTooShort');
 		}
 
 		if (!phone.trim()) {
-			nextErrors.phone = 'Telefon raqam majburiy';
+			nextErrors.phone = t('contacts.phoneRequired');
 		} else if (!isValidPhone(phone)) {
-			nextErrors.phone = 'Telefon formati noto\'g\'ri. Masalan: +998901234567';
+			nextErrors.phone = t('contacts.phoneInvalid');
 		}
 
 		setErrors(nextErrors);
@@ -65,11 +67,11 @@ export const ContactForm = ({
 	return (
 		<form onSubmit={handleSubmit} className="space-y-4">
 			<div className="space-y-1.5">
-				<label className="text-sm font-medium text-foreground">Ism familiya</label>
+				<label className="text-sm font-medium text-foreground">{t('contacts.name')}</label>
 				<Input
 					value={name}
 					onChange={(event) => setName(event.target.value)}
-					placeholder="Masalan: Otabek Xasanov"
+					placeholder={t('contacts.namePlaceholder')}
 					autoFocus
 					maxLength={100}
 				/>
@@ -77,11 +79,11 @@ export const ContactForm = ({
 			</div>
 
 			<div className="space-y-1.5">
-				<label className="text-sm font-medium text-foreground">Telefon raqam</label>
+				<label className="text-sm font-medium text-foreground">{t('contacts.phone')}</label>
 				<Input
 					value={phone}
 					onChange={(event) => setPhone(event.target.value)}
-					placeholder="+998901234567"
+					placeholder={t('contacts.phonePlaceholder')}
 					type="tel"
 					inputMode="numeric"
 					pattern="[0-9+]*"
@@ -91,11 +93,11 @@ export const ContactForm = ({
 			</div>
 
 			<div className="space-y-1.5">
-				<label className="text-sm font-medium text-foreground">Izoh (ixtiyoriy)</label>
+				<label className="text-sm font-medium text-foreground">{t('contacts.note')}</label>
 				<Textarea
 					value={note}
 					onChange={(event) => setNote(event.target.value)}
-					placeholder="Qo\'shimcha ma\'lumot"
+					placeholder={t('contacts.notePlaceholder')}
 					maxLength={500}
 					rows={4}
 				/>
@@ -103,10 +105,10 @@ export const ContactForm = ({
 
 			<div className="flex gap-2 pt-1">
 				<Button type="button" variant="outline" className="flex-1" onClick={onCancel} disabled={isSubmitting}>
-					Bekor qilish
+					{t('contacts.cancel')}
 				</Button>
 				<Button type="submit" className="flex-1" disabled={!canSubmit}>
-					{isSubmitting ? 'Saqlanmoqda...' : submitLabel}
+					{isSubmitting ? t('contacts.updating') : submitLabel}
 				</Button>
 			</div>
 		</form>

@@ -11,12 +11,14 @@ import { useModalStore } from '../store/modalStore';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 export const ContactDetail = () => {
   const [match, params] = useRoute('/contacts/:id');
   const [, navigate] = useLocation();
   const { open } = useModalStore();
   const [isDeleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const { t } = useTranslation();
 
   if (!match) return null;
 
@@ -27,11 +29,11 @@ export const ContactDetail = () => {
   const deleteMutation = trpc.contacts.delete.useMutation({
     onSuccess: async () => {
       await utils.contacts.getAll.invalidate();
-      toast.success('Kontakt o\'chirildi');
+      toast.success(t('contacts.deletedSuccess'));
       navigate('/contacts');
     },
     onError: (error) => {
-      toast.error(error.message || 'Kontaktni o\'chirishda xatolik yuz berdi');
+      toast.error(error.message || t('common.error'));
     },
   });
 
@@ -55,7 +57,7 @@ export const ContactDetail = () => {
       <AppLayout>
         <div className="p-4">
           <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-            Kontakt ma'lumotlarini yuklab bo'lmadi.
+            {t('contacts.noDetails')}
           </div>
         </div>
       </AppLayout>
@@ -82,13 +84,13 @@ export const ContactDetail = () => {
                       {formatPhone(contact.phone)}
                     </a>
                   ) : (
-                    <p className="text-sm text-muted-foreground">Telefon raqam kiritilmagan</p>
+                    <p className="text-sm text-muted-foreground">{t('contacts.noPhone')}</p>
                   )}
                 </div>
               </div>
 
               <Badge variant={stats.activeDebtsCount > 0 ? 'destructive' : 'secondary'}>
-                {stats.activeDebtsCount} ta aktiv
+                {stats.activeDebtsCount} {t('contacts.activeDebts').toLowerCase()}
               </Badge>
             </div>
           </CardContent>
@@ -97,39 +99,39 @@ export const ContactDetail = () => {
         <div className="grid grid-cols-3 gap-2">
           <Card>
             <CardContent className="py-3">
-              <p className="text-[11px] text-muted-foreground">Berilgan</p>
+              <p className="text-[11px] text-muted-foreground">{t('contacts.totalGiven')}</p>
               <p className="mt-1 text-sm font-semibold text-emerald-600">{formatCurrency(stats.totalGiven, 'UZS')}</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="py-3">
-              <p className="text-[11px] text-muted-foreground">Olingan</p>
+              <p className="text-[11px] text-muted-foreground">{t('contacts.totalTaken')}</p>
               <p className="mt-1 text-sm font-semibold text-rose-600">{formatCurrency(stats.totalTaken, 'UZS')}</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="py-3">
-              <p className="text-[11px] text-muted-foreground">Aktiv qarz</p>
-              <p className="mt-1 text-sm font-semibold">{stats.activeDebtsCount} ta</p>
+              <p className="text-[11px] text-muted-foreground">{t('contacts.activeDebts')}</p>
+              <p className="mt-1 text-sm font-semibold">{stats.activeDebtsCount}</p>
             </CardContent>
           </Card>
         </div>
 
         <div className="flex gap-2">
           <Button className="flex-1" variant="outline" onClick={() => open('EDIT_CONTACT', { contactId })}>
-            Tahrirlash
+            {t('contacts.edit')}
           </Button>
           <Button className="flex-1" variant="destructive" onClick={() => setDeleteDialogOpen(true)}>
-            O'chirish
+            {t('contacts.delete')}
           </Button>
         </div>
 
         <div className="space-y-2">
-          <h2 className="text-sm font-semibold text-foreground">Qarzlar ro'yxati</h2>
+          <h2 className="text-sm font-semibold text-foreground">{t('contacts.detailsTitle')}</h2>
 
           {!debts.length ? (
             <div className="rounded-xl border border-dashed p-4 text-center text-sm text-muted-foreground">
-              Bu kontakt bo'yicha qarzlar topilmadi.
+              {t('contacts.noDebts')}
             </div>
           ) : (
             debts.map((debt) => {
@@ -142,19 +144,19 @@ export const ContactDetail = () => {
                     <div className="flex items-center justify-between gap-2">
                       <div>
                         <p className={`text-sm font-semibold ${isGiven ? 'text-emerald-600' : 'text-rose-600'}`}>
-                          {isGiven ? 'Berilgan' : 'Olingan'}: {formatCurrency(amount, debt.currency || 'UZS')}
+                          {isGiven ? t('debts.given') : t('debts.taken')}: {formatCurrency(amount, debt.currency || 'UZS')}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          Berilgan sana: {formatDate(debt.givenDate)}
+                          {t('debts.givenDate')}: {formatDate(debt.givenDate)}
                         </p>
                         {debt.returnDate && (
                           <p className="text-xs text-muted-foreground">
-                            Qaytarish: {formatDate(debt.returnDate)}
+                            {t('debts.returnDate')}: {formatDate(debt.returnDate)}
                           </p>
                         )}
                       </div>
                       <Badge variant={debt.status === 'paid' ? 'secondary' : 'outline'}>
-                        {debt.status === 'paid' ? 'To\'langan' : debt.status === 'partial' ? 'Qisman' : 'Kutilmoqda'}
+                        {debt.status === 'paid' ? t('debts.paid') : debt.status === 'partial' ? t('debts.partial') : t('debts.pending')}
                       </Badge>
                     </div>
                   </CardContent>
@@ -167,17 +169,17 @@ export const ContactDetail = () => {
         <Dialog open={isDeleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Kontaktni o'chirish</DialogTitle>
+              <DialogTitle>{t('contacts.delete')}</DialogTitle>
               <DialogDescription>
-                Haqiqatan ham ushbu kontaktni o'chirmoqchimisiz? Agar aktiv qarzlar mavjud bo'lsa, o'chirishga ruxsat berilmaydi.
+                {t('contacts.deleteDescription')}
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>
               <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
-                Bekor qilish
+                {t('contacts.cancel')}
               </Button>
               <Button variant="destructive" onClick={handleDelete} disabled={deleteMutation.isPending}>
-                {deleteMutation.isPending ? 'O\'chirilmoqda...' : 'O\'chirish'}
+                {deleteMutation.isPending ? t('contacts.deleting') : t('contacts.delete')}
               </Button>
             </DialogFooter>
           </DialogContent>

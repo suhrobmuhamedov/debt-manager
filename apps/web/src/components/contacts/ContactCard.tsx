@@ -2,6 +2,7 @@ import { Badge } from '../ui/badge';
 import { Card, CardContent } from '../ui/card';
 import { formatCurrency } from '../../lib/formatters';
 import { formatPhone, getAvatarColor, getInitials } from '../../lib/contact-utils';
+import { useTranslation } from 'react-i18next';
 
 type ContactCardProps = {
 	contact: {
@@ -15,6 +16,8 @@ type ContactCardProps = {
 };
 
 export const ContactCard = ({ contact, onClick }: ContactCardProps) => {
+	const { t } = useTranslation();
+
 	return (
 		<Card
 			onClick={() => onClick(contact.id)}
@@ -33,14 +36,14 @@ export const ContactCard = ({ contact, onClick }: ContactCardProps) => {
 						<div className="min-w-0">
 							<p className="truncate text-sm font-semibold text-foreground">{contact.name}</p>
 							<p className="truncate text-xs text-muted-foreground">
-								{contact.phone ? formatPhone(contact.phone) : 'Telefon raqam yo\'q'}
+								{contact.phone ? formatPhone(contact.phone) : t('contacts.noPhone')}
 							</p>
 						</div>
 					</div>
 
 					<div className="flex flex-col items-end gap-1">
 						<Badge variant={contact.activeDebtsCount > 0 ? 'destructive' : 'secondary'}>
-							{contact.activeDebtsCount} ta aktiv
+							{contact.activeDebtsCount} {t('contacts.activeDebts').toLowerCase()}
 						</Badge>
 						<p className="text-xs font-medium text-muted-foreground">
 							{formatCurrency(contact.totalAmount || 0, 'UZS')}

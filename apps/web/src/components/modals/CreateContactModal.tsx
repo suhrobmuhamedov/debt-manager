@@ -2,6 +2,7 @@ import { useModalStore } from '../../store/modalStore';
 import { ContactForm, ContactFormValues } from '../contacts/ContactForm';
 import { trpc } from '../../lib/trpc';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import {
   Sheet,
   SheetContent,
@@ -14,15 +15,16 @@ export const CreateContactModal = () => {
   const { type, close } = useModalStore();
   const utils = trpc.useUtils();
   const isOpen = type === 'CREATE_CONTACT';
+  const { t } = useTranslation();
 
   const createContact = trpc.contacts.create.useMutation({
     onSuccess: async () => {
       await utils.contacts.getAll.invalidate();
-      toast.success('Kontakt muvaffaqiyatli qo\'shildi');
+      toast.success(t('contacts.savedSuccess'));
       close();
     },
     onError: (error) => {
-      toast.error(error.message || 'Kontakt saqlashda xatolik yuz berdi');
+      toast.error(error.message || t('common.error'));
     },
   });
 
@@ -34,14 +36,14 @@ export const CreateContactModal = () => {
     <Sheet open={isOpen} onOpenChange={(open) => !open && close()}>
       <SheetContent side="bottom" className="rounded-t-2xl pb-6">
         <SheetHeader className="px-0">
-          <SheetTitle>Yangi kontakt</SheetTitle>
+          <SheetTitle>{t('contacts.add')}</SheetTitle>
           <SheetDescription>
-            Ism va telefon raqam majburiy. Qolgan maydonlar ixtiyoriy.
+            {t('contacts.requiredHelp')}
           </SheetDescription>
         </SheetHeader>
 
         <ContactForm
-          submitLabel="Saqlash"
+          submitLabel={t('contacts.save')}
           isSubmitting={createContact.isPending}
           onCancel={close}
           onSubmit={handleSubmit}

@@ -6,11 +6,13 @@ import { useContacts } from '../hooks/useContacts';
 import { useModalStore } from '../store/modalStore';
 import { useLocation } from 'wouter';
 import { RefreshCw, Search, Plus } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export const Contacts = () => {
   const [, navigate] = useLocation();
   const { open } = useModalStore();
   const { contacts, search, setSearch, isLoading, isFetching, error, refetch } = useContacts();
+  const { t } = useTranslation();
 
   const handleContactClick = (id: number) => {
     navigate(`/contacts/${id}`);
@@ -29,7 +31,7 @@ export const Contacts = () => {
         }}
       >
         <div className="flex items-center justify-between gap-2">
-          <h1 className="text-xl font-bold text-foreground">Kontaktlar</h1>
+          <h1 className="text-xl font-bold text-foreground">{t('contacts.title')}</h1>
           <Button
             variant="outline"
             size="sm"
@@ -38,7 +40,7 @@ export const Contacts = () => {
             className="gap-1"
           >
             <RefreshCw className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
-            Yangilash
+            {t('contacts.refresh')}
           </Button>
         </div>
 
@@ -47,7 +49,7 @@ export const Contacts = () => {
           <Input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            placeholder="Ism yoki telefon bo'yicha qidiring"
+            placeholder={t('contacts.search')}
             className="h-10 pl-9"
           />
         </div>
@@ -59,8 +61,8 @@ export const Contacts = () => {
             ))}
           </div>
         ) : error ? (
-          <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-            Kontaktlar yuklanmadi. Iltimos, qayta urinib ko'ring.
+          <div className="rounded-xl border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-4 text-sm text-red-700 dark:text-red-200">
+            {t('contacts.loadError')}
           </div>
         ) : (
           <ContactList
@@ -76,7 +78,7 @@ export const Contacts = () => {
           size="icon"
           className="fixed bottom-24 right-5 h-14 w-14 rounded-full shadow-lg"
           style={{ backgroundColor: 'var(--tg-theme-button-color, #0ea5e9)', color: 'var(--tg-theme-button-text-color, #fff)' }}
-          aria-label="Kontakt qo'shish"
+          aria-label={t('contacts.add')}
         >
           <Plus className="h-6 w-6" />
         </Button>

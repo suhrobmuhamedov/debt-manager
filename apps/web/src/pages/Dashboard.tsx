@@ -6,10 +6,12 @@ import { SkeletonCard } from '../components/ui/skeleton-card';
 import { trpc } from '../lib/trpc';
 import { formatCurrency } from '../lib/formatters';
 import { useModalStore } from '../store/modalStore';
+import { useTranslation } from 'react-i18next';
 
 export const Dashboard = () => {
   const { data: stats, isLoading, error } = trpc.dashboard.getStats.useQuery();
   const { open: openModal } = useModalStore();
+  const { t } = useTranslation();
 
   const handleCreateDebt = () => {
     openModal('CREATE_DEBT');
@@ -32,7 +34,7 @@ export const Dashboard = () => {
 
           {/* Recent Debts Skeleton */}
           <div className="space-y-4">
-            <h2 className="text-lg font-semibold text-gray-900">So'nggi qarzlar</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{t('dashboard.recentDebts')}</h2>
             {Array.from({ length: 3 }).map((_, i) => (
               <SkeletonCard key={i} />
             ))}
@@ -46,10 +48,10 @@ export const Dashboard = () => {
     return (
       <AppLayout>
         <div className="p-4">
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-            <h3 className="text-red-900 font-bold">Xato: {error.message}</h3>
+          <div className="bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 rounded-lg p-4">
+            <h3 className="text-red-900 dark:text-red-200 font-bold">{t('common.error')}: {error.message}</h3>
             <p className="text-red-700 text-sm mt-2">Data: {error.data?.code || 'Unknown'}</p>
-            <p className="text-red-600 text-xs mt-2">Sahifani qayta yuklang yoki bot bilan qayta urinib ko'ring</p>
+            <p className="text-red-600 dark:text-red-300 text-xs mt-2">{t('common.retry')}</p>
           </div>
         </div>
       </AppLayout>
@@ -61,8 +63,8 @@ export const Dashboard = () => {
       <AppLayout>
         <div className="p-4">
           <EmptyState
-            title="Ma'lumot yuklanmadi"
-            description="Iltimos, sahifani qayta yuklang"
+            title={t('common.error')}
+            description={t('common.retry')}
           />
         </div>
       </AppLayout>
@@ -77,26 +79,26 @@ export const Dashboard = () => {
         {/* Stats Cards */}
         <div className="grid grid-cols-2 gap-4">
           <StatCard
-            title="Berilgan qarzlar"
+            title={t('dashboard.given')}
             value={formatCurrency(stats.totalGiven, 'UZS')}
             icon="💰"
             variant="success"
           />
           <StatCard
-            title="Olingan qarzlar"
+            title={t('dashboard.taken')}
             value={formatCurrency(stats.totalTaken, 'UZS')}
             icon="📥"
             variant="danger"
           />
           <StatCard
-            title="Kutilayotgan"
+            title={t('debts.pending')}
             value={stats.pendingCount}
-            subtitle="ta qarz"
+            subtitle={t('dashboard.pendingCount')}
             icon="⏳"
             variant="warning"
           />
           <StatCard
-            title="Muddat o'tgan"
+            title={t('dashboard.overdue')}
             value={stats.overdueCount}
             subtitle={formatCurrency(stats.overdueAmount, 'UZS')}
             icon="⚠️"
@@ -105,10 +107,10 @@ export const Dashboard = () => {
         </div>
 
         {/* Net Balance */}
-        <div className="bg-white rounded-lg p-4 border">
+        <div className="bg-white dark:bg-gray-900 rounded-lg p-4 border border-gray-200 dark:border-gray-800">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-sm font-medium text-gray-600">Umumiy balans</h3>
+              <h3 className="text-sm font-medium text-gray-600 dark:text-gray-300">{t('dashboard.netBalance')}</h3>
               <div className={`text-2xl font-bold ${netBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                 {netBalance >= 0 ? '+' : ''}{formatCurrency(netBalance, 'UZS')}
               </div>
@@ -122,20 +124,20 @@ export const Dashboard = () => {
         {/* Recent Debts */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-900">So'nggi qarzlar</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{t('dashboard.recentDebts')}</h2>
             <button
               onClick={handleCreateDebt}
-              className="text-blue-500 text-sm font-medium hover:text-blue-600"
+              className="text-blue-500 text-sm font-medium hover:text-blue-600 dark:text-blue-400"
             >
-              + Yangi qarz
+              + {t('dashboard.newDebt')}
             </button>
           </div>
 
           {stats.recentDebts.length === 0 ? (
             <EmptyState
-              title="Hali qarzlar yo'q"
-              description="Birinchi qarzingizni qo'shish uchun tugmani bosing"
-              actionLabel="Qarz qo'shish"
+              title={t('dashboard.noDebts')}
+              description={t('dashboard.firstDebtHint')}
+              actionLabel={t('debts.add')}
               onAction={handleCreateDebt}
             />
           ) : (

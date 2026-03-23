@@ -2,6 +2,7 @@ import { useModalStore } from '../../store/modalStore';
 import { ContactForm, ContactFormValues } from '../contacts/ContactForm';
 import { trpc } from '../../lib/trpc';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import {
   Sheet,
   SheetContent,
@@ -15,6 +16,7 @@ export const EditContactModal = () => {
   const utils = trpc.useUtils();
   const isOpen = type === 'EDIT_CONTACT';
   const contactId = typeof data?.contactId === 'number' ? data.contactId : null;
+  const { t } = useTranslation();
 
   const contactQuery = trpc.contacts.getById.useQuery(
     { id: contactId || 0 },
@@ -27,11 +29,11 @@ export const EditContactModal = () => {
       if (contactId) {
         await utils.contacts.getById.invalidate({ id: contactId });
       }
-      toast.success('Kontakt ma\'lumotlari yangilandi');
+      toast.success(t('contacts.savedSuccess'));
       close();
     },
     onError: (error) => {
-      toast.error(error.message || 'Kontaktni yangilashda xatolik yuz berdi');
+      toast.error(error.message || t('common.error'));
     },
   });
 
@@ -47,14 +49,14 @@ export const EditContactModal = () => {
     <Sheet open={isOpen} onOpenChange={(open) => !open && close()}>
       <SheetContent side="bottom" className="rounded-t-2xl pb-6">
         <SheetHeader className="px-0">
-          <SheetTitle>Kontaktni tahrirlash</SheetTitle>
-          <SheetDescription>Ma'lumotlarni yangilang va saqlang.</SheetDescription>
+          <SheetTitle>{t('contacts.edit')}</SheetTitle>
+          <SheetDescription>{t('contacts.editDescription')}</SheetDescription>
         </SheetHeader>
 
         {!contactId || contactQuery.isLoading ? (
-          <div className="py-8 text-center text-sm text-muted-foreground">Yuklanmoqda...</div>
+          <div className="py-8 text-center text-sm text-muted-foreground">{t('contacts.loading')}</div>
         ) : contactQuery.error ? (
-          <div className="py-8 text-center text-sm text-red-600">Kontaktni yuklab bo'lmadi</div>
+          <div className="py-8 text-center text-sm text-red-600">{t('contacts.noDetails')}</div>
         ) : (
           <ContactForm
             initialValues={{
@@ -62,7 +64,7 @@ export const EditContactModal = () => {
               phone: contactQuery.data?.contact.phone || '',
               note: contactQuery.data?.contact.note || '',
             }}
-            submitLabel="Yangilash"
+            submitLabel={t('contacts.save')}
             isSubmitting={updateContact.isPending}
             onCancel={close}
             onSubmit={handleSubmit}

@@ -9,9 +9,9 @@ interface AppLayoutProps {
 
 export const AppLayout = ({ children, showHeader = false, header }: AppLayoutProps) => {
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-white flex flex-col transition-colors">
       {showHeader && header && (
-        <header className="bg-white border-b border-gray-200">
+        <header className="bg-white border-b border-gray-200 dark:bg-gray-900 dark:border-gray-800">
           {header}
         </header>
       )}
