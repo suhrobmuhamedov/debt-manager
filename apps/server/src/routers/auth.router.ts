@@ -83,10 +83,10 @@ export const authRouter = router({
     }),
 
   logout: protectedProcedure.mutation(({ ctx }) => {
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<{ success: true }>((resolve, reject) => {
       ctx.req.session.destroy((err) => {
         if (err) return reject(err);
-        resolve();
+        resolve({ success: true });
       });
     });
   }),

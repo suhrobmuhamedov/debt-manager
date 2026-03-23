@@ -8,8 +8,10 @@ export type Language = 'uz' | 'ru';
 type SettingsState = {
   language: Language;
   theme: ThemeMode;
+  notificationsEnabled: boolean;
   setLanguage: (language: Language) => void;
   setTheme: (theme: ThemeMode) => void;
+  setNotifications: (enabled: boolean) => void;
 };
 
 export const useSettingsStore = create<SettingsState>()(
@@ -17,6 +19,7 @@ export const useSettingsStore = create<SettingsState>()(
     (set) => ({
       language: 'uz',
       theme: 'system',
+      notificationsEnabled: true,
       setLanguage: (language) => {
         void i18n.changeLanguage(language);
         if (typeof window !== 'undefined') {
@@ -27,9 +30,12 @@ export const useSettingsStore = create<SettingsState>()(
       setTheme: (theme) => {
         set({ theme });
       },
+      setNotifications: (notificationsEnabled) => {
+        set({ notificationsEnabled });
+      },
     }),
     {
-      name: 'debt-manager-settings',
+      name: 'qarz-daftarim-settings',
     }
   )
 );

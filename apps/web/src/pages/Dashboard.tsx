@@ -107,7 +107,7 @@ export const Dashboard = () => {
         </div>
 
         {/* Net Balance */}
-        <div className="bg-white dark:bg-gray-900 rounded-lg p-4 border border-gray-200 dark:border-gray-800">
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-300 dark:border-gray-600">
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-sm font-medium text-gray-600 dark:text-gray-300">{t('dashboard.netBalance')}</h3>

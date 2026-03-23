@@ -56,8 +56,8 @@ export const ContactDetail = () => {
     return (
       <AppLayout>
         <div className="p-4">
-          <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-            {t('contacts.noDetails')}
+          <div className="rounded-xl border border-red-300 bg-red-50 p-4 text-sm text-red-700 dark:border-red-700 dark:bg-red-950/40 dark:text-red-200">
+              {t('contacts.noDetails')}
           </div>
         </div>
       </AppLayout>

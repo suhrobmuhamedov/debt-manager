@@ -44,23 +44,27 @@ export const DebtItem = ({
 
   return (
     <Card
-      className={`cursor-pointer transition-all hover:shadow-md ${isOverdue ? 'border-red-200 bg-red-50' : ''}`}
+      className={`cursor-pointer transition-all hover:shadow-md ${
+        isOverdue
+          ? 'border-red-300 bg-red-50 dark:border-red-700 dark:bg-red-950/30'
+          : 'dark:border-gray-600 dark:bg-gray-800'
+      }`}
       onClick={onClick}
     >
       <CardContent className="p-4">
         <div className="flex items-center justify-between">
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-1">
-              <h3 className="font-medium text-gray-900">{contactName}</h3>
+              <h3 className="font-medium text-gray-900 dark:text-white">{contactName}</h3>
               {getStatusBadge()}
             </div>
             <div className={`text-lg font-semibold ${getTypeColor()}`}>
               {type === 'given' ? '+' : '-'}{formatCurrency(amount, currency || 'UZS')}
             </div>
             {returnDate && (
-              <div className="text-sm text-gray-500 mt-1">
+              <div className="text-sm text-gray-500 dark:text-gray-300 mt-1">
                 {isOverdue ? (
-                  <span className="text-red-600 font-medium">
+                  <span className="text-red-600 dark:text-red-400 font-medium">
                     Muddat o'tgan: {formatRelativeDate(returnDate)}
                   </span>
                 ) : (

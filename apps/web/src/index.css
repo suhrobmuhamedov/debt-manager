@@ -16,8 +16,8 @@
     --accent-foreground: #1e293b;
     --destructive: #ef4444;
     --destructive-foreground: #ffffff;
-    --border: #e2e8f0;
-    --input: #e2e8f0;
+    --border: #94a3b8;
+    --input: #94a3b8;
     --ring: #3b82f6;
     --radius: 0.5rem;
   }
@@ -25,20 +25,20 @@
   .dark {
     --background: #0f172a;
     --foreground: #f8fafc;
-    --card: #0f172a;
+    --card: #1e293b;
     --card-foreground: #f8fafc;
     --primary: #60a5fa;
     --primary-foreground: #1e293b;
-    --secondary: #1e293b;
+    --secondary: #334155;
     --secondary-foreground: #f8fafc;
-    --muted: #1e293b;
+    --muted: #334155;
     --muted-foreground: #94a3b8;
-    --accent: #1e293b;
+    --accent: #334155;
     --accent-foreground: #f8fafc;
-    --destructive: #7f1d1d;
+    --destructive: #dc2626;
     --destructive-foreground: #f8fafc;
-    --border: #1e293b;
-    --input: #1e293b;
+    --border: #64748b;
+    --input: #475569;
     --ring: #93c5fd;
   }
 }
@@ -50,5 +50,18 @@
   body {
     background-color: var(--background);
     color: var(--foreground);
+  }
+}
+
+@keyframes profile-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-2px);
+  }
+  75% {
+    transform: translateX(2px);
   }
 }

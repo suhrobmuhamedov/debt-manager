@@ -24,13 +24,13 @@ export const StatCard = ({
   const getVariantStyles = () => {
     switch (variant) {
       case 'success':
-        return 'border-green-200 bg-green-50 dark:border-green-900/60 dark:bg-green-950/40';
+        return 'border-green-300 bg-green-50 dark:border-green-700/70 dark:bg-green-950/40';
       case 'warning':
-        return 'border-yellow-200 bg-yellow-50 dark:border-yellow-900/60 dark:bg-yellow-950/40';
+        return 'border-yellow-300 bg-yellow-50 dark:border-yellow-700/70 dark:bg-yellow-950/40';
       case 'danger':
-        return 'border-red-200 bg-red-50 dark:border-red-900/60 dark:bg-red-950/40';
+        return 'border-red-300 bg-red-50 dark:border-red-700/70 dark:bg-red-950/40';
       default:
-        return 'border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900';
+        return 'border-gray-300 bg-white dark:border-gray-600 dark:bg-gray-800';
     }
   };
 
