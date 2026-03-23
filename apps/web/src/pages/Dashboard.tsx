@@ -142,12 +142,13 @@ export const Dashboard = () => {
             />
           ) : (
             <div className="space-y-3">
-              {stats.recentDebts.map((debt) => (
-                <DebtItem
-                  key={debt.id}
-                  {...debt}
-                  onClick={() => handleDebtClick(debt.id)}
-                />
+              {stats.recentDebts.map((debt, index) => (
+                <div key={debt.id} className="stagger-item" style={{ animationDelay: `${index * 48}ms` }}>
+                  <DebtItem
+                    {...debt}
+                    onClick={() => handleDebtClick(debt.id)}
+                  />
+                </div>
               ))}
             </div>
           )}

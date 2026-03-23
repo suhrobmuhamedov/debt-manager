@@ -1,20 +1,23 @@
 import { useModalStore } from '../../store/modalStore';
+import { Button } from '../ui/button';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '../ui/sheet';
 
 export const EditDebtModal = () => {
-  const { close } = useModalStore();
+  const { type, close } = useModalStore();
+  const isOpen = type === 'EDIT_DEBT';
 
   return (
-    <div className='fixed inset-0 bg-black/50 flex items-end z-50'>
-      <div className='bg-white w-full rounded-t-lg p-6 space-y-4'>
-        <h2 className='text-xl font-bold'>Qarzni tahrirlash</h2>
-        <p className='text-gray-600'>Bu sahifa tez orada tayyor bo\'ladi</p>
-        <button
-          onClick={close}
-          className='w-full bg-gray-200 hover:bg-gray-300 text-gray-900 py-2 rounded-lg'
-        >
+    <Sheet open={isOpen} onOpenChange={(open) => !open && close()}>
+      <SheetContent side="bottom" className="rounded-t-3xl pb-6">
+        <SheetHeader className="px-0">
+          <SheetTitle>Qarzni tahrirlash</SheetTitle>
+          <SheetDescription>Bu sahifa tez orada tayyor bo'ladi</SheetDescription>
+        </SheetHeader>
+
+        <Button onClick={close} variant="outline" className="w-full">
           Yopish
-        </button>
-      </div>
-    </div>
+        </Button>
+      </SheetContent>
+    </Sheet>
   );
 };

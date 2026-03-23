@@ -16,7 +16,7 @@ export const AboutSheet = ({ open, onOpenChange, mode }: AboutSheetProps) => {
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="rounded-t-3xl border-gray-200 bg-white px-4 pb-6 dark:border-gray-800 dark:bg-gray-900">
+      <SheetContent side="bottom" className="rounded-t-3xl px-4 pb-6">
         <SheetHeader className="px-0">
           <SheetTitle>{isAbout ? t('profile.about') : t('profile.privacyPolicy')}</SheetTitle>
           <SheetDescription>
@@ -27,7 +27,7 @@ export const AboutSheet = ({ open, onOpenChange, mode }: AboutSheetProps) => {
         <div className="space-y-4 px-1">
           {isAbout ? (
             <>
-              <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-800 dark:bg-gray-800/60">
+              <div className="rounded-2xl border border-gray-300 bg-white/70 p-4 dark:border-white/15 dark:bg-slate-900/55">
                 <p className="text-base font-semibold text-gray-900 dark:text-white">{t('profile.appName')}</p>
                 <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">v1.0.0</p>
               </div>
@@ -43,7 +43,7 @@ export const AboutSheet = ({ open, onOpenChange, mode }: AboutSheetProps) => {
               </Button>
             </>
           ) : (
-            <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600 dark:border-gray-800 dark:bg-gray-800/60 dark:text-gray-300">
+            <div className="rounded-2xl border border-gray-300 bg-white/70 p-4 text-sm text-gray-700 dark:border-white/15 dark:bg-slate-900/55 dark:text-gray-200">
               <p>{t('profile.privacyDescription')}</p>
             </div>
           )}

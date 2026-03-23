@@ -26,11 +26,11 @@ export const DebtItem = ({
   const getStatusBadge = () => {
     switch (status) {
       case 'paid':
-        return <Badge variant="default" className="bg-green-100 text-green-800">To'langan</Badge>;
+        return <Badge variant="default" className="border-green-500 bg-green-600 text-white">To'langan</Badge>;
       case 'partial':
-        return <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">Qisman</Badge>;
+        return <Badge variant="secondary" className="border-blue-500 bg-blue-600 text-white">Qisman</Badge>;
       case 'pending':
-        return <Badge variant="outline" className="bg-red-100 text-red-800">Kutilmoqda</Badge>;
+        return <Badge variant="outline" className="border-amber-400 bg-amber-300 text-black">Kutilmoqda</Badge>;
       default:
         return null;
     }
@@ -46,8 +46,8 @@ export const DebtItem = ({
     <Card
       className={`cursor-pointer transition-all hover:shadow-md ${
         isOverdue
-          ? 'border-red-300 bg-red-50 dark:border-red-700 dark:bg-red-950/30'
-          : 'dark:border-gray-600 dark:bg-gray-800'
+          ? 'border-red-400 bg-red-50 dark:border-red-600 dark:bg-red-950/30'
+          : 'border-gray-300 bg-white/90 dark:border-white/15 dark:bg-slate-900/75'
       }`}
       onClick={onClick}
     >
@@ -64,7 +64,7 @@ export const DebtItem = ({
             {returnDate && (
               <div className="text-sm text-gray-500 dark:text-gray-300 mt-1">
                 {isOverdue ? (
-                  <span className="text-red-600 dark:text-red-400 font-medium">
+                  <span className="rounded-md bg-red-600 px-2 py-0.5 text-white font-medium">
                     Muddat o'tgan: {formatRelativeDate(returnDate)}
                   </span>
                 ) : (

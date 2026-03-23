@@ -3,42 +3,42 @@
 @layer base {
   :root {
     --background: #ffffff;
-    --foreground: #0f172a;
+    --foreground: #111111;
     --card: #ffffff;
-    --card-foreground: #0f172a;
+    --card-foreground: #111111;
     --primary: #3b82f6;
     --primary-foreground: #ffffff;
-    --secondary: #f1f5f9;
-    --secondary-foreground: #1e293b;
-    --muted: #f1f5f9;
-    --muted-foreground: #64748b;
-    --accent: #f1f5f9;
-    --accent-foreground: #1e293b;
+    --secondary: #f3f6fb;
+    --secondary-foreground: #111111;
+    --muted: #f5f7fb;
+    --muted-foreground: #4b5563;
+    --accent: #eef3fb;
+    --accent-foreground: #111111;
     --destructive: #ef4444;
     --destructive-foreground: #ffffff;
-    --border: #94a3b8;
-    --input: #94a3b8;
+    --border: #cbd5e1;
+    --input: #cbd5e1;
     --ring: #3b82f6;
     --radius: 0.5rem;
   }
 
   .dark {
-    --background: #0f172a;
-    --foreground: #f8fafc;
-    --card: #1e293b;
-    --card-foreground: #f8fafc;
+    --background: #0d0d0d;
+    --foreground: #ffffff;
+    --card: #171a24;
+    --card-foreground: #f8f8f8;
     --primary: #60a5fa;
-    --primary-foreground: #1e293b;
-    --secondary: #334155;
-    --secondary-foreground: #f8fafc;
-    --muted: #334155;
-    --muted-foreground: #94a3b8;
-    --accent: #334155;
-    --accent-foreground: #f8fafc;
+    --primary-foreground: #0f172a;
+    --secondary: #1a1f2d;
+    --secondary-foreground: #f8f8f8;
+    --muted: #1b2232;
+    --muted-foreground: #a0a0b0;
+    --accent: #1f2635;
+    --accent-foreground: #f8f8f8;
     --destructive: #dc2626;
     --destructive-foreground: #f8fafc;
-    --border: #64748b;
-    --input: #475569;
+    --border: rgba(255, 255, 255, 0.16);
+    --input: rgba(255, 255, 255, 0.18);
     --ring: #93c5fd;
   }
 }
@@ -50,6 +50,10 @@
   body {
     background-color: var(--background);
     color: var(--foreground);
+  }
+
+  #root {
+    min-height: 100vh;
   }
 }
 
@@ -63,5 +67,255 @@
   }
   75% {
     transform: translateX(2px);
+  }
+}
+
+@keyframes appGradientFlow {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 100% 50%;
+  }
+}
+
+@keyframes blobFloatA {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(26px, -20px, 0) scale(1.08);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes blobFloatB {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(-24px, 20px, 0) scale(0.94);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes blobFloatC {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(18px, 18px, 0) scale(1.05);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes dialogIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -49%) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@keyframes dialogOut {
+  from {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, -49%) scale(0.97);
+  }
+}
+
+@keyframes sheetUpIn {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes sheetUpOut {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+}
+
+@keyframes dropdownIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes overlayIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes listItemIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@layer components {
+  .theme-smooth,
+  .theme-smooth * {
+    transition-property: background-color, border-color, color, fill, stroke, box-shadow;
+    transition-duration: 300ms;
+    transition-timing-function: ease;
+  }
+
+  .app-bg {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+  }
+
+  .app-bg-gradient {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, #f3f8ff 0%, #ffffff 50%, #f8f5ff 100%);
+    background-size: 200% 200%;
+    animation: appGradientFlow 30s ease-in-out infinite alternate;
+  }
+
+  .dark .app-bg-gradient {
+    background: linear-gradient(135deg, #09090b 0%, #0f1320 50%, #120f1f 100%);
+  }
+
+  .app-blob {
+    position: absolute;
+    border-radius: 9999px;
+    filter: blur(56px);
+  }
+
+  .blob-one {
+    top: -120px;
+    right: -100px;
+    width: 340px;
+    height: 340px;
+    background: rgba(59, 130, 246, 0.1);
+    animation: blobFloatA 30s ease-in-out infinite;
+  }
+
+  .blob-two {
+    bottom: -140px;
+    left: -120px;
+    width: 360px;
+    height: 360px;
+    background: rgba(244, 114, 182, 0.08);
+    animation: blobFloatB 28s ease-in-out infinite;
+  }
+
+  .blob-three {
+    top: 34%;
+    left: 45%;
+    width: 260px;
+    height: 260px;
+    background: rgba(56, 189, 248, 0.09);
+    animation: blobFloatC 26s ease-in-out infinite;
+  }
+
+  .dark .blob-one {
+    background: rgba(37, 99, 235, 0.22);
+  }
+
+  .dark .blob-two {
+    background: rgba(168, 85, 247, 0.18);
+  }
+
+  .dark .blob-three {
+    background: rgba(14, 165, 233, 0.16);
+  }
+
+  .glass-overlay {
+    background: rgba(10, 14, 24, 0.44);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+
+  .dark .glass-overlay {
+    background: rgba(2, 4, 10, 0.62);
+  }
+
+  .glass-surface {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(14px) saturate(140%);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    box-shadow: 0 14px 32px rgba(15, 23, 42, 0.12);
+    color: #111111;
+  }
+
+  .dark .glass-surface {
+    background: rgba(15, 15, 30, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 18px 42px rgba(0, 0, 0, 0.52);
+    color: #ffffff;
+  }
+
+  .dialog-open {
+    animation: dialogIn 240ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+
+  .dialog-closed {
+    animation: dialogOut 180ms ease-out forwards;
+  }
+
+  .sheet-open {
+    animation: sheetUpIn 300ms cubic-bezier(0.2, 0.9, 0.2, 1) forwards;
+  }
+
+  .sheet-closed {
+    animation: sheetUpOut 220ms ease-out forwards;
+  }
+
+  .dropdown-open {
+    animation: dropdownIn 200ms cubic-bezier(0.2, 0.9, 0.2, 1) forwards;
+  }
+
+  .overlay-open {
+    animation: overlayIn 220ms ease-out forwards;
+  }
+
+  .stagger-item {
+    opacity: 0;
+    transform: translateY(10px);
+    animation: listItemIn 420ms ease-out forwards;
   }
 }

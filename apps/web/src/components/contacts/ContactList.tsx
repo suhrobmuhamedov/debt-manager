@@ -31,11 +31,9 @@ export const ContactList = ({
 			{contacts.map((contact, index) => (
 				<div
 					key={contact.id}
-					className="transition-all duration-200"
+					className="stagger-item"
 					style={{
-						opacity: 1,
-						transform: 'translateY(0)',
-						transitionDelay: `${index * 24}ms`,
+						animationDelay: `${index * 42}ms`,
 					}}
 				>
 					<ContactCard contact={contact} onClick={onContactClick} />
