@@ -108,6 +108,7 @@ export const ru = {
     loading: 'Загрузка...',
     error: 'Произошла ошибка',
     retry: 'Повторить',
+    back: 'Назад',
     close: 'Закрыть',
     confirm: 'Подтвердить',
     open: 'Открыть',

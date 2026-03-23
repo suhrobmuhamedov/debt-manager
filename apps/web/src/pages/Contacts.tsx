@@ -7,6 +7,7 @@ import { useModalStore } from '../store/modalStore';
 import { useLocation } from 'wouter';
 import { RefreshCw, Search, Plus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { BackButton } from '../components/common/BackButton';
 
 export const Contacts = () => {
   const [, navigate] = useLocation();
@@ -22,6 +23,10 @@ export const Contacts = () => {
     open('CREATE_CONTACT');
   };
 
+  const handleAddDebtClick = (contactId: number) => {
+    open('CREATE_DEBT', { contactId });
+  };
+
   return (
     <AppLayout>
       <div
@@ -30,18 +35,21 @@ export const Contacts = () => {
           backgroundColor: 'var(--tg-theme-secondary-bg-color, transparent)',
         }}
       >
-        <div className="flex items-center justify-between gap-2">
-          <h1 className="text-xl font-bold text-foreground">{t('contacts.title')}</h1>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => refetch()}
-            disabled={isFetching}
-            className="gap-1"
-          >
-            <RefreshCw className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
-            {t('contacts.refresh')}
-          </Button>
+        <div className="space-y-2">
+          <BackButton fallback="/" label={t('common.back')} />
+          <div className="flex items-center justify-between gap-2">
+            <h1 className="text-xl font-bold text-foreground">{t('contacts.title')}</h1>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => refetch()}
+              disabled={isFetching}
+              className="gap-1"
+            >
+              <RefreshCw className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
+              {t('contacts.refresh')}
+            </Button>
+          </div>
         </div>
 
         <div className="relative">
@@ -70,6 +78,7 @@ export const Contacts = () => {
             hasSearch={Boolean(search.trim())}
             onAddClick={handleAddClick}
             onContactClick={handleContactClick}
+            onContactAddDebt={handleAddDebtClick}
           />
         )}
 

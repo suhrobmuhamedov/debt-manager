@@ -108,6 +108,7 @@ export const uz = {
     loading: 'Yuklanmoqda...',
     error: 'Xatolik yuz berdi',
     retry: 'Qayta urinish',
+    back: 'Orqaga',
     close: 'Yopish',
     confirm: 'Tasdiqlash',
     open: 'Ochish',

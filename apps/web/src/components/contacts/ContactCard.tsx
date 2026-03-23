@@ -1,5 +1,6 @@
 import { Badge } from '../ui/badge';
 import { Card, CardContent } from '../ui/card';
+import { Button } from '../ui/button';
 import { formatCurrency } from '../../lib/formatters';
 import { formatPhone, getAvatarColor, getInitials } from '../../lib/contact-utils';
 import { useTranslation } from 'react-i18next';
@@ -13,9 +14,10 @@ type ContactCardProps = {
 		totalAmount: number;
 	};
 	onClick: (id: number) => void;
+	onAddDebt: (id: number) => void;
 };
 
-export const ContactCard = ({ contact, onClick }: ContactCardProps) => {
+export const ContactCard = ({ contact, onClick, onAddDebt }: ContactCardProps) => {
 	const { t } = useTranslation();
 
 	return (
@@ -48,6 +50,17 @@ export const ContactCard = ({ contact, onClick }: ContactCardProps) => {
 						<p className="text-xs font-medium text-muted-foreground">
 							{formatCurrency(contact.totalAmount || 0, 'UZS')}
 						</p>
+						<Button
+							type="button"
+							variant="outline"
+							size="sm"
+							onClick={(event) => {
+								event.stopPropagation();
+								onAddDebt(contact.id);
+							}}
+						>
+							+ {t('debts.add')}
+						</Button>
 					</div>
 				</div>
 			</CardContent>

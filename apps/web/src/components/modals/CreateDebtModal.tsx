@@ -6,10 +6,11 @@ import { trpc } from '../../lib/trpc';
 import { DebtForm, DebtFormValues } from '../debts/DebtForm';
 
 export const CreateDebtModal = () => {
-  const { type, close, open } = useModalStore();
+  const { type, data, close, open } = useModalStore();
   const isOpen = type === 'CREATE_DEBT';
   const { t } = useTranslation();
   const utils = trpc.useUtils();
+  const preselectedContactId = typeof data?.contactId === 'number' ? data.contactId : undefined;
 
   const contactsQuery = trpc.contacts.getAll.useQuery(undefined, { enabled: isOpen });
 
@@ -57,6 +58,8 @@ export const CreateDebtModal = () => {
             contacts={contactOptions}
             submitLabel={t('debts.add')}
             isSubmitting={createDebt.isPending}
+            initialContactId={preselectedContactId}
+            lockContact={Boolean(preselectedContactId)}
             onCancel={close}
             onSubmit={handleSubmit}
           />

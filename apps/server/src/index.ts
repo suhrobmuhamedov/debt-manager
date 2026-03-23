@@ -174,12 +174,14 @@ app.get('/api/internal/stats/:telegramId', async (req, res) => {
     if (!user) return res.json({ found: false });
 
     const allDebts = await db
-      .select()
+      .select({
+        amount: debts.amount,
+        type: debts.type,
+        returnDate: debts.returnDate,
+        status: debts.status,
+      })
       .from(debts)
-      .where(and(
-        eq(debts.userId, user.id),
-        isNull(debts.deletedAt)
-      ));
+      .where(and(eq(debts.userId, user.id), isNull(debts.deletedAt)));
 
     const totalGiven = allDebts
       .filter(d => d.type === 'given')

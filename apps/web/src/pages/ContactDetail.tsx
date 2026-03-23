@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
+import { BackButton } from '../components/common/BackButton';
 
 export const ContactDetail = () => {
   const [match, params] = useRoute('/contacts/:id');
@@ -69,6 +70,13 @@ export const ContactDetail = () => {
   return (
     <AppLayout>
       <div className="space-y-4 p-4">
+        <div className="flex items-center justify-between gap-2">
+          <BackButton fallback="/contacts" label={t('common.back')} />
+          <Button onClick={() => open('CREATE_DEBT', { contactId })} className="h-9 rounded-lg px-3 text-sm">
+            + {t('debts.add')}
+          </Button>
+        </div>
+
         <Card>
           <CardContent className="py-4">
             <div className="flex items-start justify-between gap-3">
@@ -166,9 +174,19 @@ export const ContactDetail = () => {
                           {countdown}
                         </p>
                       </div>
-                      <Badge variant={debt.status === 'paid' ? 'secondary' : 'outline'}>
-                        {debt.status === 'paid' ? t('debts.paid') : debt.status === 'partial' ? t('debts.partial') : t('debts.pending')}
-                      </Badge>
+                      <div className="flex flex-col items-end gap-2">
+                        <Badge variant={debt.status === 'paid' ? 'secondary' : 'outline'}>
+                          {debt.status === 'paid' ? t('debts.paid') : debt.status === 'partial' ? t('debts.partial') : t('debts.pending')}
+                        </Badge>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => open('EDIT_DEBT', { debtId: debt.id })}
+                        >
+                          {t('contacts.edit')}
+                        </Button>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>

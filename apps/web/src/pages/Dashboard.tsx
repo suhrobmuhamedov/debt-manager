@@ -76,6 +76,20 @@ export const Dashboard = () => {
   return (
     <AppLayout>
       <div className="p-4 space-y-6">
+        <div className="relative overflow-hidden rounded-2xl border border-sky-200/80 bg-gradient-to-br from-sky-500 via-blue-500 to-cyan-500 p-4 text-white shadow-xl shadow-sky-500/30">
+          <div className="pointer-events-none absolute -right-10 -top-10 h-28 w-28 rounded-full bg-white/20 blur-xl" />
+          <div className="space-y-2">
+            <h2 className="text-lg font-bold">{t('dashboard.newDebt')}</h2>
+            <p className="text-sm text-white/90">{t('dashboard.firstDebtHint')}</p>
+            <button
+              onClick={handleCreateDebt}
+              className="mt-1 inline-flex h-11 items-center rounded-xl bg-white px-4 text-sm font-semibold text-sky-700 transition hover:bg-sky-50"
+            >
+              + {t('debts.add')}
+            </button>
+          </div>
+        </div>
+
         {/* Stats Cards */}
         <div className="grid grid-cols-2 gap-4">
           <StatCard
@@ -127,7 +141,7 @@ export const Dashboard = () => {
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{t('dashboard.recentDebts')}</h2>
             <button
               onClick={handleCreateDebt}
-              className="text-blue-500 text-sm font-medium hover:text-blue-600 dark:text-blue-400"
+              className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-sm font-semibold text-blue-700 hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
             >
               + {t('dashboard.newDebt')}
             </button>

@@ -7,6 +7,7 @@ import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import { formatCurrency, formatDate } from '../lib/formatters';
+import { BackButton } from '../components/common/BackButton';
 
 const formatExpires = (value: string | null | undefined) => {
   if (!value) {
@@ -113,6 +114,8 @@ export const DebtDetail = () => {
   return (
     <AppLayout>
       <div className="space-y-4 p-4">
+        <BackButton fallback="/debts" label={t('common.back')} />
+
         <Card>
           <CardContent className="space-y-2 p-4">
             <div className="flex items-center justify-between">

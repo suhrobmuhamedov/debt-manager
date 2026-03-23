@@ -17,6 +17,7 @@ import { SettingsItem } from '../components/profile/SettingsItem';
 import { AboutSheet } from '../components/profile/AboutSheet';
 import { Bell, Info, Shield } from 'lucide-react';
 import { toast } from 'sonner';
+import { BackButton } from '../components/common/BackButton';
 
 export const Profile = () => {
   const { user, logout } = useAuthStore();
@@ -63,6 +64,7 @@ export const Profile = () => {
         }}
       >
         <div className="space-y-1">
+          <BackButton fallback="/" label={t('common.back')} />
           <h1 className="text-xl font-bold text-foreground">{t('profile.title')}</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400">{t('profile.settingsDescription')}</p>
         </div>

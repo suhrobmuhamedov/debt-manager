@@ -14,6 +14,7 @@ type ContactListProps = {
 	hasSearch: boolean;
 	onAddClick: () => void;
 	onContactClick: (id: number) => void;
+	onContactAddDebt: (id: number) => void;
 };
 
 export const ContactList = ({
@@ -21,6 +22,7 @@ export const ContactList = ({
 	hasSearch,
 	onAddClick,
 	onContactClick,
+	onContactAddDebt,
 }: ContactListProps) => {
 	if (!contacts.length) {
 		return <EmptyContacts hasSearch={hasSearch} onAddClick={onAddClick} />;
@@ -36,7 +38,7 @@ export const ContactList = ({
 						animationDelay: `${index * 42}ms`,
 					}}
 				>
-					<ContactCard contact={contact} onClick={onContactClick} />
+					<ContactCard contact={contact} onClick={onContactClick} onAddDebt={onContactAddDebt} />
 				</div>
 			))}
 		</div>

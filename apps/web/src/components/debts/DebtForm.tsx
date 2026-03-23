@@ -23,6 +23,8 @@ type DebtFormProps = {
   contacts: ContactOption[];
   isSubmitting?: boolean;
   submitLabel: string;
+  initialContactId?: number;
+  lockContact?: boolean;
   onCancel: () => void;
   onSubmit: (values: DebtFormValues) => Promise<void>;
 };
@@ -39,11 +41,20 @@ const getTodayString = () => {
   return now.toISOString().split('T')[0];
 };
 
-export const DebtForm = ({ contacts, isSubmitting = false, submitLabel, onCancel, onSubmit }: DebtFormProps) => {
+export const DebtForm = ({
+  contacts,
+  isSubmitting = false,
+  submitLabel,
+  initialContactId,
+  lockContact = false,
+  onCancel,
+  onSubmit,
+}: DebtFormProps) => {
   const { t } = useTranslation();
 
   const today = getTodayString();
-  const [contactId, setContactId] = useState<string>(contacts[0] ? String(contacts[0].id) : '');
+  const defaultContactId = initialContactId ?? contacts[0]?.id;
+  const [contactId, setContactId] = useState<string>(defaultContactId ? String(defaultContactId) : '');
   const [amount, setAmount] = useState<string>('');
   const [currency, setCurrency] = useState<'UZS' | 'USD' | 'EUR'>('UZS');
   const [type, setType] = useState<'given' | 'taken'>('given');
@@ -114,6 +125,7 @@ export const DebtForm = ({ contacts, isSubmitting = false, submitLabel, onCancel
         <select
           value={contactId}
           onChange={(event) => setContactId(event.target.value)}
+          disabled={lockContact}
           className="h-11 w-full rounded-lg border border-input bg-white px-3 text-sm text-foreground dark:bg-slate-900/80 dark:text-white"
         >
           {contacts.map((contact) => (
