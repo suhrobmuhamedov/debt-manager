@@ -14,7 +14,7 @@ export const BottomNav = () => {
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-black/6 bg-[rgba(255,255,255,0.75)] px-4 pt-2 pb-[calc(env(safe-area-inset-bottom)+8px)] backdrop-blur-[24px] backdrop-saturate-[180%] dark:border-white/8 dark:bg-[rgba(12,12,22,0.80)]">
+    <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-[rgba(255,255,255,0.30)] bg-[rgba(255,255,255,0.18)] px-4 pt-2 pb-[calc(env(safe-area-inset-bottom)+8px)] shadow-none backdrop-blur-[28px] backdrop-saturate-[200%] dark:border-[rgba(255,255,255,0.10)] dark:bg-[rgba(10,10,20,0.25)]">
       <div className="mx-auto flex h-[72px] max-w-md items-center justify-around">
         {navItems.map((item) => {
           const isActive = location === item.path;
@@ -26,7 +26,7 @@ export const BottomNav = () => {
                 className={`h-auto min-w-16 flex-col items-center gap-1 rounded-xl px-2 py-2 ${
                   isActive
                     ? 'text-[#3b82f6] dark:text-[#3b82f6]'
-                    : 'text-black/45 dark:text-white/45'
+                    : 'text-white/50 dark:text-white/45'
                 }`}
               >
                 <span className="text-2xl leading-none">{item.icon}</span>

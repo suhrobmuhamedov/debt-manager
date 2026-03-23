@@ -93,7 +93,7 @@ export const Dashboard = () => {
         <div className="flex justify-center py-1">
           <button
             onClick={handleCreateDebt}
-            className="flex h-14 items-center justify-center rounded-2xl border border-sky-200/70 bg-white/70 px-8 text-base font-semibold text-sky-800 shadow-2xl shadow-sky-700/20 backdrop-blur-xl transition hover:-translate-y-0.5 hover:bg-white/80 dark:border-sky-500/30 dark:bg-slate-900/55 dark:text-sky-200"
+            className="flex h-14 items-center justify-center rounded-2xl border border-sky-200/70 bg-white/70 px-8 text-base font-semibold text-sky-800 shadow-2xl shadow-sky-700/20 backdrop-blur-xl focus-visible:outline-none dark:border-sky-500/30 dark:bg-slate-900/55 dark:text-sky-200"
           >
             + {t('debts.add')}
           </button>
@@ -138,7 +138,7 @@ export const Dashboard = () => {
         </div>
 
         {/* Net Balance */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-300 dark:border-gray-600">
+        <div className="glass-surface rounded-[20px] p-4">
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-sm font-medium text-gray-600 dark:text-gray-300">{t('dashboard.netBalance')}</h3>

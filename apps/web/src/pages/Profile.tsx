@@ -44,7 +44,7 @@ export const Profile = () => {
     return (
       <AppLayout>
         <div className="p-4">
-        <Card className="border-gray-300 bg-white/90 shadow-sm dark:border-gray-600 dark:bg-gray-800/90">
+        <Card>
             <CardContent className="p-5 text-sm text-gray-500 dark:text-gray-400">
               {t('common.loading')}
             </CardContent>
@@ -93,7 +93,7 @@ export const Profile = () => {
 
         <LanguageSelector current={language} onChange={setLanguage} />
 
-        <Card className="border-gray-300 bg-transparent shadow-none dark:border-gray-600">
+        <Card className="shadow-none">
           <CardContent className="space-y-3 p-0">
             <h2 className="px-1 text-sm font-semibold text-gray-900 dark:text-white">{t('profile.accountActions')}</h2>
 

@@ -17,7 +17,7 @@ export const EmptyState = ({
   onAction
 }: EmptyStateProps) => {
   return (
-    <Card className="border-dashed dark:bg-gray-900 dark:border-gray-800">
+    <Card className="border-dashed">
       <CardContent className="flex flex-col items-center justify-center py-12 px-6 text-center">
         <div className="text-6xl mb-4 opacity-50">
           {icon}
