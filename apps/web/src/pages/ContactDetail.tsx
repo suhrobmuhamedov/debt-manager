@@ -137,6 +137,16 @@ export const ContactDetail = () => {
             debts.map((debt) => {
               const amount = Math.max(Number(debt.amount) - Number(debt.paidAmount), 0);
               const isGiven = debt.type === 'given';
+              const today = new Date();
+              today.setHours(0, 0, 0, 0);
+              const deadline = debt.returnDate ? new Date(debt.returnDate) : null;
+              if (deadline) {
+                deadline.setHours(0, 0, 0, 0);
+              }
+              const dayDiff = deadline ? Math.ceil((deadline.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)) : 0;
+              const countdown = dayDiff < 0
+                ? `${Math.abs(dayDiff)} ${t('debts.daysOverdue')}`
+                : `${dayDiff} ${t('debts.daysLeft')}`;
 
               return (
                 <Card key={debt.id}>
@@ -149,11 +159,12 @@ export const ContactDetail = () => {
                         <p className="text-xs text-muted-foreground">
                           {t('debts.givenDate')}: {formatDate(debt.givenDate)}
                         </p>
-                        {debt.returnDate && (
-                          <p className="text-xs text-muted-foreground">
-                            {t('debts.returnDate')}: {formatDate(debt.returnDate)}
-                          </p>
-                        )}
+                        <p className="text-xs text-muted-foreground">
+                          {t('debts.returnDate')}: {deadline ? formatDate(deadline) : '—'}
+                        </p>
+                        <p className={`mt-1 inline-flex rounded-md px-2 py-0.5 text-[11px] font-medium ${dayDiff < 0 ? 'bg-red-600 text-white' : 'bg-blue-600 text-white'}`}>
+                          {countdown}
+                        </p>
                       </div>
                       <Badge variant={debt.status === 'paid' ? 'secondary' : 'outline'}>
                         {debt.status === 'paid' ? t('debts.paid') : debt.status === 'partial' ? t('debts.partial') : t('debts.pending')}

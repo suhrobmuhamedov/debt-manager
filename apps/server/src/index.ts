@@ -42,6 +42,11 @@ app.get('/health', (_req, res) => {
 // Compression
 app.use(compression());
 
+const hasValidInternalApiKey = (req: express.Request) => {
+  const headerKey = req.headers['internal_api_key'];
+  return headerKey === process.env.INTERNAL_API_KEY;
+};
+
 // Session — MemoryStore (tez, sodda)
 app.use(session({
   secret: process.env.SESSION_SECRET || 'fallback-secret-key',
@@ -60,6 +65,92 @@ app.use('/trpc', trpcExpress.createExpressMiddleware({
   router: appRouter,
   createContext,
 }));
+
+app.get('/api/internal/confirmation/:token', async (req, res) => {
+  try {
+    if (!hasValidInternalApiKey(req)) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const caller = appRouter.createCaller({ userId: null, req, res });
+    const result = await caller.debts.getConfirmationDetails({ token: req.params.token });
+    return res.json(result);
+  } catch (error: any) {
+    if (error?.code === 'NOT_FOUND') {
+      return res.status(404).json({ error: 'Not found' });
+    }
+    console.error('Internal confirmation details error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.post('/api/internal/confirm-debt', express.json(), async (req, res) => {
+  try {
+    if (!hasValidInternalApiKey(req)) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const { token, telegramId, firstName, lastName, username } = req.body ?? {};
+    if (!token || !telegramId) {
+      return res.status(400).json({ error: 'token and telegramId are required' });
+    }
+
+    const caller = appRouter.createCaller({ userId: null, req, res });
+    const result = await caller.debts.confirmDebt({
+      token,
+      telegramId,
+      internalApiKey: String(req.headers['internal_api_key'] || ''),
+      firstName,
+      lastName,
+      username,
+    });
+
+    return res.json(result);
+  } catch (error: any) {
+    const message = error?.message || 'Internal server error';
+    if (error?.code === 'NOT_FOUND') {
+      return res.status(404).json({ error: message });
+    }
+    if (error?.code === 'BAD_REQUEST' || error?.code === 'UNAUTHORIZED') {
+      return res.status(400).json({ error: message });
+    }
+    console.error('Internal confirm debt error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.post('/api/internal/deny-debt', express.json(), async (req, res) => {
+  try {
+    if (!hasValidInternalApiKey(req)) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const { token, telegramId, denierName } = req.body ?? {};
+    if (!token || !telegramId) {
+      return res.status(400).json({ error: 'token and telegramId are required' });
+    }
+
+    const caller = appRouter.createCaller({ userId: null, req, res });
+    const result = await caller.debts.denyDebt({
+      token,
+      telegramId,
+      denierName,
+      internalApiKey: String(req.headers['internal_api_key'] || ''),
+    });
+
+    return res.json(result);
+  } catch (error: any) {
+    const message = error?.message || 'Internal server error';
+    if (error?.code === 'NOT_FOUND') {
+      return res.status(404).json({ error: message });
+    }
+    if (error?.code === 'BAD_REQUEST' || error?.code === 'UNAUTHORIZED') {
+      return res.status(400).json({ error: message });
+    }
+    console.error('Internal deny debt error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
 
 // Internal API — bot uchun
 app.get('/api/internal/stats/:telegramId', async (req, res) => {

@@ -5,6 +5,7 @@ import { DeleteDebtModal } from './DeleteDebtModal';
 import { AddPaymentModal } from './AddPaymentModal';
 import { CreateContactModal } from './CreateContactModal';
 import { EditContactModal } from './EditContactModal';
+import { DebtConfirmationModal } from './DebtConfirmationModal';
 
 export const ModalRenderer = () => {
   const { type } = useModalStore();
@@ -17,6 +18,7 @@ export const ModalRenderer = () => {
       {type === 'ADD_PAYMENT' && <AddPaymentModal />}
       {type === 'CREATE_CONTACT' && <CreateContactModal />}
       {type === 'EDIT_CONTACT' && <EditContactModal />}
+      {type === 'DEBT_CONFIRMATION' && <DebtConfirmationModal />}
     </>
   );
 };

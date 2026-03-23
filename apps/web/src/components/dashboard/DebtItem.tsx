@@ -1,7 +1,8 @@
 import { Card, CardContent } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
-import { formatCurrency, formatRelativeDate } from '../../lib/formatters';
+import { formatCurrency, formatDate } from '../../lib/formatters';
+import { useTranslation } from 'react-i18next';
 
 interface DebtItemProps {
   id: number;
@@ -11,6 +12,8 @@ interface DebtItemProps {
   type: 'given' | 'taken';
   status: 'pending' | 'partial' | 'paid' | null;
   returnDate: string | null;
+  confirmationStatus?: 'not_required' | 'pending' | 'confirmed' | 'denied' | null;
+  confirmationExpiresAt?: string | null;
   onClick?: () => void;
 }
 
@@ -21,8 +24,11 @@ export const DebtItem = ({
   type,
   status,
   returnDate,
+  confirmationStatus,
   onClick
 }: DebtItemProps) => {
+  const { t } = useTranslation();
+
   const getStatusBadge = () => {
     switch (status) {
       case 'paid':
@@ -40,11 +46,41 @@ export const DebtItem = ({
     return type === 'given' ? 'text-green-600' : 'text-red-600';
   };
 
-  const isOverdue = returnDate && new Date(returnDate) < new Date() && status !== 'paid';
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const deadline = returnDate ? new Date(returnDate) : null;
+  if (deadline) {
+    deadline.setHours(0, 0, 0, 0);
+  }
+
+  const dayDiff = deadline ? Math.ceil((deadline.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)) : 0;
+  const isOverdue = dayDiff < 0 && status !== 'paid';
+  const deadlineLabel = dayDiff < 0
+    ? `${Math.abs(dayDiff)} ${t('debts.daysOverdue')}`
+    : `${dayDiff} ${t('debts.daysLeft')}`;
+
+  const confirmationBadge = (() => {
+    if (!confirmationStatus || confirmationStatus === 'not_required') {
+      return null;
+    }
+    if (confirmationStatus === 'pending') {
+      return <span className="inline-flex animate-pulse rounded-full bg-yellow-300 px-2 py-0.5 text-[11px] font-semibold text-black">⏳ {t('debts.confirmPending')}</span>;
+    }
+    if (confirmationStatus === 'confirmed') {
+      return <span className="inline-flex rounded-full bg-green-600 px-2 py-0.5 text-[11px] font-semibold text-white">✅ {t('debts.confirmConfirmed')}</span>;
+    }
+    return <span className="inline-flex rounded-full bg-orange-500 px-2 py-0.5 text-[11px] font-semibold text-white">⚠️ {t('debts.confirmDenied')}</span>;
+  })();
+
+  const confirmationCardTone = confirmationStatus === 'denied'
+    ? 'border-l-4 border-l-orange-400'
+    : confirmationStatus === 'confirmed'
+      ? 'border-l-4 border-l-green-500'
+      : '';
 
   return (
     <Card
-      className={`cursor-pointer transition-all hover:shadow-md ${
+      className={`cursor-pointer transition-all hover:shadow-md ${confirmationCardTone} ${
         isOverdue
           ? 'border-red-400 bg-red-50 dark:border-red-600 dark:bg-red-950/30'
           : 'border-gray-300 bg-white/90 dark:border-white/15 dark:bg-slate-900/75'
@@ -57,21 +93,19 @@ export const DebtItem = ({
             <div className="flex items-center gap-2 mb-1">
               <h3 className="font-medium text-gray-900 dark:text-white">{contactName}</h3>
               {getStatusBadge()}
+              {confirmationBadge}
             </div>
             <div className={`text-lg font-semibold ${getTypeColor()}`}>
               {type === 'given' ? '+' : '-'}{formatCurrency(amount, currency || 'UZS')}
             </div>
-            {returnDate && (
-              <div className="text-sm text-gray-500 dark:text-gray-300 mt-1">
-                {isOverdue ? (
-                  <span className="rounded-md bg-red-600 px-2 py-0.5 text-white font-medium">
-                    Muddat o'tgan: {formatRelativeDate(returnDate)}
-                  </span>
-                ) : (
-                  <span>Qaytarish: {formatRelativeDate(returnDate)}</span>
-                )}
-              </div>
-            )}
+            <div className="mt-1 text-sm text-gray-600 dark:text-gray-300">
+              <p>
+                {t('debts.returnDate')}: {deadline ? formatDate(deadline) : '—'}
+              </p>
+              <span className={`inline-flex rounded-md px-2 py-0.5 text-xs font-medium ${isOverdue ? 'bg-red-600 text-white' : 'bg-blue-600 text-white'}`}>
+                {deadlineLabel}
+              </span>
+            </div>
           </div>
           <Button variant="ghost" size="sm" className="ml-2">
             →

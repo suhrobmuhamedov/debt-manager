@@ -54,6 +54,9 @@ export const dashboardRouter = router({
         currency: d.debt.currency,
         type: d.debt.type,
         status: d.debt.status,
+        confirmationStatus: d.debt.confirmationStatus,
+        confirmationExpiresAt: d.debt.confirmationExpiresAt ? d.debt.confirmationExpiresAt.toISOString() : null,
+        linkedDebtId: d.debt.linkedDebtId,
         returnDate: d.debt.returnDate ? d.debt.returnDate.toISOString().split('T')[0] : null,
       }));
 

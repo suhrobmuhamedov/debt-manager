@@ -19,6 +19,7 @@ for (const envVar of requiredEnvVars) {
 import { startCommand } from './commands/start.command';
 import { helpCommand } from './commands/help.command';
 import { balanceCommand } from './commands/balance.command';
+import { handleDebtConfirmCallback, handleDebtDenyCallback } from './commands/debt-confirm.command';
 import { helpText } from './utils/keyboards';
 
 const bot = new Telegraf(process.env.BOT_TOKEN!);
@@ -41,6 +42,24 @@ bot.action('show_balance', async (ctx) => {
 bot.action('show_help', async (ctx) => {
   await ctx.editMessageText(helpText);
   await ctx.answerCbQuery();
+});
+
+bot.action(/^debt_confirm_(.+)$/i, async (ctx) => {
+  const payload = (ctx.match as RegExpExecArray | undefined)?.[1];
+  if (!payload) {
+    await ctx.answerCbQuery('Token topilmadi', { show_alert: true });
+    return;
+  }
+  await handleDebtConfirmCallback(ctx, payload);
+});
+
+bot.action(/^debt_deny_(.+)$/i, async (ctx) => {
+  const payload = (ctx.match as RegExpExecArray | undefined)?.[1];
+  if (!payload) {
+    await ctx.answerCbQuery('Token topilmadi', { show_alert: true });
+    return;
+  }
+  await handleDebtDenyCallback(ctx, payload);
 });
 
 // Error handling

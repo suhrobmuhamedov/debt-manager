@@ -6,7 +6,8 @@ export type ModalType =
   | 'DELETE_DEBT'
   | 'CREATE_CONTACT'
   | 'EDIT_CONTACT'
-  | 'ADD_PAYMENT';
+  | 'ADD_PAYMENT'
+  | 'DEBT_CONFIRMATION';
 
 interface ModalStore {
   type: ModalType | null;
