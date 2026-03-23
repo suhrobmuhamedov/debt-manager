@@ -67,6 +67,16 @@ export const ContactDetail = () => {
   }
 
   const { contact, debts, stats } = detailQuery.data;
+  const sortedDebts = [...debts].sort((a, b) => {
+    const aPaid = a.status === 'paid' ? 1 : 0;
+    const bPaid = b.status === 'paid' ? 1 : 0;
+    if (aPaid !== bPaid) {
+      return aPaid - bPaid;
+    }
+    const aCreated = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const bCreated = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    return bCreated - aCreated;
+  });
 
   return (
     <AppLayout>
@@ -141,12 +151,12 @@ export const ContactDetail = () => {
         <div className="space-y-2">
           <h2 className="text-sm font-semibold text-foreground">{t('contacts.detailsTitle')}</h2>
 
-          {!debts.length ? (
+          {!sortedDebts.length ? (
             <div className="rounded-xl border border-dashed p-4 text-center text-sm text-muted-foreground">
               {t('contacts.noDebts')}
             </div>
           ) : (
-            debts.map((debt) => (
+            sortedDebts.map((debt) => (
               <DebtItem
                 key={debt.id}
                 id={debt.id}

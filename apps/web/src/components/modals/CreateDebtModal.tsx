@@ -35,15 +35,33 @@ export const CreateDebtModal = () => {
     },
   });
 
+  const createContactInline = trpc.contacts.create.useMutation({
+    onError: (error) => {
+      toast.error(error.message || t('common.error'));
+    },
+  });
+
   const handleSubmit = async (values: DebtFormValues) => {
     await createDebt.mutateAsync(values);
+  };
+
+  const handleQuickAddContact = async (values: { name: string; phone: string }) => {
+    const created = await createContactInline.mutateAsync({
+      name: values.name,
+      phone: values.phone,
+    });
+
+    await utils.contacts.getAll.invalidate();
+    await contactsQuery.refetch();
+    toast.success(t('contacts.savedSuccess'));
+    return { id: created.id, name: created.name };
   };
 
   const contactOptions = (contactsQuery.data || []).map((item) => ({ id: item.id, name: item.name }));
 
   return (
     <Sheet open={isOpen} onOpenChange={(open) => !open && close()}>
-      <SheetContent side="bottom" className="rounded-t-3xl pb-6">
+      <SheetContent side="bottom" className="rounded-t-3xl border border-white/60 bg-white/70 pb-6 backdrop-blur-2xl dark:border-white/20 dark:bg-slate-950/45">
         <SheetHeader className="px-0">
           <SheetTitle>{t('debts.add')}</SheetTitle>
           <SheetDescription>{t('debts.confirmSkip')}</SheetDescription>
@@ -51,8 +69,6 @@ export const CreateDebtModal = () => {
 
         {contactsQuery.isLoading ? (
           <p className="py-8 text-center text-sm text-muted-foreground">{t('common.loading')}</p>
-        ) : !contactOptions.length ? (
-          <p className="py-8 text-center text-sm text-muted-foreground">{t('contacts.empty')}</p>
         ) : (
           <DebtForm
             contacts={contactOptions}
@@ -60,6 +76,7 @@ export const CreateDebtModal = () => {
             isSubmitting={createDebt.isPending}
             initialContactId={preselectedContactId}
             lockContact={Boolean(preselectedContactId)}
+            onQuickAddContact={handleQuickAddContact}
             onCancel={close}
             onSubmit={handleSubmit}
           />
