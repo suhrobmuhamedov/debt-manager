@@ -11,6 +11,8 @@ interface StatCardProps {
   };
   icon?: React.ReactNode;
   variant?: 'default' | 'success' | 'warning' | 'danger';
+  className?: string;
+  onClick?: () => void;
 }
 
 export const StatCard = ({
@@ -19,7 +21,9 @@ export const StatCard = ({
   subtitle,
   trend,
   icon,
-  variant = 'default'
+  variant = 'default',
+  className,
+  onClick,
 }: StatCardProps) => {
   const getVariantStyles = () => {
     switch (variant) {
@@ -35,7 +39,22 @@ export const StatCard = ({
   };
 
   return (
-    <Card className={`${getVariantStyles()} transition-all hover:shadow-md`}>
+    <Card
+      className={`${getVariantStyles()} ${className || ''} transition-all hover:shadow-md ${onClick ? 'cursor-pointer hover:-translate-y-0.5 active:translate-y-0' : ''}`}
+      onClick={onClick}
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onKeyDown={
+        onClick
+          ? (event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                onClick();
+              }
+            }
+          : undefined
+      }
+    >
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-300">
           {title}

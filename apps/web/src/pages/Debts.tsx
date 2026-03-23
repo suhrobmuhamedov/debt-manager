@@ -6,13 +6,53 @@ import { Button } from '../components/ui/button';
 import { useModalStore } from '../store/modalStore';
 import { BackButton } from '../components/common/BackButton';
 import { PlusCircle } from 'lucide-react';
+import { useMemo } from 'react';
 
 export const Debts = () => {
   const { t } = useTranslation();
   const { open } = useModalStore();
-  const debtsQuery = trpc.debts.getAll.useQuery({ limit: 50 });
+  const search = typeof window !== 'undefined' ? window.location.search : '';
 
-  const items = (debtsQuery.data?.items || []).slice().sort((a, b) => {
+  const filters = useMemo(() => {
+    const params = new URLSearchParams(search);
+    const type = params.get('type');
+    const status = params.get('status');
+    const overdue = params.get('overdue') === '1';
+
+    return {
+      type: type === 'given' || type === 'taken' ? type : undefined,
+      status:
+        status === 'pending' || status === 'partial' || status === 'paid' || status === 'active'
+          ? status
+          : undefined,
+      overdue,
+    } as {
+      type?: 'given' | 'taken';
+      status?: 'pending' | 'partial' | 'paid' | 'active';
+      overdue: boolean;
+    };
+  }, [search]);
+
+  const debtsQuery = trpc.debts.getAll.useQuery(
+    {
+      limit: 50,
+      ...(filters.type ? { type: filters.type } : {}),
+      ...(filters.status && filters.status !== 'active' ? { status: filters.status } : {}),
+    },
+    { enabled: !filters.overdue }
+  );
+
+  const overdueQuery = trpc.debts.getOverdue.useQuery(undefined, { enabled: filters.overdue });
+
+  const fetchedItems = filters.overdue ? (overdueQuery.data || []) : (debtsQuery.data?.items || []);
+  const baseItems =
+    filters.status === 'active'
+      ? fetchedItems.filter((item) => item.status === 'pending' || item.status === 'partial')
+      : fetchedItems;
+  const isLoading = filters.overdue ? overdueQuery.isLoading : debtsQuery.isLoading;
+  const queryError = filters.overdue ? overdueQuery.error : debtsQuery.error;
+
+  const items = baseItems.slice().sort((a, b) => {
     const aPaid = a.status === 'paid' ? 1 : 0;
     const bPaid = b.status === 'paid' ? 1 : 0;
     if (aPaid !== bPaid) {
@@ -40,7 +80,7 @@ export const Debts = () => {
           </div>
         </div>
 
-        {debtsQuery.isLoading ? (
+        {isLoading ? (
           <p className="text-sm text-muted-foreground">{t('common.loading')}</p>
         ) : !items.length ? (
           <p className="text-sm text-muted-foreground">{t('debts.empty')}</p>
@@ -64,9 +104,9 @@ export const Debts = () => {
           </div>
         )}
 
-        {debtsQuery.error ? (
+        {queryError ? (
           <div className="rounded-xl border border-red-300 bg-red-50 p-4 text-sm text-red-700 dark:border-red-700 dark:bg-red-950/40 dark:text-red-200">
-            {debtsQuery.error.message || t('common.error')}
+            {queryError.message || t('common.error')}
           </div>
         ) : null}
       </div>

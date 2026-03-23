@@ -7,11 +7,13 @@ import { trpc } from '../lib/trpc';
 import { formatCurrency } from '../lib/formatters';
 import { useModalStore } from '../store/modalStore';
 import { useTranslation } from 'react-i18next';
+import { useLocation } from 'wouter';
 
 export const Dashboard = () => {
   const { data: stats, isLoading, error } = trpc.dashboard.getStats.useQuery();
   const { open: openModal } = useModalStore();
   const { t } = useTranslation();
+  const [, navigate] = useLocation();
 
   const handleCreateDebt = () => {
     openModal('CREATE_DEBT');
@@ -19,6 +21,10 @@ export const Dashboard = () => {
 
   const handleDebtClick = (debtId: number) => {
     openModal('EDIT_DEBT', { debtId });
+  };
+
+  const navigateToDebts = (query: string) => {
+    navigate(`/debts${query}`);
   };
 
   if (isLoading) {
@@ -72,15 +78,24 @@ export const Dashboard = () => {
   }
 
   const netBalance = stats.totalGiven - stats.totalTaken;
+  const recentActiveDebts = [...stats.recentDebts]
+    .filter((debt) => debt.status !== 'paid')
+    .sort((a, b) => {
+      const aDate = a.returnDate ? new Date(a.returnDate).getTime() : 0;
+      const bDate = b.returnDate ? new Date(b.returnDate).getTime() : 0;
+      return bDate - aDate;
+    })
+    .slice(0, 4);
 
   return (
     <AppLayout>
       <div className="p-4 space-y-6">
-        <div className="relative overflow-hidden rounded-2xl border border-sky-200/80 bg-gradient-to-br from-sky-500 via-blue-500 to-cyan-500 p-4 text-white shadow-xl shadow-sky-500/30">
-          <div className="pointer-events-none absolute -right-10 -top-10 h-28 w-28 rounded-full bg-white/20 blur-xl" />
+        <div className="relative overflow-hidden rounded-3xl border border-sky-100/40 bg-gradient-to-br from-sky-500/85 via-blue-500/80 to-cyan-500/75 p-5 text-white shadow-2xl shadow-sky-600/30 backdrop-blur-xl">
+          <div className="pointer-events-none absolute -right-12 -top-12 h-32 w-32 rounded-full bg-white/25 blur-2xl" />
+          <div className="pointer-events-none absolute -left-10 -bottom-16 h-36 w-36 rounded-full bg-cyan-200/30 blur-3xl" />
           <button
             onClick={handleCreateDebt}
-            className="inline-flex h-12 items-center rounded-xl bg-white px-5 text-sm font-semibold text-sky-700 transition hover:bg-sky-50"
+            className="mx-auto flex h-14 items-center justify-center rounded-2xl border border-white/70 bg-white/65 px-8 text-base font-semibold text-sky-800 shadow-2xl shadow-cyan-900/25 backdrop-blur-xl transition hover:-translate-y-0.5 hover:bg-white/75"
           >
             + {t('debts.add')}
           </button>
@@ -93,12 +108,16 @@ export const Dashboard = () => {
             value={formatCurrency(stats.totalGiven, 'UZS')}
             icon="💰"
             variant="success"
+            onClick={() => navigateToDebts('?type=given')}
+            className="border-white/60 bg-white/25 backdrop-blur-2xl shadow-xl shadow-emerald-900/10"
           />
           <StatCard
             title={t('dashboard.taken')}
             value={formatCurrency(stats.totalTaken, 'UZS')}
             icon="📥"
             variant="danger"
+            onClick={() => navigateToDebts('?type=taken')}
+            className="border-white/60 bg-white/25 backdrop-blur-2xl shadow-xl shadow-rose-900/10"
           />
           <StatCard
             title={t('debts.pending')}
@@ -106,6 +125,8 @@ export const Dashboard = () => {
             subtitle={t('dashboard.pendingCount')}
             icon="⏳"
             variant="warning"
+            onClick={() => navigateToDebts('?status=active')}
+            className="border-white/60 bg-white/25 backdrop-blur-2xl shadow-xl shadow-amber-900/10"
           />
           <StatCard
             title={t('dashboard.overdue')}
@@ -113,6 +134,8 @@ export const Dashboard = () => {
             subtitle={formatCurrency(stats.overdueAmount, 'UZS')}
             icon="⚠️"
             variant={stats.overdueCount > 0 ? "danger" : "default"}
+            onClick={() => navigateToDebts('?overdue=1')}
+            className="border-white/60 bg-white/25 backdrop-blur-2xl shadow-xl shadow-slate-900/10"
           />
         </div>
 
@@ -135,15 +158,9 @@ export const Dashboard = () => {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{t('dashboard.recentDebts')}</h2>
-            <button
-              onClick={handleCreateDebt}
-              className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-sm font-semibold text-blue-700 hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
-            >
-              + {t('dashboard.newDebt')}
-            </button>
           </div>
 
-          {stats.recentDebts.length === 0 ? (
+          {recentActiveDebts.length === 0 ? (
             <EmptyState
               title={t('dashboard.noDebts')}
               description={t('dashboard.firstDebtHint')}
@@ -152,7 +169,7 @@ export const Dashboard = () => {
             />
           ) : (
             <div className="space-y-3">
-              {stats.recentDebts.map((debt, index) => (
+              {recentActiveDebts.map((debt, index) => (
                 <div key={debt.id} className="stagger-item" style={{ animationDelay: `${index * 48}ms` }}>
                   <DebtItem
                     {...debt}
