@@ -28,6 +28,7 @@ export const DebtItem = ({
   onClick
 }: DebtItemProps) => {
   const { t } = useTranslation();
+  const isPaid = status === 'paid';
 
   const getStatusBadge = () => {
     switch (status) {
@@ -83,10 +84,19 @@ export const DebtItem = ({
       className={`cursor-pointer transition-all hover:shadow-md ${confirmationCardTone} ${
         isOverdue
           ? 'border-red-400 bg-red-50/60 backdrop-blur-xl dark:border-red-600 dark:bg-red-950/20'
+          : isPaid
+            ? 'relative overflow-hidden border-emerald-400/60 bg-emerald-50/40 backdrop-blur-xl dark:border-emerald-500/40 dark:bg-emerald-950/20'
           : 'border-white/50 bg-white/40 backdrop-blur-2xl dark:border-white/20 dark:bg-slate-900/30'
       }`}
       onClick={onClick}
     >
+      {isPaid ? (
+        <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-white/35 backdrop-blur-sm dark:bg-slate-900/35">
+          <span className="rounded-full border border-emerald-500/60 bg-emerald-500/20 px-3 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
+            To'landi
+          </span>
+        </div>
+      ) : null}
       <CardContent className="p-4">
         <div className="flex items-center justify-between">
           <div className="flex-1">

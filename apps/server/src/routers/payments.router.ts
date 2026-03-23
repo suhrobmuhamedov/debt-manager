@@ -1,11 +1,83 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
-import { eq, and, isNull, sql, sum } from 'drizzle-orm';
+import { eq, and, isNull, sql } from 'drizzle-orm';
 import { protectedProcedure, router } from '../trpc';
 import { db } from '../db';
 import { debts, payments } from '../db/schema';
 
 export const paymentsRouter = router({
+  adjustDebt: protectedProcedure
+    .input(
+      z.object({
+        debtId: z.number(),
+        amount: z.number().positive(),
+        action: z.enum(['increase', 'payment']),
+        actionDate: z.string(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const userId = ctx.userId!;
+
+      const [currentDebt] = await db
+        .select()
+        .from(debts)
+        .where(and(eq(debts.id, input.debtId), eq(debts.userId, userId), isNull(debts.deletedAt)))
+        .limit(1);
+
+      if (!currentDebt) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Debt not found or access denied' });
+      }
+
+      const currentTotal = parseFloat(currentDebt.amount);
+      const currentPaid = parseFloat(currentDebt.paidAmount);
+      const remainingAmount = currentTotal - currentPaid;
+
+      if (input.action === 'payment' && input.amount > remainingAmount) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Payment amount exceeds remaining debt' });
+      }
+
+      const result = await db.transaction(async (tx) => {
+        const nextTotal = input.action === 'increase' ? currentTotal + input.amount : currentTotal;
+        const nextPaid = input.action === 'payment' ? currentPaid + input.amount : currentPaid;
+        const nextStatus = nextPaid === 0 ? 'pending' : nextPaid >= nextTotal ? 'paid' : 'partial';
+
+        await tx
+          .insert(payments)
+          .values({
+            debtId: input.debtId,
+            amount: input.amount.toString(),
+            paymentDate: new Date(input.actionDate),
+            note: input.action === 'increase' ? 'debt_increase:Qarz oshirildi' : 'debt_payment:To\'lov qilindi',
+          })
+          .execute();
+
+        const [timelineEntry] = await tx
+          .select()
+          .from(payments)
+          .where(eq(payments.id, sql`LAST_INSERT_ID()`))
+          .limit(1);
+
+        await tx
+          .update(debts)
+          .set({
+            amount: nextTotal.toString(),
+            paidAmount: nextPaid.toString(),
+            status: nextStatus,
+          })
+          .where(eq(debts.id, input.debtId));
+
+        const [updatedDebt] = await tx
+          .select()
+          .from(debts)
+          .where(eq(debts.id, input.debtId))
+          .limit(1);
+
+        return { entry: timelineEntry, debt: updatedDebt };
+      });
+
+      return result;
+    }),
+
   addPayment: protectedProcedure
     .input(
       z.object({
@@ -147,7 +219,9 @@ export const paymentsRouter = router({
 
         // Recalculate paidAmount
         const sumResult = await tx
-          .select({ total: sum(payments.amount) })
+          .select({
+            total: sql<string>`COALESCE(SUM(CASE WHEN ${payments.note} LIKE 'debt_increase:%' THEN 0 ELSE ${payments.amount} END), 0)`,
+          })
           .from(payments)
           .where(eq(payments.debtId, debtId));
 

@@ -2,14 +2,14 @@ import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { trpc } from '../../lib/trpc';
-import { formatCurrency, formatDate } from '../../lib/formatters';
+import { formatCurrency } from '../../lib/formatters';
 import { useModalStore } from '../../store/modalStore';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Input } from '../ui/input';
 import { Textarea } from '../ui/textarea';
-import { Minus, Plus, Calendar, Lock, Check } from 'lucide-react';
+import { Minus, Plus, Calendar, Lock } from 'lucide-react';
 
 const toDateInput = (value: Date | string | null | undefined) => {
   if (!value) {
@@ -46,25 +46,23 @@ export const EditDebtModal = () => {
     { enabled: isOpen && Number.isFinite(debtId) }
   );
 
-  const [amount, setAmount] = useState('');
   const [returnDate, setReturnDate] = useState('');
   const [note, setNote] = useState('');
   const [showReturnDatePicker, setShowReturnDatePicker] = useState(false);
-  const [adjustmentMode, setAdjustmentMode] = useState<'add' | 'subtract' | 'payment' | null>(null);
+  const [adjustmentMode, setAdjustmentMode] = useState<'add' | 'subtract' | null>(null);
   const [adjustmentValue, setAdjustmentValue] = useState('');
-  const [paymentDate, setPaymentDate] = useState('');
+  const [actionDate, setActionDate] = useState('');
 
   useEffect(() => {
     if (!debtQuery.data?.debt) {
       return;
     }
-    setAmount(String(Number(debtQuery.data.debt.amount)));
     setReturnDate(toDateInput(debtQuery.data.debt.returnDate));
     setNote(debtQuery.data.debt.note ?? '');
     setShowReturnDatePicker(false);
     setAdjustmentMode(null);
     setAdjustmentValue('');
-    setPaymentDate(new Date().toISOString().split('T')[0]);
+    setActionDate(new Date().toISOString().split('T')[0]);
   }, [debtQuery.data?.debt]);
 
   const updateMutation = trpc.debts.update.useMutation({
@@ -83,7 +81,7 @@ export const EditDebtModal = () => {
     },
   });
 
-  const addPaymentMutation = trpc.payments.addPayment.useMutation({
+  const adjustDebtMutation = trpc.payments.adjustDebt.useMutation({
     onSuccess: async () => {
       await Promise.all([
         utils.dashboard.getStats.invalidate(),
@@ -91,9 +89,9 @@ export const EditDebtModal = () => {
         utils.debts.getById.invalidate({ id: debtId }),
         utils.contacts.getById.invalidate(),
       ]);
-      toast.success(t('debts.addPayment'));
+      toast.success(t('contacts.savedSuccess'));
       setAdjustmentValue('');
-      setPaymentDate('');
+      setActionDate(new Date().toISOString().split('T')[0]);
       setAdjustmentMode(null);
       void debtQuery.refetch();
     },
@@ -102,15 +100,70 @@ export const EditDebtModal = () => {
     },
   });
 
-  const currentAmount = Number(amount) || 0;
   const debt = debtQuery.data?.debt;
   const contact = debtQuery.data?.contact;
   const payments = debtQuery.data?.payments || [];
-  const totalPaid = payments.reduce((sum, p) => sum + Number(p.amount), 0);
-  const isPaid = currentAmount === 0;
+  const totalAmount = Number(debt?.amount ?? 0);
+  const paidAmount = Number(debt?.paidAmount ?? 0);
+  const remainingAmount = Math.max(totalAmount - paidAmount, 0);
+  const isPaid = debt?.status === 'paid' || remainingAmount === 0;
+  const readOnlyMode = isPaid;
+
+  const increaseTotal = payments
+    .filter((entry) => (entry.note || '').startsWith('debt_increase:'))
+    .reduce((sum, entry) => sum + Number(entry.amount), 0);
+
+  const initialAmount = Math.max(totalAmount - increaseTotal, 0);
+
+  const timeline = useMemo(() => {
+    if (!debt) {
+      return [] as Array<{ id: string; date: Date; title: string; amount: number; kind: 'created' | 'increase' | 'payment'; balance: number }>;
+    }
+
+    const entries = [...payments]
+      .sort((a, b) => new Date(a.paymentDate).getTime() - new Date(b.paymentDate).getTime())
+      .map((entry) => {
+        const isIncrease = (entry.note || '').startsWith('debt_increase:');
+        return {
+          id: `p-${entry.id}`,
+          date: new Date(entry.paymentDate),
+          amount: Number(entry.amount),
+          kind: isIncrease ? ('increase' as const) : ('payment' as const),
+          title: isIncrease ? "Qarz miqdori oshirildi" : "To'lov qilindi",
+        };
+      });
+
+    let runningBalance = initialAmount;
+    const built = [
+      {
+        id: `created-${debt.id}`,
+        date: new Date(debt.createdAt),
+        title: 'Qarz yaratildi',
+        amount: initialAmount,
+        kind: 'created' as const,
+        balance: initialAmount,
+      },
+    ];
+
+    entries.forEach((entry) => {
+      if (entry.kind === 'increase') {
+        runningBalance += entry.amount;
+      } else {
+        runningBalance = Math.max(0, runningBalance - entry.amount);
+      }
+
+      built.push({
+        ...entry,
+        balance: runningBalance,
+      });
+    });
+
+    return built;
+  }, [debt, initialAmount, payments]);
+
   const canSubmit = useMemo(() => {
-    return Boolean(returnDate) && !updateMutation.isPending;
-  }, [returnDate, updateMutation.isPending]);
+    return Boolean(returnDate) && !updateMutation.isPending && !readOnlyMode;
+  }, [returnDate, updateMutation.isPending, readOnlyMode]);
 
   const handleApplyAdjustment = () => {
     const adjustment = Number(adjustmentValue) || 0;
@@ -119,37 +172,25 @@ export const EditDebtModal = () => {
       return;
     }
 
-    if (adjustmentMode === 'payment') {
-      if (!paymentDate) {
-        toast.error(t('debts.givenDate') + ' ' + t('common.error'));
-        return;
-      }
-
-      addPaymentMutation.mutate({
-        debtId: debtId!,
-        amount: Number(adjustmentValue),
-        paymentDate,
-      });
-    } else {
-      let newAmount = currentAmount;
-      if (adjustmentMode === 'add') {
-        newAmount = currentAmount + adjustment;
-      } else if (adjustmentMode === 'subtract') {
-        newAmount = Math.max(0, currentAmount - adjustment);
-      }
-      setAmount(String(newAmount));
-      setAdjustmentMode(null);
-      setAdjustmentValue('');
+    if (!debtId || !adjustmentMode) {
+      return;
     }
-  };
 
-  const handleMarkAsPaid = () => {
-    if (currentAmount === 0) return;
+    if (!actionDate) {
+      toast.error(t('common.error'));
+      return;
+    }
 
-    addPaymentMutation.mutate({
-      debtId: debtId!,
-      amount: currentAmount,
-      paymentDate: new Date().toISOString().split('T')[0],
+    if (adjustmentMode === 'subtract' && adjustment > remainingAmount) {
+      toast.error("Kiritilgan summa qolgan qarzdan katta bo'lmasligi kerak");
+      return;
+    }
+
+    adjustDebtMutation.mutate({
+      debtId,
+      amount: adjustment,
+      action: adjustmentMode === 'add' ? 'increase' : 'payment',
+      actionDate,
     });
   };
 
@@ -160,30 +201,10 @@ export const EditDebtModal = () => {
 
     await updateMutation.mutateAsync({
       id: debtId,
-      amount: Math.max(0, Number(amount)),
       returnDate,
       note: note.trim() || undefined,
     });
   };
-
-  if (isPaid) {
-    return (
-      <Dialog open={isOpen} onOpenChange={(open) => !open && close()}>
-        <DialogContent className="border border-white/50 bg-white/70 backdrop-blur-2xl dark:border-white/20 dark:bg-slate-950/45 sm:max-w-md">
-          <div className="flex h-64 flex-col items-center justify-center gap-4 text-center">
-            <div className="text-5xl">✅</div>
-            <div className="space-y-1">
-              <p className="text-lg font-bold text-foreground">{t('debts.paid')}</p>
-              <p className="text-xs text-muted-foreground">{contact?.name}</p>
-            </div>
-          </div>
-          <Button onClick={close} variant="outline" className="w-full">
-            {t('common.close')}
-          </Button>
-        </DialogContent>
-      </Dialog>
-    );
-  }
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && close()}>
@@ -222,6 +243,11 @@ export const EditDebtModal = () => {
                         ? t('debts.partial')
                         : t('debts.pending')}
                   </Badge>
+                  {readOnlyMode ? (
+                    <Badge variant="secondary" className="border border-emerald-500/40 bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">
+                      To'landi - faqat ko'rish
+                    </Badge>
+                  ) : null}
                 </div>
               </div>
             </DialogHeader>
@@ -235,7 +261,7 @@ export const EditDebtModal = () => {
                 {adjustmentMode ? (
                   <div className="rounded-lg border border-sky-300/50 bg-sky-50/50 p-3 dark:border-sky-600/40 dark:bg-sky-950/20">
                     <p className="mb-2 text-xs font-medium text-foreground">
-                      {adjustmentMode === 'add' ? '➕ Qo\'shish' : adjustmentMode === 'subtract' ? '➖ Ayirish' : '💰 To\'lov qo\'shish'}
+                      {adjustmentMode === 'add' ? "Qarz miqdoriga qo'shish" : "Qarzdan to'lov ayirish"}
                     </p>
                     <div className="flex gap-2">
                       <Input
@@ -252,7 +278,7 @@ export const EditDebtModal = () => {
                         type="button"
                         size="icon"
                         onClick={handleApplyAdjustment}
-                        disabled={adjustmentMode === 'payment' && addPaymentMutation.isPending}
+                        disabled={readOnlyMode || adjustDebtMutation.isPending}
                         className="h-10 w-10"
                       >
                         ✓
@@ -270,16 +296,15 @@ export const EditDebtModal = () => {
                         ✕
                       </Button>
                     </div>
-                    {adjustmentMode === 'payment' && (
-                      <div className="mt-2">
-                        <Input
-                          type="date"
-                          value={paymentDate}
-                          onChange={(event) => setPaymentDate(event.target.value)}
-                          className="h-10"
-                        />
-                      </div>
-                    )}
+                    <div className="mt-2">
+                      <Input
+                        type="date"
+                        value={actionDate}
+                        onChange={(event) => setActionDate(event.target.value)}
+                        className="h-10"
+                        disabled={readOnlyMode}
+                      />
+                    </div>
                   </div>
                 ) : (
                   <div className="flex items-center gap-2">
@@ -287,19 +312,21 @@ export const EditDebtModal = () => {
                       type="button"
                       variant="outline"
                       size="icon"
+                      disabled={readOnlyMode}
                       onClick={() => setAdjustmentMode('subtract')}
                       className="h-11 w-11 rounded-lg"
                     >
                       <Minus className="h-5 w-5" />
                     </Button>
                     <div className="flex-1 rounded-lg border border-sky-300/50 bg-sky-50/50 px-3 py-2 text-center dark:border-sky-600/40 dark:bg-sky-950/20">
-                      <p className="text-2xl font-bold text-foreground">{formatCurrency(currentAmount, debt.currency || 'UZS')}</p>
-                      <p className="text-xs text-muted-foreground">Qolgan: {formatCurrency(currentAmount - totalPaid, debt.currency || 'UZS')}</p>
+                      <p className="text-2xl font-bold text-foreground">{formatCurrency(remainingAmount, debt.currency || 'UZS')}</p>
+                      <p className="text-xs text-muted-foreground">Jami: {formatCurrency(totalAmount, debt.currency || 'UZS')} | To'langan: {formatCurrency(paidAmount, debt.currency || 'UZS')}</p>
                     </div>
                     <Button
                       type="button"
                       variant="outline"
                       size="icon"
+                      disabled={readOnlyMode}
                       onClick={() => setAdjustmentMode('add')}
                       className="h-11 w-11 rounded-lg"
                     >
@@ -309,97 +336,27 @@ export const EditDebtModal = () => {
                 )}
               </div>
 
-              {/* Payment Button & History */}
+              {/* Timeline */}
               <div className="space-y-3">
-                {adjustmentMode === 'payment' ? (
-                  <div className="rounded-lg border border-green-300/50 bg-green-50/50 p-3 dark:border-green-600/40 dark:bg-green-950/20">
-                    <p className="mb-2 text-xs font-medium text-foreground">💰 To'lov qo'shish</p>
-                    <div className="space-y-2">
-                      <Input
-                        type="number"
-                        min="0"
-                        step="1"
-                        value={adjustmentValue}
-                        onChange={(event) => setAdjustmentValue(event.target.value)}
-                        placeholder="Miqdor"
-                        autoFocus
-                        className="h-10"
-                      />
-                      <Input
-                        type="date"
-                        value={paymentDate}
-                        onChange={(event) => setPaymentDate(event.target.value)}
-                        className="h-10"
-                      />
-                      <div className="flex gap-2">
-                        <Button
-                          type="button"
-                          size="sm"
-                          onClick={handleApplyAdjustment}
-                          disabled={addPaymentMutation.isPending}
-                          className="flex-1"
-                        >
-                          {addPaymentMutation.isPending ? t('common.loading') : t('debts.addPayment')}
-                        </Button>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            setAdjustmentMode(null);
-                            setAdjustmentValue('');
-                          }}
-                        >
-                          ✕
-                        </Button>
+                <div className="space-y-2 rounded-lg border border-white/40 bg-white/20 p-3 dark:border-white/20 dark:bg-white/5">
+                  <p className="text-xs font-semibold text-foreground">{t('debts.paymentHistory')}</p>
+                  <div className="space-y-2">
+                    {timeline.map((entry) => (
+                      <div key={entry.id} className="flex items-center justify-between rounded-md bg-white/50 px-2 py-1.5 dark:bg-white/5">
+                        <div className="min-w-0">
+                          <p className="text-xs font-medium text-foreground">{formatDateDisplay(entry.date)}</p>
+                          <p className="text-xs text-muted-foreground">{entry.title}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className={`text-xs font-semibold ${entry.kind === 'payment' ? 'text-emerald-600 dark:text-emerald-400' : entry.kind === 'increase' ? 'text-amber-700 dark:text-amber-300' : 'text-sky-700 dark:text-sky-300'}`}>
+                            {entry.kind === 'payment' ? '-' : '+'}{formatCurrency(entry.amount, debt.currency || 'UZS')}
+                          </p>
+                          <p className="text-[11px] text-muted-foreground">Qoldiq: {formatCurrency(entry.balance, debt.currency || 'UZS')}</p>
+                        </div>
                       </div>
-                    </div>
+                    ))}
                   </div>
-                ) : (
-                  <div className="flex gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="flex-1 h-10"
-                      onClick={() => setAdjustmentMode('payment')}
-                    >
-                      💰 To'lov qo'shish
-                    </Button>
-                    <Button
-                      type="button"
-                      className="flex-1 h-10 bg-green-600 hover:bg-green-700"
-                      onClick={handleMarkAsPaid}
-                    >
-                      <Check className="mr-1 h-4 w-4" />
-                      To'landi
-                    </Button>
-                  </div>
-                )}
-
-                {/* Payment History Timeline */}
-                {payments.length > 0 && (
-                  <div className="space-y-2 rounded-lg border border-white/40 bg-white/20 p-3 dark:border-white/20 dark:bg-white/5">
-                    <p className="text-xs font-semibold text-foreground">{t('debts.paymentHistory')}</p>
-                    <div className="space-y-2">
-                      {payments
-                        .sort((a, b) => new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime())
-                        .map((payment, idx) => (
-                          <div key={payment.id} className="flex items-center justify-between rounded-md bg-white/50 px-2 py-1.5 dark:bg-white/5">
-                            <div className="flex items-center gap-2">
-                              <div className="text-lg">✓</div>
-                              <div className="min-w-0">
-                                <p className="text-xs font-medium text-foreground">{formatDateDisplay(payment.paymentDate)}</p>
-                                <p className="text-xs text-muted-foreground">{payment.note || 'To\'lov'}</p>
-                              </div>
-                            </div>
-                            <p className="text-xs font-semibold text-green-600 dark:text-green-400">
-                              +{formatCurrency(Number(payment.amount), debt.currency || 'UZS')}
-                            </p>
-                          </div>
-                        ))}
-                    </div>
-                  </div>
-                )}
+                </div>
               </div>
 
               {/* Dates Section */}
@@ -427,6 +384,7 @@ export const EditDebtModal = () => {
                     type="button"
                     variant="ghost"
                     size="icon"
+                    disabled={readOnlyMode}
                     onClick={() => setShowReturnDatePicker(!showReturnDatePicker)}
                     className="h-8 w-8 rounded-lg"
                   >
@@ -458,6 +416,7 @@ export const EditDebtModal = () => {
                   value={note}
                   onChange={(event) => setNote(event.target.value)}
                   placeholder={t('debts.note')}
+                  readOnly={readOnlyMode}
                   className="resize-none"
                 />
               </div>
@@ -479,7 +438,7 @@ export const EditDebtModal = () => {
                 disabled={!canSubmit || debtQuery.isLoading || Boolean(debtQuery.error)}
                 className="flex-1"
               >
-                {updateMutation.isPending ? t('contacts.updating') : t('contacts.edit')}
+                {readOnlyMode ? "Faqat ma'lumot" : updateMutation.isPending ? t('contacts.updating') : t('contacts.edit')}
               </Button>
             </DialogFooter>
           </>
