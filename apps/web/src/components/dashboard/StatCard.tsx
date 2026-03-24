@@ -1,5 +1,6 @@
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Badge } from '../ui/badge';
+import { GlassCard } from '../ui/GlassCard';
 
 interface StatCardProps {
   title: string;
@@ -28,19 +29,20 @@ export const StatCard = ({
   const getVariantStyles = () => {
     switch (variant) {
       case 'success':
-        return 'border-emerald-300/70 bg-emerald-50/40 backdrop-blur-2xl dark:border-emerald-600/40 dark:bg-emerald-950/25';
+        return 'bg-[var(--debt-given-light)] border-blue-400/20';
       case 'warning':
-        return 'border-amber-300/70 bg-amber-50/40 backdrop-blur-2xl dark:border-amber-600/40 dark:bg-amber-950/25';
+        return 'bg-amber-400/15 border-amber-300/30';
       case 'danger':
-        return 'border-rose-300/70 bg-rose-50/40 backdrop-blur-2xl dark:border-rose-600/40 dark:bg-rose-950/25';
+        return 'bg-[var(--debt-taken-light)] border-orange-300/30';
       default:
-        return 'border-white/60 bg-white/35 backdrop-blur-2xl dark:border-white/25 dark:bg-slate-900/35';
+        return '';
     }
   };
 
   return (
-    <Card
-      className={`${getVariantStyles()} ${className || ''} rounded-2xl transition-all hover:shadow-xl ${onClick ? 'cursor-pointer hover:-translate-y-1 active:translate-y-0' : ''}`}
+    <GlassCard
+      variant={variant === 'success' ? 'colored' : 'light'}
+      className={`${getVariantStyles()} ${className || ''} ${onClick ? 'cursor-pointer' : ''}`}
       onClick={onClick}
       role={onClick ? 'button' : undefined}
       tabIndex={onClick ? 0 : undefined}
@@ -66,7 +68,7 @@ export const StatCard = ({
         )}
       </CardHeader>
       <CardContent>
-        <div className="mb-1 text-2xl font-bold text-slate-900 dark:text-white">
+        <div className="numeric-text mb-1 text-2xl font-bold text-slate-900 dark:text-white">
           {value}
         </div>
         {subtitle && (
@@ -83,6 +85,6 @@ export const StatCard = ({
           </Badge>
         )}
       </CardContent>
-    </Card>
+    </GlassCard>
   );
 };

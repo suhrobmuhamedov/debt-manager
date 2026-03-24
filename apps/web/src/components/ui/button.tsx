@@ -4,15 +4,15 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[14px] text-[15px] font-semibold transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none active:scale-[0.96]",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl border text-[15px] font-medium transition-[transform,background-color,border-color,box-shadow,color] duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none active:scale-95",
   {
     variants: {
       variant: {
-        default: "bg-[#3b82f6] text-white shadow-[0_4px_14px_rgba(59,130,246,0.35)] hover:bg-[#2563eb] dark:bg-[#60a5fa] dark:hover:bg-[#3b82f6]",
-        destructive: "bg-[#ef4444] text-white shadow-[0_4px_14px_rgba(239,68,68,0.35)] hover:bg-[#dc2626]",
-        outline: "glass-surface border border-white/40 bg-white/45 text-foreground font-medium hover:bg-white/60 dark:border-white/12 dark:bg-white/6",
-        secondary: "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80",
-        ghost: "glass-surface border border-white/40 bg-white/35 text-foreground font-medium hover:bg-white/55 dark:border-white/12 dark:bg-white/8",
+        default: "border-blue-400/30 bg-blue-500/20 text-blue-900 shadow-lg shadow-blue-500/15 backdrop-blur-md hover:bg-blue-500/30 dark:text-blue-100",
+        destructive: "border-red-400/30 bg-red-500/20 text-red-900 shadow-lg shadow-red-500/15 backdrop-blur-md hover:bg-red-500/30 dark:text-red-100",
+        outline: "border-white/20 bg-white/10 text-foreground shadow-[var(--glass-shadow)] backdrop-blur-md hover:bg-white/14 dark:border-white/10 dark:bg-black/20",
+        secondary: "border-emerald-400/30 bg-emerald-500/20 text-emerald-900 shadow-lg shadow-emerald-500/15 backdrop-blur-md hover:bg-emerald-500/30 dark:text-emerald-100",
+        ghost: "border-transparent bg-transparent text-foreground shadow-none hover:bg-white/10 dark:hover:bg-white/8",
         link: "text-primary underline-offset-4 hover:underline",
       },
       size: {

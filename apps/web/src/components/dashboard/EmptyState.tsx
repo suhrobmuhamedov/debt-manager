@@ -1,5 +1,5 @@
-import { Button } from '../ui/button';
 import { Card, CardContent } from '../ui/card';
+import { GlassButton } from '../ui/GlassButton';
 
 interface EmptyStateProps {
   icon?: string;
@@ -29,9 +29,9 @@ export const EmptyState = ({
           {description}
         </p>
         {actionLabel && onAction && (
-          <Button onClick={onAction} className="bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-500">
+          <GlassButton onClick={onAction}>
             {actionLabel}
-          </Button>
+          </GlassButton>
         )}
       </CardContent>
     </Card>

@@ -8,6 +8,8 @@ import { useLocation } from 'wouter';
 import { RefreshCw, Search, PlusCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { BackButton } from '../components/common/BackButton';
+import { GlassButton } from '../components/ui/GlassButton';
+import { GlassCard } from '../components/ui/GlassCard';
 
 export const Contacts = () => {
   const [, navigate] = useLocation();
@@ -45,23 +47,23 @@ export const Contacts = () => {
                 size="sm"
                 onClick={() => refetch()}
                 disabled={isFetching}
-                className="gap-1 border-white/60 bg-white/35 backdrop-blur-xl dark:border-white/20 dark:bg-slate-900/35"
+                className="gap-1"
               >
                 <RefreshCw className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
                 {t('contacts.refresh')}
               </Button>
-              <Button
+              <GlassButton
                 onClick={handleAddClick}
-                className="h-10 gap-2 rounded-xl bg-gradient-to-r from-sky-500 to-emerald-500 px-4 text-white shadow-lg shadow-sky-500/30 hover:from-sky-600 hover:to-emerald-600"
+                className="h-10 gap-2 px-4 text-white"
               >
                 <PlusCircle className="h-4 w-4" />
                 {t('contacts.add')}
-              </Button>
+              </GlassButton>
             </div>
           </div>
         </div>
 
-        <div className="relative rounded-2xl border border-white/60 bg-white/35 p-1 backdrop-blur-xl dark:border-white/20 dark:bg-slate-900/35">
+        <GlassCard className="relative p-1">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={search}
@@ -69,7 +71,7 @@ export const Contacts = () => {
             placeholder={t('contacts.search')}
             className="h-10 border-transparent bg-transparent pl-9"
           />
-        </div>
+        </GlassCard>
 
         {isLoading ? (
           <div className="space-y-3">

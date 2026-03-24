@@ -8,6 +8,8 @@ import { formatCurrency } from '../lib/formatters';
 import { useModalStore } from '../store/modalStore';
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'wouter';
+import { GlassButton } from '../components/ui/GlassButton';
+import { GlassCard } from '../components/ui/GlassCard';
 
 export const Dashboard = () => {
   const { data: stats, isLoading, error } = trpc.dashboard.getStats.useQuery();
@@ -91,12 +93,13 @@ export const Dashboard = () => {
     <AppLayout>
       <div className="p-4 space-y-6">
         <div className="flex justify-center py-1">
-          <button
+          <GlassButton
             onClick={handleCreateDebt}
-            className="flex h-14 items-center justify-center rounded-2xl border border-sky-200/70 bg-white/70 px-8 text-base font-semibold text-sky-800 shadow-2xl shadow-sky-700/20 backdrop-blur-xl focus-visible:outline-none dark:border-sky-500/30 dark:bg-slate-900/55 dark:text-sky-200"
+            variant="primary"
+            className="flex h-14 items-center justify-center px-8 text-base"
           >
             + {t('debts.add')}
-          </button>
+          </GlassButton>
         </div>
 
         {/* Stats Cards */}
@@ -107,7 +110,7 @@ export const Dashboard = () => {
             icon="💰"
             variant="success"
             onClick={() => navigateToDebts('?type=given')}
-            className="border-white/60 bg-white/25 backdrop-blur-2xl shadow-xl shadow-emerald-900/10"
+            className=""
           />
           <StatCard
             title={t('dashboard.taken')}
@@ -115,7 +118,7 @@ export const Dashboard = () => {
             icon="📥"
             variant="danger"
             onClick={() => navigateToDebts('?type=taken')}
-            className="border-white/60 bg-white/25 backdrop-blur-2xl shadow-xl shadow-rose-900/10"
+            className=""
           />
           <StatCard
             title={t('debts.pending')}
@@ -124,7 +127,7 @@ export const Dashboard = () => {
             icon="⏳"
             variant="warning"
             onClick={() => navigateToDebts('?status=active')}
-            className="border-white/60 bg-white/25 backdrop-blur-2xl shadow-xl shadow-amber-900/10"
+            className=""
           />
           <StatCard
             title={t('dashboard.overdue')}
@@ -133,16 +136,16 @@ export const Dashboard = () => {
             icon="⚠️"
             variant={stats.overdueCount > 0 ? "danger" : "default"}
             onClick={() => navigateToDebts('?overdue=1')}
-            className="border-white/60 bg-white/25 backdrop-blur-2xl shadow-xl shadow-slate-900/10"
+            className=""
           />
         </div>
 
         {/* Net Balance */}
-        <div className="glass-surface rounded-[20px] p-4">
+        <GlassCard className="p-4">
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-sm font-medium text-gray-600 dark:text-gray-300">{t('dashboard.netBalance')}</h3>
-              <div className={`text-2xl font-bold ${netBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              <div className={`numeric-text text-2xl font-bold ${netBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                 {netBalance >= 0 ? '+' : ''}{formatCurrency(netBalance, 'UZS')}
               </div>
             </div>
@@ -150,7 +153,7 @@ export const Dashboard = () => {
               {netBalance >= 0 ? '📈' : '📉'}
             </div>
           </div>
-        </div>
+        </GlassCard>
 
         {/* Recent Debts */}
         <div className="space-y-4">

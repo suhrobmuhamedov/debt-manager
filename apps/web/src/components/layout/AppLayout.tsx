@@ -12,9 +12,6 @@ export const AppLayout = ({ children, showHeader = false, header }: AppLayoutPro
     <div className="theme-smooth relative flex min-h-screen flex-col text-gray-900 transition-colors dark:text-white">
       <div className="app-bg" aria-hidden>
         <div className="app-bg-gradient" />
-        <span className="app-blob blob-one" />
-        <span className="app-blob blob-two" />
-        <span className="app-blob blob-three" />
       </div>
 
       {showHeader && header && (
@@ -23,7 +20,7 @@ export const AppLayout = ({ children, showHeader = false, header }: AppLayoutPro
         </header>
       )}
 
-      <main className="relative z-10 flex-1 overflow-y-auto pb-[90px]">
+      <main className="relative z-10 flex-1 overflow-y-auto pb-[calc(88px+env(safe-area-inset-bottom,20px))]">
         <div className="mx-auto max-w-md">
           {children}
         </div>

@@ -14,6 +14,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { BackButton } from '../components/common/BackButton';
+import { GlassButton } from '../components/ui/GlassButton';
 
 export const ContactDetail = () => {
   const [match, params] = useRoute('/contacts/:id');
@@ -83,15 +84,15 @@ export const ContactDetail = () => {
       <div className="space-y-4 p-4">
         <div className="flex items-center justify-between gap-2">
           <BackButton fallback="/contacts" label={t('common.back')} />
-          <Button
+          <GlassButton
             onClick={() => open('CREATE_DEBT', { contactId })}
-            className="h-10 gap-2 rounded-xl bg-gradient-to-r from-sky-500 to-emerald-500 px-4 text-sm text-white shadow-lg shadow-sky-500/30 hover:from-sky-600 hover:to-emerald-600"
+            className="h-10 gap-2 px-4 text-sm text-white"
           >
             + {t('debts.add')}
-          </Button>
+          </GlassButton>
         </div>
 
-        <Card className="border-white/50 bg-white/40 backdrop-blur-2xl dark:border-white/20 dark:bg-slate-900/30">
+        <Card>
           <CardContent className="py-4">
             <div className="flex items-start justify-between gap-3">
               <div className="flex min-w-0 items-center gap-3">
@@ -119,28 +120,28 @@ export const ContactDetail = () => {
         </Card>
 
         <div className="grid grid-cols-3 gap-2">
-          <Card className="border-white/50 bg-white/40 backdrop-blur-2xl dark:border-white/20 dark:bg-slate-900/30">
+          <Card>
             <CardContent className="py-3">
               <p className="text-[11px] text-muted-foreground">{t('contacts.totalGiven')}</p>
-              <p className="mt-1 text-sm font-semibold text-emerald-600">{formatCurrency(stats.totalGiven, 'UZS')}</p>
+              <p className="numeric-text mt-1 text-sm font-semibold text-emerald-600">{formatCurrency(stats.totalGiven, 'UZS')}</p>
             </CardContent>
           </Card>
-          <Card className="border-white/50 bg-white/40 backdrop-blur-2xl dark:border-white/20 dark:bg-slate-900/30">
+          <Card>
             <CardContent className="py-3">
               <p className="text-[11px] text-muted-foreground">{t('contacts.totalTaken')}</p>
-              <p className="mt-1 text-sm font-semibold text-rose-600">{formatCurrency(stats.totalTaken, 'UZS')}</p>
+              <p className="numeric-text mt-1 text-sm font-semibold text-rose-600">{formatCurrency(stats.totalTaken, 'UZS')}</p>
             </CardContent>
           </Card>
-          <Card className="border-white/50 bg-white/40 backdrop-blur-2xl dark:border-white/20 dark:bg-slate-900/30">
+          <Card>
             <CardContent className="py-3">
               <p className="text-[11px] text-muted-foreground">{t('contacts.activeDebts')}</p>
-              <p className="mt-1 text-sm font-semibold">{stats.activeDebtsCount}</p>
+              <p className="numeric-text mt-1 text-sm font-semibold">{stats.activeDebtsCount}</p>
             </CardContent>
           </Card>
         </div>
 
         <div className="flex gap-2">
-          <Button className="flex-1 border-white/60 bg-white/35 backdrop-blur-xl dark:border-white/20 dark:bg-slate-900/35" variant="outline" onClick={() => open('EDIT_CONTACT', { contactId })}>
+          <Button className="flex-1" variant="outline" onClick={() => open('EDIT_CONTACT', { contactId })}>
             {t('contacts.edit')}
           </Button>
           <Button className="flex-1" variant="destructive" onClick={() => setDeleteDialogOpen(true)}>

@@ -1,8 +1,9 @@
-import { Card, CardContent } from '../ui/card';
+import { CardContent } from '../ui/card';
 import { Badge } from '../ui/badge';
-import { Button } from '../ui/button';
+import { GlassButton } from '../ui/GlassButton';
 import { formatCurrency, formatDate } from '../../lib/formatters';
 import { useTranslation } from 'react-i18next';
+import { GlassCard } from '../ui/GlassCard';
 
 interface DebtItemProps {
   id: number;
@@ -87,21 +88,27 @@ export const DebtItem = ({
       ? 'border-l-4 border-l-green-500'
       : '';
 
+  const cardVariant = type === 'given' ? 'colored' : 'light';
+
   return (
-    <Card
-      className={`cursor-pointer transition-all hover:shadow-md ${confirmationCardTone} ${
+    <GlassCard
+      variant={cardVariant}
+      className={`cursor-pointer ${confirmationCardTone} ${
         isOverdue
-          ? 'border-red-400 bg-red-50/60 backdrop-blur-xl dark:border-red-600 dark:bg-red-950/20'
+          ? 'border-red-400/60 bg-red-500/12'
           : isPaid
             ? paidIsTaken
-              ? 'relative overflow-hidden border-red-400/60 bg-red-50/45 backdrop-blur-2xl dark:border-red-500/40 dark:bg-red-950/30'
-              : 'relative overflow-hidden border-emerald-400/60 bg-emerald-50/45 backdrop-blur-2xl dark:border-emerald-500/40 dark:bg-emerald-950/30'
-          : 'border-white/50 bg-white/40 backdrop-blur-2xl dark:border-white/20 dark:bg-slate-900/30'
+              ? 'relative overflow-hidden border-red-400/50 bg-red-500/10'
+              : 'relative overflow-hidden border-emerald-400/50 bg-emerald-500/10'
+          : type === 'taken'
+            ? 'border-orange-300/30 bg-orange-500/10'
+            : ''
       }`}
       onClick={onClick}
     >
+      <div className={`absolute -right-4 -top-4 h-24 w-24 rounded-full blur-3xl opacity-45 ${type === 'given' ? 'bg-blue-400' : 'bg-orange-400'}`} />
       {isPaid ? (
-        <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-white/45 backdrop-blur-md dark:bg-slate-900/45">
+        <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-white/25 backdrop-blur-sm dark:bg-black/25">
           <span
             className={`rounded-full px-4 py-1.5 text-sm font-semibold ${
               paidIsTaken
@@ -113,7 +120,7 @@ export const DebtItem = ({
           </span>
         </div>
       ) : null}
-      <CardContent className="p-4">
+      <CardContent className="relative z-10 p-0">
         <div className="flex items-center justify-between">
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-1">
@@ -121,7 +128,7 @@ export const DebtItem = ({
               {getStatusBadge()}
               {confirmationBadge}
             </div>
-            <div className={`text-lg font-semibold ${getTypeColor()}`}>
+            <div className={`numeric-text text-lg font-semibold ${getTypeColor()}`}>
               {type === 'given' ? '+' : '-'}{formatCurrency(amount, currency || 'UZS')}
             </div>
             <div className="mt-1 text-sm text-gray-600 dark:text-gray-300">
@@ -133,11 +140,11 @@ export const DebtItem = ({
               </span>
             </div>
           </div>
-          <Button variant="ghost" size="sm" className="ml-2">
+          <GlassButton variant="primary" className="ml-2 px-3 py-2 text-sm">
             →
-          </Button>
+          </GlassButton>
         </div>
       </CardContent>
-    </Card>
+    </GlassCard>
   );
 };

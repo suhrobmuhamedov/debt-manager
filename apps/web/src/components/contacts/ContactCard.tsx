@@ -1,9 +1,10 @@
 import { Badge } from '../ui/badge';
-import { Card, CardContent } from '../ui/card';
-import { Button } from '../ui/button';
+import { CardContent } from '../ui/card';
 import { formatCurrency } from '../../lib/formatters';
 import { formatPhone, getAvatarColor, getInitials } from '../../lib/contact-utils';
 import { useTranslation } from 'react-i18next';
+import { GlassCard } from '../ui/GlassCard';
+import { GlassButton } from '../ui/GlassButton';
 
 type ContactCardProps = {
 	contact: {
@@ -21,11 +22,11 @@ export const ContactCard = ({ contact, onClick, onAddDebt }: ContactCardProps) =
 	const { t } = useTranslation();
 
 	return (
-		<Card
+		<GlassCard
 			onClick={() => onClick(contact.id)}
-			className="cursor-pointer border-white/50 bg-white/40 backdrop-blur-2xl transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-white/20 dark:bg-slate-900/30"
+			className="cursor-pointer"
 		>
-			<CardContent className="py-3">
+			<CardContent className="p-0">
 				<div className="flex items-center justify-between gap-3">
 					<div className="flex min-w-0 items-center gap-3">
 						<div
@@ -47,24 +48,23 @@ export const ContactCard = ({ contact, onClick, onAddDebt }: ContactCardProps) =
 						<Badge variant={contact.activeDebtsCount > 0 ? 'destructive' : 'secondary'}>
 							{contact.activeDebtsCount} {t('contacts.activeDebts').toLowerCase()}
 						</Badge>
-						<p className="text-xs font-medium text-muted-foreground">
+						<p className="numeric-text text-xs font-medium text-muted-foreground">
 							{formatCurrency(contact.totalAmount || 0, 'UZS')}
 						</p>
-						<Button
+						<GlassButton
 							type="button"
-							variant="outline"
-							size="sm"
-							className="border-sky-300/60 bg-sky-50/60 text-sky-700 hover:bg-sky-100/70 dark:border-sky-500/40 dark:bg-sky-900/25 dark:text-sky-200"
+							variant="primary"
+							className="px-3 py-2 text-sm"
 							onClick={(event) => {
 								event.stopPropagation();
 								onAddDebt(contact.id);
 							}}
 						>
 							+ {t('debts.add')}
-						</Button>
+						</GlassButton>
 					</div>
 				</div>
 			</CardContent>
-		</Card>
+		</GlassCard>
 	);
 };
