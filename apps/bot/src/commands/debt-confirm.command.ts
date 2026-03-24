@@ -1,17 +1,5 @@
 import { Context, Markup } from 'telegraf';
-import { confirmDebtByToken, denyDebtByToken, getConfirmationDetails } from '../utils/internal-api';
-
-const formatAmount = (amount: number, currency: string): string => {
-  return `${amount.toLocaleString('uz-UZ')} ${currency}`;
-};
-
-const formatDate = (value: string): string => {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-  return date.toLocaleDateString('uz-UZ', { day: 'numeric', month: 'long', year: 'numeric' });
-};
+import { confirmDebtByToken, denyDebtByToken } from '../utils/internal-api';
 
 const DEFAULT_BOT_USERNAME = 'Qarznazoratibot';
 
@@ -39,44 +27,77 @@ export const handleDebtConfirmStartPayload = async (ctx: Context): Promise<boole
   }
 
   try {
-    const details = await getConfirmationDetails(token);
-
-    if (!details.isValid) {
-      if (details.isExpired) {
-        await ctx.reply("❌ Bu havola yaroqsiz yoki muddati o'tgan.\nQarz egasidan yangi havola so'rang.");
-        return true;
-      }
-
-      if (details.status === 'confirmed') {
-        await ctx.reply('✅ Bu qarz allaqachon tasdiqlangan.');
-        return true;
-      }
-
-      if (details.status === 'denied') {
-        await ctx.reply('⚠️ Bu qarz allaqachon inkor qilingan.');
-        return true;
-      }
-
-      await ctx.reply('❌ Bu havola yaroqsiz.');
+    const telegramId = ctx.from?.id?.toString();
+    if (!telegramId) {
+      await ctx.reply('❌ Telegram ID topilmadi.');
       return true;
     }
 
-    const detailsText = `📋 Qarz ma'lumotlari:\n─────────────────────\n👤 Kimdan: ${details.creatorFirstName}\n💰 Miqdor: ${formatAmount(details.amount, details.currency)}\n📅 Qaytarish muddati: ${formatDate(details.returnDate)}\n📝 Tur: ${details.typeLabel}\n─────────────────────\nSiz bu qarzni tasdiqlaysizmi?`;
+    await confirmDebtByToken({
+      token,
+      telegramId,
+      firstName: ctx.from?.first_name,
+      lastName: ctx.from?.last_name,
+      username: ctx.from?.username,
+    });
 
-    await ctx.reply(
-      detailsText,
-      Markup.inlineKeyboard([
-        [
-          Markup.button.callback('✅ Tasdiqlandi', `debt_confirm_${token}`),
-          Markup.button.callback('⚠️ Inkor qilish', `debt_deny_${token}`),
-        ],
-      ])
-    );
+    const telegramUserId = ctx.from?.id ? String(ctx.from.id) : '';
+    const baseUrl = process.env.WEB_APP_URL || '';
+    if (baseUrl) {
+      const loginUrl = new URL(baseUrl);
+      if (telegramUserId) {
+        loginUrl.searchParams.set('tgUserId', telegramUserId);
+      }
+      loginUrl.searchParams.set('source', 'debt_confirm');
+
+      await ctx.reply(
+        "✅ Qarz tasdiqlandi.\nilovaga kirish uchun kirish tugmasini bosing",
+        Markup.inlineKeyboard([
+          [Markup.button.webApp('🔐 Kirish', loginUrl.toString())],
+        ])
+      );
+    } else {
+      await ctx.reply("✅ Qarz tasdiqlandi.");
+    }
 
     return true;
   } catch (error) {
     console.error('handleDebtConfirmStartPayload error:', error);
     await ctx.reply("❌ Bu havola yaroqsiz yoki muddati o'tgan.\nQarz egasidan yangi havola so'rang.");
+    return true;
+  }
+};
+
+export const handleDebtDenyStartPayload = async (ctx: Context): Promise<boolean> => {
+  const payload = extractStartPayload(ctx);
+  if (!payload.startsWith('deny_')) {
+    return false;
+  }
+
+  const token = payload.replace(/^deny_/, '').trim();
+  if (!token) {
+    await ctx.reply("❌ Bu havola yaroqsiz yoki muddati o'tgan.");
+    return true;
+  }
+
+  try {
+    const telegramId = ctx.from?.id?.toString();
+    if (!telegramId) {
+      await ctx.reply('❌ Telegram ID topilmadi.');
+      return true;
+    }
+
+    await denyDebtByToken({
+      token,
+      telegramId,
+      denierName: ctx.from?.first_name,
+    });
+
+    await ctx.reply('⚠️ Qarzni inkor qildingiz. Qarz egasiga xabar yuborildi.');
+    return true;
+  } catch (error) {
+    console.error('handleDebtDenyStartPayload error:', error);
+    await ctx.reply("❌ Bu havola yaroqsiz yoki muddati o'tgan.");
     return true;
   }
 };

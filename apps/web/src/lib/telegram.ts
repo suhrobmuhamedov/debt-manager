@@ -20,9 +20,46 @@ declare global {
           hide: () => void;
           onClick: (fn: () => void) => void;
         };
+        openTelegramLink?: (url: string) => void;
+        openLink?: (url: string) => void;
       };
     };
   }
+}
+
+export function shareToTelegram(link: string | null | undefined, text: string): void {
+  const encodedText = encodeURIComponent(text);
+  const encodedLink = link ? encodeURIComponent(link) : null;
+
+  const tgScheme = encodedLink
+    ? `tg://msg_url?url=${encodedLink}&text=${encodedText}`
+    : `tg://msg?text=${encodedText}`;
+  const shareUrl = encodedLink
+    ? `https://t.me/share/url?url=${encodedLink}&text=${encodedText}`
+    : `https://t.me/share/url?text=${encodedText}`;
+
+  const webApp = window.Telegram?.WebApp;
+  if (webApp?.openTelegramLink) {
+    webApp.openTelegramLink(shareUrl);
+    return;
+  }
+
+  if (webApp?.openLink) {
+    webApp.openLink(shareUrl);
+    return;
+  }
+
+  const openedViaScheme = window.open(tgScheme, '_blank');
+  if (!openedViaScheme) {
+    window.open(shareUrl, '_blank');
+    return;
+  }
+
+  setTimeout(() => {
+    if (document.visibilityState === 'visible') {
+      window.open(shareUrl, '_blank');
+    }
+  }, 700);
 }
 
 export function isTelegram(): boolean {

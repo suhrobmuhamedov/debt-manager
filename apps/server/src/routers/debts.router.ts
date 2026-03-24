@@ -572,12 +572,13 @@ export const debtsRouter = router({
         .where(eq(debts.id, debtRow.debt.id));
 
       const botUsername = resolveBotUsername();
-      const link = `https://t.me/${botUsername}?start=confirm_${token}`;
+      const confirmLink = `https://t.me/${botUsername}?start=confirm_${token}`;
+      const denyLink = `https://t.me/${botUsername}?start=deny_${token}`;
       const amountText = Number(debtRow.debt.amount).toLocaleString('uz-UZ');
       const returnDateText = formatDebtDate(debtRow.debt.returnDate);
-      const shareText = `Salom! Men sizga ${amountText} ${debtRow.debt.currency ?? 'UZS'} qarz berdim.\nQaytarish muddati: ${returnDateText}.\nIltimos, quyidagi havolani bosib tasdiqlang:\n${link}`;
+      const shareText = `Salom! Men sizga ${amountText} ${debtRow.debt.currency ?? 'UZS'} qarz berdim.\nQaytarish muddati: ${returnDateText}.\n\nTasdiqlash: ${confirmLink}\nInkor qilish: ${denyLink}`;
 
-      return { token, link, shareText, expiresAt };
+      return { token, link: confirmLink, confirmLink, denyLink, shareText, expiresAt };
     }),
 
   getConfirmationDetails: publicProcedure
@@ -790,14 +791,112 @@ export const debtsRouter = router({
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'debts.confirmExpired' });
       }
 
-      await db
-        .update(debts)
-        .set({
-          confirmationStatus: 'denied',
-          confirmedByTelegramId: input.telegramId,
-          confirmationExpiresAt: null,
-        })
-        .where(eq(debts.id, row.debt.id));
+      const denierUser = await getOrCreateUserByTelegramId({
+        telegramId: input.telegramId,
+        firstName: input.denierName,
+      });
+
+      const creatorFullName = [row.creator.firstName, row.creator.lastName].filter(Boolean).join(' ').trim() || row.creator.firstName;
+
+      await db.transaction(async (tx) => {
+        await tx
+          .update(debts)
+          .set({
+            confirmationStatus: 'denied',
+            confirmedByTelegramId: input.telegramId,
+            confirmationExpiresAt: null,
+          })
+          .where(eq(debts.id, row.debt.id));
+
+        let receiverContactId: number;
+
+        const [existingContact] = await tx
+          .select()
+          .from(contacts)
+          .where(and(eq(contacts.userId, denierUser.id), eq(contacts.name, creatorFullName), isNull(contacts.deletedAt)))
+          .limit(1);
+
+        if (existingContact) {
+          receiverContactId = existingContact.id;
+        } else {
+          const insertResult = await tx
+            .insert(contacts)
+            .values({
+              userId: denierUser.id,
+              name: creatorFullName,
+              phone: row.creator.phone,
+              note: 'Auto-created from debt denial',
+            })
+            .execute();
+
+          receiverContactId = (insertResult as { insertId?: number }).insertId ?? 0;
+          if (!receiverContactId) {
+            const [createdContact] = await tx
+              .select()
+              .from(contacts)
+              .where(and(eq(contacts.userId, denierUser.id), eq(contacts.name, creatorFullName), isNull(contacts.deletedAt)))
+              .limit(1);
+            receiverContactId = createdContact?.id ?? 0;
+          }
+
+          if (!receiverContactId) {
+            throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to create deny receiver contact' });
+          }
+        }
+
+        const [existingMirror] = await tx
+          .select()
+          .from(debts)
+          .where(and(eq(debts.linkedDebtId, row.debt.id), eq(debts.userId, denierUser.id), isNull(debts.deletedAt)))
+          .limit(1);
+
+        if (existingMirror) {
+          await tx
+            .update(debts)
+            .set({
+              confirmationStatus: 'denied',
+              confirmedByTelegramId: input.telegramId,
+              confirmationExpiresAt: null,
+            })
+            .where(eq(debts.id, existingMirror.id));
+
+          await tx
+            .update(debts)
+            .set({ linkedDebtId: existingMirror.id })
+            .where(eq(debts.id, row.debt.id));
+        } else {
+          const mirrorType = row.debt.type === 'given' ? 'taken' : 'given';
+
+          const mirrorInsert = await tx
+            .insert(debts)
+            .values({
+              userId: denierUser.id,
+              contactId: receiverContactId,
+              amount: row.debt.amount,
+              paidAmount: '0',
+              currency: row.debt.currency,
+              type: mirrorType,
+              status: row.debt.status,
+              confirmationStatus: 'denied',
+              linkedDebtId: row.debt.id,
+              confirmedByTelegramId: input.telegramId,
+              givenDate: row.debt.givenDate,
+              returnDate: row.debt.returnDate,
+              note: row.debt.note,
+            })
+            .execute();
+
+          const mirrorDebtId = (mirrorInsert as { insertId?: number }).insertId;
+          if (!mirrorDebtId) {
+            throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to create denied mirror debt' });
+          }
+
+          await tx
+            .update(debts)
+            .set({ linkedDebtId: mirrorDebtId })
+            .where(eq(debts.id, row.debt.id));
+        }
+      });
 
       if (row.creator.telegramId) {
         await sendTelegramText(

@@ -1,7 +1,7 @@
 import { Context } from 'telegraf';
 import { Markup } from 'telegraf';
 import { mainKeyboard } from '../utils/keyboards';
-import { handleDebtConfirmStartPayload } from './debt-confirm.command';
+import { handleDebtConfirmStartPayload, handleDebtDenyStartPayload } from './debt-confirm.command';
 
 const extractStartPayload = (ctx: Context): string => {
   const text = 'text' in (ctx.message || {}) ? String((ctx.message as { text?: string }).text || '') : '';
@@ -12,6 +12,11 @@ const extractStartPayload = (ctx: Context): string => {
 export async function startCommand(ctx: Context) {
   const handled = await handleDebtConfirmStartPayload(ctx);
   if (handled) {
+    return;
+  }
+
+  const denyHandled = await handleDebtDenyStartPayload(ctx);
+  if (denyHandled) {
     return;
   }
 

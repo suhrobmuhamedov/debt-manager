@@ -6,26 +6,7 @@ import { Button } from '../ui/button';
 import { Card, CardContent } from '../ui/card';
 import { useModalStore } from '../../store/modalStore';
 import { trpc } from '../../lib/trpc';
-
-const openTelegramShare = (link: string, text: string) => {
-  const encodedLink = encodeURIComponent(link);
-  const encodedText = encodeURIComponent(text);
-
-  const tgScheme = `tg://msg_url?url=${encodedLink}&text=${encodedText}`;
-  const fallback = `https://t.me/share/url?url=${encodedLink}&text=${encodedText}`;
-
-  const openedViaScheme = window.open(tgScheme, '_blank');
-  if (!openedViaScheme) {
-    window.open(fallback, '_blank');
-    return;
-  }
-
-  setTimeout(() => {
-    if (document.visibilityState === 'visible') {
-      window.open(fallback, '_blank');
-    }
-  }, 700);
-};
+import { shareToTelegram } from '../../lib/telegram';
 
 export const DebtConfirmationModal = () => {
   const { type, data, close } = useModalStore();
@@ -51,7 +32,7 @@ export const DebtConfirmationModal = () => {
     }
 
     const result = await mutation.mutateAsync({ debtId });
-    openTelegramShare(result.link, result.shareText);
+    shareToTelegram(null, result.shareText);
     toast.success(t('debts.linkSent'));
   };
 
