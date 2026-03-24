@@ -5,8 +5,28 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '
 import { trpc } from '../../lib/trpc';
 import { DebtForm, DebtFormValues } from '../debts/DebtForm';
 
+const openTelegramShare = (link: string, text: string) => {
+  const encodedLink = encodeURIComponent(link);
+  const encodedText = encodeURIComponent(text);
+
+  const tgScheme = `tg://msg_url?url=${encodedLink}&text=${encodedText}`;
+  const fallback = `https://t.me/share/url?url=${encodedLink}&text=${encodedText}`;
+
+  const openedViaScheme = window.open(tgScheme, '_blank');
+  if (!openedViaScheme) {
+    window.open(fallback, '_blank');
+    return;
+  }
+
+  setTimeout(() => {
+    if (document.visibilityState === 'visible') {
+      window.open(fallback, '_blank');
+    }
+  }, 700);
+};
+
 export const CreateDebtModal = () => {
-  const { type, data, close, open } = useModalStore();
+  const { type, data, close } = useModalStore();
   const isOpen = type === 'CREATE_DEBT';
   const { t } = useTranslation();
   const utils = trpc.useUtils();
@@ -14,28 +34,28 @@ export const CreateDebtModal = () => {
 
   const contactsQuery = trpc.contacts.getAll.useQuery(undefined, { enabled: isOpen });
 
+  const generateConfirmationLink = trpc.debts.generateConfirmationLink.useMutation({
+    onError: (error) => {
+      toast.error(error.message || t('common.error'));
+    },
+  });
+
   const createDebt = trpc.debts.create.useMutation({
     onSuccess: async (created, variables) => {
       await utils.dashboard.getStats.invalidate();
       await utils.debts.getAll.invalidate();
       toast.success(t('contacts.savedSuccess'));
 
-      const contactName = contactsQuery.data?.find((item) => item.id === variables.contactId)?.name || 'Contact';
       close();
 
-      const shouldOpenFallbackConfirmation =
-        variables.twoWayConfirmation &&
-        !created.confirmation?.telegramNotification?.sent;
-
-      if (shouldOpenFallbackConfirmation) {
-        toast.warning(t('debts.confirmFallbackManual'));
-        open('DEBT_CONFIRMATION', {
-          debtId: created.id,
-          contactName,
-          amount: variables.amount,
-          currency: variables.currency,
-          returnDate: variables.returnDate,
-        });
+      if (variables.twoWayConfirmation) {
+        try {
+          const result = await generateConfirmationLink.mutateAsync({ debtId: created.id });
+          openTelegramShare(result.link, result.shareText);
+          toast.success(t('debts.linkSent'));
+        } catch {
+          // Error toast is handled by mutation onError above.
+        }
       }
     },
     onError: (error) => {
