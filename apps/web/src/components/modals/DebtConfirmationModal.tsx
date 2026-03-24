@@ -32,8 +32,11 @@ export const DebtConfirmationModal = () => {
     }
 
     const result = await mutation.mutateAsync({ debtId });
-    shareToTelegram(null, result.shareText);
+    const shareResult = await shareToTelegram(null, result.shareText);
     toast.success(t('debts.linkSent'));
+    if (shareResult.copiedFallback) {
+      toast.info(t('debts.shareDesktopFallback'));
+    }
   };
 
   return (

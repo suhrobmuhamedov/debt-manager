@@ -22,12 +22,30 @@ declare global {
         };
         openTelegramLink?: (url: string) => void;
         openLink?: (url: string) => void;
+        platform?: string;
       };
     };
   }
 }
 
-export function shareToTelegram(link: string | null | undefined, text: string): void {
+type ShareResult = {
+  opened: boolean;
+  copiedFallback: boolean;
+};
+
+const copyToClipboardSafe = async (value: string): Promise<boolean> => {
+  try {
+    if (!navigator?.clipboard?.writeText) {
+      return false;
+    }
+    await navigator.clipboard.writeText(value);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+export async function shareToTelegram(link: string | null | undefined, text: string): Promise<ShareResult> {
   const encodedText = encodeURIComponent(text);
   const encodedLink = link ? encodeURIComponent(link) : null;
 
@@ -39,20 +57,45 @@ export function shareToTelegram(link: string | null | undefined, text: string): 
     : `https://t.me/share/url?text=${encodedText}`;
 
   const webApp = window.Telegram?.WebApp;
-  if (webApp?.openTelegramLink) {
-    webApp.openTelegramLink(shareUrl);
-    return;
+  const platform = webApp?.platform || '';
+
+  // Telegram Desktop webview sometimes blocks scheme/open operations.
+  // We still try to open share URL, and copy text as fallback for manual paste.
+  if (platform === 'tdesktop') {
+    try {
+      if (webApp?.openLink) {
+        webApp.openLink(shareUrl);
+        const copied = await copyToClipboardSafe(text);
+        return { opened: true, copiedFallback: copied };
+      }
+    } catch {
+      // Continue to next fallbacks.
+    }
   }
 
-  if (webApp?.openLink) {
-    webApp.openLink(shareUrl);
-    return;
+  try {
+    if (webApp?.openTelegramLink) {
+      webApp.openTelegramLink(shareUrl);
+      return { opened: true, copiedFallback: false };
+    }
+  } catch {
+    // Continue to next fallback.
+  }
+
+  try {
+    if (webApp?.openLink) {
+      webApp.openLink(shareUrl);
+      return { opened: true, copiedFallback: false };
+    }
+  } catch {
+    // Continue to next fallback.
   }
 
   const openedViaScheme = window.open(tgScheme, '_blank');
   if (!openedViaScheme) {
+    const copied = await copyToClipboardSafe(text);
     window.location.href = shareUrl;
-    return;
+    return { opened: false, copiedFallback: copied };
   }
 
   setTimeout(() => {
@@ -60,6 +103,8 @@ export function shareToTelegram(link: string | null | undefined, text: string): 
       window.location.href = shareUrl;
     }
   }, 700);
+
+  return { opened: true, copiedFallback: false };
 }
 
 export function isTelegram(): boolean {

@@ -99,6 +99,7 @@ export const ru = {
     twoWayConfirmLabel: 'Двустороннее подтверждение',
     twoWayConfirmHint: 'Если включено, подходящему пользователю будет отправлен запрос подтверждения в Telegram.',
     confirmFallbackManual: 'Получатель не найден в Telegram. Отправьте ссылку вручную.',
+    shareDesktopFallback: 'Из-за ограничения Telegram Desktop текст скопирован в буфер обмена. Вставьте его в чат Telegram.',
     note: 'Примечание',
     daysLeft: 'дней осталось',
     daysOverdue: 'дней просрочено',

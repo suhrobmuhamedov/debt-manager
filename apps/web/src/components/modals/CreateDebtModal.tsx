@@ -32,8 +32,11 @@ export const CreateDebtModal = () => {
       if (variables.twoWayConfirmation) {
         try {
           const result = await generateConfirmationLink.mutateAsync({ debtId: created.id });
-          shareToTelegram(null, result.shareText);
+          const shareResult = await shareToTelegram(null, result.shareText);
           toast.success(t('debts.linkSent'));
+          if (shareResult.copiedFallback) {
+            toast.info(t('debts.shareDesktopFallback'));
+          }
         } catch {
           // Error toast is handled by mutation onError above.
         }

@@ -99,6 +99,7 @@ export const uz = {
     twoWayConfirmLabel: '2 tomonlama tasdiqlash',
     twoWayConfirmHint: 'Belgilansa, mos foydalanuvchiga Telegram orqali tasdiqlash xabari yuboriladi.',
     confirmFallbackManual: 'Qarzdorni Telegramdan topib bo\'lmadi. Havolani qo\'lda yuboring.',
+    shareDesktopFallback: 'Telegram Desktop cheklovi sabab matn clipboardga nusxalandi. Telegram chatga paste qilib yuboring.',
     note: 'Izoh',
     daysLeft: 'kun qoldi',
     daysOverdue: 'kun kechikdi',
