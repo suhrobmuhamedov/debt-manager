@@ -163,7 +163,7 @@ export const DebtItem = ({
         <div className="flex items-center justify-between">
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-1">
-              <h3 className="font-medium text-gray-900 dark:text-white">{contactName}</h3>
+              <h3 className={`font-medium ${isPaid ? 'text-white' : 'text-gray-900 dark:text-white'}`}>{contactName}</h3>
               {!isPaid ? getStatusBadge() : null}
               {confirmationBadge}
             </div>

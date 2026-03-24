@@ -74,7 +74,7 @@ export const ContactForm = ({
 					placeholder={t('contacts.namePlaceholder')}
 					autoFocus
 					maxLength={100}
-					className="border-white/70 bg-white/75 dark:border-white/25 dark:bg-slate-700/55"
+					className="border-sky-200/65 bg-white/85 dark:border-slate-500/50 dark:bg-slate-700/45"
 				/>
 				{errors.name && <p className="text-xs text-red-600">{errors.name}</p>}
 			</div>
@@ -89,7 +89,7 @@ export const ContactForm = ({
 					inputMode="numeric"
 					pattern="[0-9+]*"
 					maxLength={16}
-					className="border-white/70 bg-white/75 dark:border-white/25 dark:bg-slate-700/55"
+					className="border-sky-200/65 bg-white/85 dark:border-slate-500/50 dark:bg-slate-700/45"
 				/>
 				{errors.phone && <p className="text-xs text-red-600">{errors.phone}</p>}
 			</div>
@@ -102,7 +102,7 @@ export const ContactForm = ({
 					placeholder={t('contacts.notePlaceholder')}
 					maxLength={500}
 					rows={4}
-					className="border-white/70 bg-white/75 dark:border-white/25 dark:bg-slate-700/55"
+					className="border-sky-200/65 bg-white/85 dark:border-slate-500/50 dark:bg-slate-700/45"
 				/>
 			</div>
 

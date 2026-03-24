@@ -187,7 +187,7 @@ export const DebtForm = ({
           value={contactId}
           onChange={(event) => setContactId(event.target.value)}
           disabled={lockContact}
-          className="h-11 w-full rounded-xl border border-white/70 bg-white/75 px-3 text-sm text-foreground backdrop-blur-sm dark:border-white/25 dark:bg-slate-700/55 dark:text-white"
+          className="h-11 w-full rounded-xl border border-sky-200/65 bg-white/85 px-3 text-sm text-foreground backdrop-blur-sm dark:border-slate-500/50 dark:bg-slate-700/45 dark:text-white"
         >
           {!contacts.length ? <option value="">Kontakt mavjud emas</option> : null}
           {contacts.map((contact) => (
@@ -219,13 +219,13 @@ export const DebtForm = ({
                   value={quickName}
                   onChange={(event) => setQuickName(event.target.value)}
                   placeholder={t('contacts.namePlaceholder')}
-                  className="h-10 border-white/70 bg-white/75 dark:border-white/25 dark:bg-slate-700/55"
+                  className="h-10 border-sky-200/65 bg-white/85 dark:border-slate-500/50 dark:bg-slate-700/45"
                 />
                 <Input
                   value={quickPhone}
                   onChange={(event) => setQuickPhone(maskPhoneInput(event.target.value))}
                   placeholder={t('contacts.phonePlaceholder')}
-                  className="h-10 border-white/70 bg-white/75 dark:border-white/25 dark:bg-slate-700/55"
+                  className="h-10 border-sky-200/65 bg-white/85 dark:border-slate-500/50 dark:bg-slate-700/45"
                 />
                 <p className="text-[11px] text-muted-foreground">Format: +998 90 123 45 67</p>
                 {quickAddError ? <p className="text-xs text-red-600">{quickAddError}</p> : null}
@@ -265,7 +265,7 @@ export const DebtForm = ({
             type="number"
             min={0}
             step="0.01"
-            className="border-white/70 bg-white/75 dark:border-white/25 dark:bg-slate-700/55"
+            className="border-sky-200/65 bg-white/85 dark:border-slate-500/50 dark:bg-slate-700/45"
           />
           {errors.amount ? <p className="text-xs text-red-600">{errors.amount}</p> : null}
         </div>
@@ -274,7 +274,7 @@ export const DebtForm = ({
           <select
             value={currency}
             onChange={(event) => setCurrency(event.target.value as 'UZS' | 'USD' | 'EUR')}
-            className="h-11 w-full rounded-xl border border-white/70 bg-white/75 px-3 text-sm text-foreground backdrop-blur-sm dark:border-white/25 dark:bg-slate-700/55 dark:text-white"
+            className="h-11 w-full rounded-xl border border-sky-200/65 bg-white/85 px-3 text-sm text-foreground backdrop-blur-sm dark:border-slate-500/50 dark:bg-slate-700/45 dark:text-white"
           >
             <option value="UZS">UZS</option>
             <option value="USD">USD</option>
@@ -302,7 +302,7 @@ export const DebtForm = ({
             type="date"
             value={givenDate}
             onChange={(event) => setGivenDate(event.target.value)}
-            className="border-white/70 bg-white/75 dark:border-white/25 dark:bg-slate-700/55"
+            className="border-sky-200/65 bg-white/85 dark:border-slate-500/50 dark:bg-slate-700/45"
           />
         </div>
         <div className="space-y-1.5">
@@ -312,7 +312,7 @@ export const DebtForm = ({
             value={returnDate}
             onChange={(event) => setReturnDate(event.target.value)}
             min={today}
-            className="border-white/70 bg-white/75 dark:border-white/25 dark:bg-slate-700/55"
+            className="border-sky-200/65 bg-white/85 dark:border-slate-500/50 dark:bg-slate-700/45"
           />
           {errors.returnDate ? <p className="text-xs text-red-600">{errors.returnDate}</p> : null}
         </div>
@@ -325,7 +325,7 @@ export const DebtForm = ({
           onChange={(event) => setNote(event.target.value)}
           maxLength={500}
           rows={3}
-          className="border-white/70 bg-white/75 dark:border-white/25 dark:bg-slate-700/55"
+          className="border-sky-200/65 bg-white/85 dark:border-slate-500/50 dark:bg-slate-700/45"
         />
       </div>
 
