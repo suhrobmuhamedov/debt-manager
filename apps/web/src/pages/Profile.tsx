@@ -30,9 +30,14 @@ export const Profile = () => {
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
 
   const statsQuery = trpc.dashboard.getStats.useQuery();
+  const contactsQuery = trpc.contacts.getAll.useQuery();
 
   const navigateToDebts = (query: string) => {
     navigate(`/debts${query}`);
+  };
+
+  const navigateToContacts = () => {
+    navigate('/contacts');
   };
 
   const logoutMutation = trpc.auth.logout.useMutation({
@@ -77,6 +82,7 @@ export const Profile = () => {
             overdueCount: statsQuery.data.overdueCount,
             paidCount: statsQuery.data.paidCount,
           } : undefined}
+          contactsCount={contactsQuery.data?.length ?? 0}
           isLoading={statsQuery.isLoading}
           isError={statsQuery.isError}
           onRetry={() => statsQuery.refetch()}
@@ -84,6 +90,7 @@ export const Profile = () => {
           onTakenClick={() => navigateToDebts('?type=taken')}
           onOverdueClick={() => navigateToDebts('?overdue=1')}
           onPaidClick={() => navigateToDebts('?status=paid')}
+          onContactsClick={navigateToContacts}
         />
 
         <ThemeSelector

@@ -13,6 +13,7 @@ type DashboardStats = {
 
 type StatsCardProps = {
   stats?: DashboardStats;
+  contactsCount?: number;
   isLoading: boolean;
   isError?: boolean;
   onRetry?: () => void;
@@ -20,9 +21,10 @@ type StatsCardProps = {
   onTakenClick?: () => void;
   onOverdueClick?: () => void;
   onPaidClick?: () => void;
+  onContactsClick?: () => void;
 };
 
-export const StatsCard = ({ stats, isLoading, isError, onRetry, onGivenClick, onTakenClick, onOverdueClick, onPaidClick }: StatsCardProps) => {
+export const StatsCard = ({ stats, contactsCount, isLoading, isError, onRetry, onGivenClick, onTakenClick, onOverdueClick, onPaidClick, onContactsClick }: StatsCardProps) => {
   const { t } = useTranslation();
 
   return (
@@ -33,7 +35,7 @@ export const StatsCard = ({ stats, isLoading, isError, onRetry, onGivenClick, on
 
         {isLoading ? (
           <div className="grid grid-cols-2 gap-3">
-            {Array.from({ length: 4 }).map((_, idx) => (
+            {Array.from({ length: 5 }).map((_, idx) => (
               <div key={idx} className="rounded-2xl border border-white/35 bg-white/15 p-3 backdrop-blur-md dark:border-white/20 dark:bg-white/10">
                 <Skeleton className="mb-2 h-4 w-20" />
                 <Skeleton className="h-6 w-24" />
@@ -78,6 +80,13 @@ export const StatsCard = ({ stats, isLoading, isError, onRetry, onGivenClick, on
             >
               <p className="text-xs text-muted-foreground">✅ {t('dashboard.paid')}</p>
               <p className="mt-1 text-sm font-semibold text-foreground">{stats.paidCount}</p>
+            </div>
+            <div 
+              onClick={onContactsClick}
+              className={`rounded-2xl border border-purple-400/25 bg-purple-500/10 p-3 backdrop-blur-md dark:border-purple-500/25 dark:bg-purple-500/10 transition-all ${onContactsClick ? 'cursor-pointer hover:border-purple-400/40 hover:bg-purple-500/15' : ''}`}
+            >
+              <p className="text-xs text-muted-foreground">👤 {t('profile.myContacts')}</p>
+              <p className="mt-1 text-sm font-semibold text-foreground">{contactsCount ?? 0}</p>
             </div>
           </div>
         )}
