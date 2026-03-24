@@ -31,6 +31,10 @@ export const Profile = () => {
 
   const statsQuery = trpc.dashboard.getStats.useQuery();
 
+  const navigateToDebts = (query: string) => {
+    navigate(`/debts${query}`);
+  };
+
   const logoutMutation = trpc.auth.logout.useMutation({
     onSuccess: () => {
       logout();
@@ -76,6 +80,10 @@ export const Profile = () => {
           isLoading={statsQuery.isLoading}
           isError={statsQuery.isError}
           onRetry={() => statsQuery.refetch()}
+          onGivenClick={() => navigateToDebts('?type=given')}
+          onTakenClick={() => navigateToDebts('?type=taken')}
+          onOverdueClick={() => navigateToDebts('?overdue=1')}
+          onPaidClick={() => navigateToDebts('?status=paid')}
         />
 
         <ThemeSelector

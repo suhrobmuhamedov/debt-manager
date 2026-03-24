@@ -68,9 +68,12 @@ function SheetContent({
     
     const touchEnd = e.clientY;
     const distance = touchEnd - touchStart;
+    const absoluteDistance = Math.abs(distance);
     
-    // If swiped down more than 50px, close the sheet
-    if (distance > 50) {
+    // Close the sheet if swiped up or down more than 40px
+    // Downward: distance > 40
+    // Upward: distance < -40
+    if (absoluteDistance > 40) {
       const closeButton = contentRef.current?.querySelector('[data-slot="sheet-close"]') as HTMLButtonElement;
       closeButton?.click();
     }

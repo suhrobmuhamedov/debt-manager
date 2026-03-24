@@ -34,7 +34,7 @@ export const CreateContactModal = () => {
 
   return (
     <Sheet open={isOpen} onOpenChange={(open) => !open && close()}>
-      <SheetContent side="bottom" className="rounded-t-3xl border border-white/50 bg-white/10 pb-6 backdrop-blur-xl dark:border-white/20 dark:bg-white/5 shadow-2xl shadow-black/20 dark:shadow-black/50">
+      <SheetContent side="bottom" className="rounded-t-3xl border border-white/50 bg-white/25 pb-6 backdrop-blur-xl dark:border-white/20 dark:bg-white/15 shadow-2xl shadow-black/20 dark:shadow-black/50">
         <SheetHeader className="px-0">
           <SheetTitle>{t('contacts.add')}</SheetTitle>
           <SheetDescription>

@@ -16,9 +16,13 @@ type StatsCardProps = {
   isLoading: boolean;
   isError?: boolean;
   onRetry?: () => void;
+  onGivenClick?: () => void;
+  onTakenClick?: () => void;
+  onOverdueClick?: () => void;
+  onPaidClick?: () => void;
 };
 
-export const StatsCard = ({ stats, isLoading, isError, onRetry }: StatsCardProps) => {
+export const StatsCard = ({ stats, isLoading, isError, onRetry, onGivenClick, onTakenClick, onOverdueClick, onPaidClick }: StatsCardProps) => {
   const { t } = useTranslation();
 
   return (
@@ -47,19 +51,31 @@ export const StatsCard = ({ stats, isLoading, isError, onRetry }: StatsCardProps
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-2xl border border-sky-400/25 bg-sky-500/10 p-3 backdrop-blur-md dark:border-sky-500/25 dark:bg-sky-500/10">
+            <div 
+              onClick={onGivenClick}
+              className={`rounded-2xl border border-sky-400/25 bg-sky-500/10 p-3 backdrop-blur-md dark:border-sky-500/25 dark:bg-sky-500/10 transition-all ${onGivenClick ? 'cursor-pointer hover:border-sky-400/40 hover:bg-sky-500/15' : ''}`}
+            >
               <p className="text-xs text-muted-foreground">📤 {t('dashboard.given')}</p>
               <p className="mt-1 text-sm font-semibold text-foreground">{formatCurrency(stats.totalGiven, 'UZS')}</p>
             </div>
-            <div className="rounded-2xl border border-rose-400/25 bg-rose-500/10 p-3 backdrop-blur-md dark:border-rose-500/25 dark:bg-rose-500/10">
+            <div 
+              onClick={onTakenClick}
+              className={`rounded-2xl border border-rose-400/25 bg-rose-500/10 p-3 backdrop-blur-md dark:border-rose-500/25 dark:bg-rose-500/10 transition-all ${onTakenClick ? 'cursor-pointer hover:border-rose-400/40 hover:bg-rose-500/15' : ''}`}
+            >
               <p className="text-xs text-muted-foreground">📥 {t('dashboard.taken')}</p>
               <p className="mt-1 text-sm font-semibold text-foreground">{formatCurrency(stats.totalTaken, 'UZS')}</p>
             </div>
-            <div className="rounded-2xl border border-amber-400/25 bg-amber-500/10 p-3 backdrop-blur-md dark:border-amber-500/25 dark:bg-amber-500/10">
+            <div 
+              onClick={onOverdueClick}
+              className={`rounded-2xl border border-amber-400/25 bg-amber-500/10 p-3 backdrop-blur-md dark:border-amber-500/25 dark:bg-amber-500/10 transition-all ${onOverdueClick ? 'cursor-pointer hover:border-amber-400/40 hover:bg-amber-500/15' : ''}`}
+            >
               <p className="text-xs text-muted-foreground">⚠️ {t('dashboard.overdue')}</p>
               <p className="mt-1 text-sm font-semibold text-foreground">{stats.overdueCount}</p>
             </div>
-            <div className="rounded-2xl border border-emerald-400/25 bg-emerald-500/10 p-3 backdrop-blur-md dark:border-emerald-500/25 dark:bg-emerald-500/10">
+            <div 
+              onClick={onPaidClick}
+              className={`rounded-2xl border border-emerald-400/25 bg-emerald-500/10 p-3 backdrop-blur-md dark:border-emerald-500/25 dark:bg-emerald-500/10 transition-all ${onPaidClick ? 'cursor-pointer hover:border-emerald-400/40 hover:bg-emerald-500/15' : ''}`}
+            >
               <p className="text-xs text-muted-foreground">✅ {t('dashboard.paid')}</p>
               <p className="mt-1 text-sm font-semibold text-foreground">{stats.paidCount}</p>
             </div>
