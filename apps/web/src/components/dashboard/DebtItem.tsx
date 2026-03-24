@@ -98,17 +98,25 @@ export const DebtItem = ({
           ? 'border-red-400/60 bg-red-500/12'
           : isPaid
             ? paidIsTaken
-              ? 'relative overflow-hidden border-red-400/50 bg-red-500/10'
-              : 'relative overflow-hidden border-emerald-400/50 bg-emerald-500/10'
+              ? 'relative overflow-hidden border-red-400/50 bg-red-500/20 backdrop-blur-lg'
+              : 'relative overflow-hidden border-emerald-400/50 bg-emerald-500/20 backdrop-blur-lg'
           : type === 'taken'
             ? 'border-orange-300/30 bg-orange-500/10'
             : ''
       }`}
       onClick={onClick}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e: React.KeyboardEvent<HTMLDivElement>) => {
+        if ((e.key === 'Enter' || e.key === ' ') && onClick) {
+          e.preventDefault();
+          onClick();
+        }
+      }}
     >
       <div className={`absolute -right-4 -top-4 h-24 w-24 rounded-full blur-3xl opacity-45 ${type === 'given' ? 'bg-blue-400' : 'bg-orange-400'}`} />
       {isPaid ? (
-        <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-white/25 backdrop-blur-sm dark:bg-black/25">
+        <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-white/40 backdrop-blur-md dark:bg-black/35">
           <span
             className={`rounded-full px-4 py-1.5 text-sm font-semibold ${
               paidIsTaken

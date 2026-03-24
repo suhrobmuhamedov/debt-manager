@@ -28,8 +28,9 @@
     --debt-given-light: rgba(59, 130, 246, 0.2);
     --debt-taken: #f97316;
     --debt-taken-light: rgba(249, 115, 22, 0.2);
-    --bg-gradient-start: #f0f4f8;
-    --bg-gradient-end: #e2e8f0;
+    --bg-gradient-start: #8EC5FC;
+    --bg-gradient-mid: #A18CD1;
+    --bg-gradient-end: #E0C3FC;
   }
 
   .dark {
@@ -55,6 +56,7 @@
     --glass-border: rgba(255, 255, 255, 0.1);
     --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
     --bg-gradient-start: #0f172a;
+    --bg-gradient-mid: #1a1a3e;
     --bg-gradient-end: #1e293b;
   }
 }
@@ -64,7 +66,7 @@
     border-color: var(--border);
   }
   body {
-    background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
+    background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-mid) 50%, var(--bg-gradient-end) 100%);
     color: var(--foreground);
     font-size: 15px;
     font-family:
@@ -79,7 +81,7 @@
   }
 
   .dark body {
-    background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
+    background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-mid) 50%, var(--bg-gradient-end) 100%);
   }
 
   #root {
@@ -238,56 +240,55 @@
   .app-bg-gradient {
     position: absolute;
     inset: 0;
-    background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
+    background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-mid) 50%, var(--bg-gradient-end) 100%);
+    background-size: 200% 200%;
   }
 
   .dark .app-bg-gradient {
-    background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
+    background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-mid) 50%, var(--bg-gradient-end) 100%);
   }
 
   .app-blob {
     position: absolute;
     border-radius: 9999px;
-    filter: blur(56px);
+    filter: blur-3xl;
   }
 
   .blob-one {
-    top: -120px;
-    right: -100px;
-    width: 340px;
-    height: 340px;
-    background: rgba(214, 220, 232, 0.06);
-    animation: blobFloatA 35s ease-in-out infinite;
-  }
-
-  .blob-two {
-    bottom: -140px;
-    left: -120px;
-    width: 360px;
-    height: 360px;
-    background: rgba(216, 218, 226, 0.06);
-    animation: blobFloatB 32s ease-in-out infinite;
-  }
-
-  .blob-three {
-    top: 34%;
-    left: 45%;
-    width: 260px;
-    height: 260px;
-    background: rgba(208, 220, 214, 0.06);
-    animation: blobFloatC 28s ease-in-out infinite;
+    top: 20px;
+    left: 40px;
+    width: 288px;
+    height: 288px;
+    background: rgba(255, 255, 255, 0.3);
   }
 
   .dark .blob-one {
-    background: rgba(67, 56, 202, 0.2);
+    background: rgba(142, 197, 252, 0.15);
+  }
+
+  .blob-two {
+    bottom: 80px;
+    right: 40px;
+    width: 320px;
+    height: 320px;
+    background: rgba(199, 152, 242, 0.3);
   }
 
   .dark .blob-two {
-    background: rgba(109, 40, 217, 0.2);
+    background: rgba(161, 140, 209, 0.12);
+  }
+
+  .blob-three {
+    top: 50%;
+    left: 50%;
+    width: 384px;
+    height: 384px;
+    background: rgba(224, 195, 252, 0.25);
+    transform: translate(-50%, -50%);
   }
 
   .dark .blob-three {
-    background: rgba(13, 148, 136, 0.2);
+    background: rgba(224, 195, 252, 0.08);
   }
 
   .glass-overlay {

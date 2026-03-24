@@ -12,6 +12,9 @@ export const AppLayout = ({ children, showHeader = false, header }: AppLayoutPro
     <div className="theme-smooth relative flex min-h-screen flex-col text-gray-900 transition-colors dark:text-white">
       <div className="app-bg" aria-hidden>
         <div className="app-bg-gradient" />
+        <span className="app-blob blob-one" />
+        <span className="app-blob blob-two" />
+        <span className="app-blob blob-three" />
       </div>
 
       {showHeader && header && (
