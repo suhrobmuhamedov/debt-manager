@@ -33,14 +33,14 @@ export const Contacts = () => {
       <div className="space-y-4 p-4">
         <div className="space-y-2">
           <BackButton fallback="/" label={t('common.back')} />
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
             <h1 className="text-2xl font-bold text-foreground">{t('contacts.title')}</h1>
-            <div className="flex items-center gap-2">
+            <div className="flex w-full items-center gap-2 sm:w-auto">
               <GlassButton
                 variant="glass"
                 onClick={() => refetch()}
                 disabled={isFetching}
-                className="h-12 gap-2 px-4 text-sm font-semibold whitespace-nowrap"
+                className="h-12 gap-2 flex-1 px-4 text-sm font-semibold sm:flex-none sm:whitespace-nowrap"
               >
                 <RefreshCw className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
                 {t('contacts.refresh')}
@@ -48,9 +48,9 @@ export const Contacts = () => {
               <GlassButton
                 onClick={handleAddClick}
                 variant="glass"
-                className="h-12 px-6 text-sm font-semibold whitespace-nowrap"
+                className="h-12 flex-1 px-6 text-sm font-semibold sm:flex-none sm:whitespace-nowrap"
               >
-                {t('contacts.add')}
+                + {t('contacts.add')}
               </GlassButton>
             </div>
           </div>

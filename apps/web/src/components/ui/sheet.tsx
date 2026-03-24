@@ -53,20 +53,51 @@ function SheetContent({
   side?: "top" | "right" | "bottom" | "left"
   showCloseButton?: boolean
 }) {
+  const [touchStart, setTouchStart] = React.useState<number | null>(null);
+  const contentRef = React.useRef<HTMLDivElement>(null);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    // Only detect swipe on the drag handle area
+    if (side === "bottom" && e.target instanceof HTMLElement && e.target.closest('[data-drag-handle]')) {
+      setTouchStart(e.clientY);
+    }
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStart === null) return;
+    
+    const touchEnd = e.clientY;
+    const distance = touchEnd - touchStart;
+    
+    // If swiped down more than 50px, close the sheet
+    if (distance > 50) {
+      const closeButton = contentRef.current?.querySelector('[data-slot="sheet-close"]') as HTMLButtonElement;
+      closeButton?.click();
+    }
+    
+    setTouchStart(null);
+  };
+
   return (
     <SheetPortal>
       <SheetOverlay />
       <SheetPrimitive.Content
+        ref={contentRef}
         data-slot="sheet-content"
         data-side={side}
         className={cn(
           "glass-surface fixed z-50 flex flex-col gap-4 bg-clip-padding text-sm shadow-2xl transition duration-300 ease-out data-[side=bottom]:inset-x-0 data-[side=bottom]:bottom-0 data-[side=bottom]:h-auto data-[side=bottom]:border-t data-[side=bottom]:rounded-t-[28px] data-[side=bottom]:px-5 data-[side=bottom]:pb-6 data-[side=bottom]:pt-6 data-[side=left]:inset-y-0 data-[side=left]:left-0 data-[side=left]:h-full data-[side=left]:w-3/4 data-[side=left]:border-r data-[side=right]:inset-y-0 data-[side=right]:right-0 data-[side=right]:h-full data-[side=right]:w-3/4 data-[side=right]:border-l data-[side=top]:inset-x-0 data-[side=top]:top-0 data-[side=top]:h-auto data-[side=top]:border-b data-[side=left]:sm:max-w-sm data-[side=right]:sm:max-w-sm data-[state=open]:sheet-open data-[state=closed]:sheet-closed",
           className
         )}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
         {...props}
       >
         {side === "bottom" ? (
-          <div className="pointer-events-none absolute top-2 left-1/2 h-1 w-10 -translate-x-1/2 rounded-full bg-black/15 dark:bg-white/20" />
+          <div 
+            data-drag-handle
+            className="pointer-events-auto absolute top-2 left-1/2 h-1 w-10 -translate-x-1/2 rounded-full bg-black/15 dark:bg-white/20 cursor-grab active:cursor-grabbing" 
+          />
         ) : null}
         {children}
         {showCloseButton && (

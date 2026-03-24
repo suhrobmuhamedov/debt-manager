@@ -74,7 +74,7 @@ export const Debts = () => {
               variant="glass"
               className="h-12 px-6 text-sm font-semibold whitespace-nowrap"
             >
-              {t('debts.add')}
+              + {t('debts.add')}
             </GlassButton>
           </div>
         </div>
