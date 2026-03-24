@@ -54,6 +54,7 @@ export const Contacts = () => {
               </Button>
               <GlassButton
                 onClick={handleAddClick}
+                variant="glass"
                 className="h-12 gap-2 px-6 text-sm font-semibold whitespace-nowrap"
               >
                 <PlusCircle className="h-4 w-4" />

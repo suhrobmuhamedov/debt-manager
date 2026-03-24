@@ -46,9 +46,23 @@ export const DebtItem = ({
           </Badge>
         );
       case 'partial':
-        return <Badge variant="secondary" className="border-blue-500 bg-blue-600 text-white">Qisman</Badge>;
+        return (
+          <Badge
+            variant="secondary"
+            className="border border-white/40 bg-white/20 text-foreground backdrop-blur-md dark:border-white/20 dark:bg-white/10"
+          >
+            Qisman
+          </Badge>
+        );
       case 'pending':
-        return <Badge variant="outline" className="border-amber-400 bg-amber-300 text-black">Kutilmoqda</Badge>;
+        return (
+          <Badge
+            variant="outline"
+            className="border border-white/40 bg-white/20 text-foreground backdrop-blur-md dark:border-white/20 dark:bg-white/10"
+          >
+            Kutilmoqda
+          </Badge>
+        );
       default:
         return null;
     }
@@ -150,12 +164,14 @@ export const DebtItem = ({
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-1">
               <h3 className="font-medium text-gray-900 dark:text-white">{contactName}</h3>
-              {getStatusBadge()}
+              {!isPaid ? getStatusBadge() : null}
               {confirmationBadge}
             </div>
-            <div className={`numeric-text text-lg font-semibold ${getTypeColor()}`}>
-              {type === 'given' ? '+' : '-'}{formatCurrency(amount, currency || 'UZS')}
-            </div>
+            {!isPaid ? (
+              <div className={`numeric-text text-lg font-semibold ${getTypeColor()}`}>
+                {type === 'given' ? '+' : '-'}{formatCurrency(amount, currency || 'UZS')}
+              </div>
+            ) : null}
             {!isPaid ? (
               <div className="mt-1 text-sm text-gray-600 dark:text-gray-300">
                 <p>

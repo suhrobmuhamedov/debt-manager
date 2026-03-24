@@ -97,7 +97,7 @@ export const Dashboard = () => {
           <div className="flex justify-center py-2">
             <GlassButton
               onClick={handleCreateDebt}
-              variant="primary"
+              variant="glass"
               className="flex h-12 items-center justify-center px-6 text-sm font-semibold whitespace-nowrap"
             >
               + {t('debts.add')}

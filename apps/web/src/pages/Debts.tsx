@@ -72,6 +72,7 @@ export const Debts = () => {
             <h1 className="text-2xl font-bold text-foreground">{t('debts.title')}</h1>
             <GlassButton
               onClick={() => open('CREATE_DEBT')}
+              variant="glass"
               className="h-12 gap-2 px-6 text-sm font-semibold whitespace-nowrap"
             >
               <PlusCircle className="h-4 w-4" />

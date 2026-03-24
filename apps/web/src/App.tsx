@@ -1,4 +1,4 @@
-import { Router, Route } from 'wouter';
+import { Router, Route, Switch } from 'wouter';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Toaster } from 'sonner';
@@ -21,13 +21,15 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <Router>
           <AuthWrapper>
-            <Route path="/" component={Dashboard} />
-            <Route path="/debts" component={Debts} />
-            <Route path="/debts/:id" component={DebtDetail} />
-            <Route path="/contacts" component={Contacts} />
-            <Route path="/contacts/:id" component={ContactDetail} />
-            <Route path="/profile" component={Profile} />
-            <Route component={NotFound} />
+            <Switch>
+              <Route path="/" component={Dashboard} />
+              <Route path="/debts" component={Debts} />
+              <Route path="/debts/:id" component={DebtDetail} />
+              <Route path="/contacts" component={Contacts} />
+              <Route path="/contacts/:id" component={ContactDetail} />
+              <Route path="/profile" component={Profile} />
+              <Route component={NotFound} />
+            </Switch>
           </AuthWrapper>
         </Router>
 
