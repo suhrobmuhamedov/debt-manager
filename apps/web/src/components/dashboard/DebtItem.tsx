@@ -136,7 +136,7 @@ export const DebtItem = ({
     >
       <div className={`absolute -right-4 -top-4 h-24 w-24 rounded-full blur-3xl opacity-45 ${type === 'given' ? 'bg-blue-400' : 'bg-orange-400'}`} />
       {isPaid ? (
-        <div className="pointer-events-none absolute inset-0 z-10 flex justify-center bg-white/45 pt-3 backdrop-blur-xl dark:bg-black/45">
+        <div className="pointer-events-none absolute inset-0 z-20 flex justify-center bg-white/45 pt-3 backdrop-blur-xl dark:bg-black/45">
           <div className="flex flex-col items-center gap-1.5">
             <span
               className={`rounded-full px-4 py-1.5 text-sm font-semibold ${
@@ -159,7 +159,7 @@ export const DebtItem = ({
           </div>
         </div>
       ) : null}
-      <CardContent className="relative z-10 p-0">
+      <CardContent className={`relative z-10 p-0 ${isPaid ? 'pt-20' : ''}`}>
         <div className="flex items-center justify-between">
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-1">

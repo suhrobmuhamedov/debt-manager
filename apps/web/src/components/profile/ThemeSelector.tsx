@@ -1,7 +1,7 @@
 import { Palette } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { Card, CardContent } from '../ui/card';
 import { ThemeMode } from '../../lib/theme';
+import { GlassCard } from '../ui/GlassCard';
 
 type ThemeSelectorProps = {
   current: ThemeMode;
@@ -17,13 +17,12 @@ export const ThemeSelector = ({ current, onChange }: ThemeSelectorProps) => {
   ];
 
   return (
-    <Card className="border-gray-300 bg-white/90 shadow-sm dark:border-gray-600 dark:bg-gray-800/90">
-      <CardContent className="p-4">
+    <GlassCard className="p-4">
         <div className="mb-3 flex items-center gap-2">
-          <Palette className="h-4 w-4 text-gray-500 dark:text-gray-400" />
-          <h2 className="text-sm font-semibold text-gray-900 dark:text-white">{t('profile.theme')}</h2>
+          <Palette className="h-4 w-4 text-muted-foreground" />
+          <h2 className="text-sm font-semibold text-foreground">{t('profile.theme')}</h2>
         </div>
-        <div className="grid grid-cols-3 gap-2 rounded-2xl bg-gray-100 p-1 dark:bg-gray-800/80">
+        <div className="grid grid-cols-3 gap-2 rounded-2xl border border-white/30 bg-white/10 p-1 backdrop-blur-md dark:border-white/20 dark:bg-white/5">
           {options.map((option) => {
             const active = current === option.value;
             return (
@@ -33,8 +32,8 @@ export const ThemeSelector = ({ current, onChange }: ThemeSelectorProps) => {
                 onClick={() => onChange(option.value)}
                 className={`rounded-xl px-3 py-2 text-xs font-medium transition-all duration-200 ${
                   active
-                    ? 'bg-blue-500 text-white shadow-sm'
-                    : 'bg-transparent text-gray-600 hover:bg-white/70 dark:text-gray-300 dark:hover:bg-gray-700/80'
+                    ? 'border border-sky-400/30 bg-sky-500/20 text-sky-950 shadow-sm dark:text-sky-200'
+                    : 'bg-transparent text-muted-foreground hover:bg-white/20 dark:hover:bg-white/10'
                 }`}
               >
                 {option.label}
@@ -42,7 +41,6 @@ export const ThemeSelector = ({ current, onChange }: ThemeSelectorProps) => {
             );
           })}
         </div>
-      </CardContent>
-    </Card>
+    </GlassCard>
   );
 };

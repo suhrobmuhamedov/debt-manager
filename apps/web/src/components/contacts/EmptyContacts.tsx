@@ -1,4 +1,5 @@
-import { Button } from '../ui/button';
+import { GlassCard } from '../ui/GlassCard';
+import { GlassButton } from '../ui/GlassButton';
 import { useTranslation } from 'react-i18next';
 
 type EmptyContactsProps = {
@@ -10,7 +11,7 @@ export const EmptyContacts = ({ hasSearch, onAddClick }: EmptyContactsProps) => 
 	const { t } = useTranslation();
 
 	return (
-		<div className="rounded-xl border border-dashed border-muted-foreground/30 bg-background p-6 text-center">
+		<GlassCard className="border-dashed border-white/30 p-6 text-center">
 			<div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-muted text-xl">
 				👥
 			</div>
@@ -21,10 +22,10 @@ export const EmptyContacts = ({ hasSearch, onAddClick }: EmptyContactsProps) => 
 				{hasSearch ? t('contacts.searchHint') : t('contacts.emptyHint')}
 			</p>
 			{!hasSearch && (
-				<Button className="mt-4" onClick={onAddClick}>
+				<GlassButton variant="glass" className="mt-4" onClick={onAddClick}>
 					+ {t('contacts.add')}
-				</Button>
+				</GlassButton>
 			)}
-		</div>
+		</GlassCard>
 	);
 };

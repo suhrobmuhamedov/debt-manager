@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useLocation } from 'wouter';
 import { AppLayout } from '../components/layout/AppLayout';
-import { Card, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import { useAuthStore } from '../store/authStore';
@@ -18,6 +17,8 @@ import { AboutSheet } from '../components/profile/AboutSheet';
 import { Bell, Info, Shield } from 'lucide-react';
 import { toast } from 'sonner';
 import { BackButton } from '../components/common/BackButton';
+import { GlassCard } from '../components/ui/GlassCard';
+import { GlassButton } from '../components/ui/GlassButton';
 
 export const Profile = () => {
   const { user, logout } = useAuthStore();
@@ -44,11 +45,11 @@ export const Profile = () => {
     return (
       <AppLayout>
         <div className="p-4">
-        <Card>
-            <CardContent className="p-5 text-sm text-gray-500 dark:text-gray-400">
+          <GlassCard>
+            <div className="p-5 text-sm text-muted-foreground">
               {t('common.loading')}
-            </CardContent>
-          </Card>
+            </div>
+          </GlassCard>
         </div>
       </AppLayout>
     );
@@ -56,17 +57,11 @@ export const Profile = () => {
 
   return (
     <AppLayout>
-      <div
-        className="space-y-4 overflow-x-hidden p-4"
-        style={{
-          backgroundColor: 'var(--tg-theme-secondary-bg-color, transparent)',
-          color: 'var(--tg-theme-text-color, inherit)',
-        }}
-      >
-        <div className="space-y-1">
+      <div className="space-y-4 overflow-x-hidden p-4">
+        <div className="space-y-2">
           <BackButton fallback="/" label={t('common.back')} />
           <h1 className="text-2xl font-bold text-foreground">{t('profile.title')}</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400">{t('profile.settingsDescription')}</p>
+          <p className="text-sm text-muted-foreground">{t('profile.settingsDescription')}</p>
         </div>
 
         <UserAvatarCard user={user} language={language} />
@@ -93,9 +88,8 @@ export const Profile = () => {
 
         <LanguageSelector current={language} onChange={setLanguage} />
 
-        <Card className="shadow-none">
-          <CardContent className="space-y-3 p-0">
-            <h2 className="px-1 text-sm font-semibold text-gray-900 dark:text-white">{t('profile.accountActions')}</h2>
+        <GlassCard className="space-y-3">
+          <h2 className="px-1 text-sm font-semibold text-foreground">{t('profile.accountActions')}</h2>
 
             <SettingsItem
               icon={<Bell className="h-5 w-5" />}
@@ -103,10 +97,10 @@ export const Profile = () => {
               onClick={() => setNotifications(!notificationsEnabled)}
               rightElement={
                 <span
-                  className={`inline-flex min-w-16 justify-center rounded-full px-2.5 py-1 text-xs font-medium ${
+                  className={`inline-flex min-w-16 justify-center rounded-full border px-2.5 py-1 text-xs font-medium backdrop-blur-md ${
                     notificationsEnabled
-                      ? 'bg-blue-500 text-white'
-                      : 'bg-gray-200 text-gray-600 dark:bg-gray-800 dark:text-gray-300'
+                      ? 'border-sky-400/30 bg-sky-500/20 text-sky-900 dark:text-sky-200'
+                      : 'border-white/30 bg-white/20 text-muted-foreground dark:border-white/20 dark:bg-white/10'
                   }`}
                 >
                   {notificationsEnabled ? t('profile.notificationsOn') : t('profile.notificationsOff')}
@@ -140,18 +134,17 @@ export const Profile = () => {
                 danger
               />
             </div>
-          </CardContent>
-        </Card>
+        </GlassCard>
 
-        <div className="space-y-1 pb-2 text-center text-xs text-gray-500 dark:text-gray-400">
+        <GlassCard className="space-y-1 pb-2 text-center text-xs text-muted-foreground">
           <p>{t('profile.appName')} v1.0.0</p>
           <p>{t('profile.madeInUzbekistan')}</p>
-        </div>
+        </GlassCard>
 
         <AboutSheet open={sheetOpen} onOpenChange={setSheetOpen} mode={sheetMode} />
 
         <Dialog open={logoutDialogOpen} onOpenChange={setLogoutDialogOpen}>
-          <DialogContent>
+          <DialogContent className="border border-white/50 bg-white/70 backdrop-blur-2xl dark:border-white/20 dark:bg-slate-950/45">
             <DialogHeader>
               <DialogTitle>{t('profile.logoutConfirm')}</DialogTitle>
               <DialogDescription>{t('profile.logoutDescription')}</DialogDescription>
@@ -160,13 +153,13 @@ export const Profile = () => {
               <Button variant="outline" onClick={() => setLogoutDialogOpen(false)}>
                 {t('contacts.cancel')}
               </Button>
-              <Button
-                variant="destructive"
+              <GlassButton
+                variant="danger"
                 onClick={() => logoutMutation.mutate()}
                 disabled={logoutMutation.isPending}
               >
                 {logoutMutation.isPending ? t('common.loading') : t('profile.logout')}
-              </Button>
+              </GlassButton>
             </DialogFooter>
           </DialogContent>
         </Dialog>

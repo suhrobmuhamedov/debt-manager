@@ -4,7 +4,6 @@ import { trpc } from '../lib/trpc';
 import { DebtItem } from '../components/dashboard/DebtItem';
 import { useModalStore } from '../store/modalStore';
 import { BackButton } from '../components/common/BackButton';
-import { PlusCircle } from 'lucide-react';
 import { useMemo } from 'react';
 import { GlassButton } from '../components/ui/GlassButton';
 
@@ -73,9 +72,8 @@ export const Debts = () => {
             <GlassButton
               onClick={() => open('CREATE_DEBT')}
               variant="glass"
-              className="h-12 gap-2 px-6 text-sm font-semibold whitespace-nowrap"
+              className="h-12 px-6 text-sm font-semibold whitespace-nowrap"
             >
-              <PlusCircle className="h-4 w-4" />
               {t('debts.add')}
             </GlassButton>
           </div>

@@ -45,7 +45,10 @@ export const ContactCard = ({ contact, onClick, onAddDebt }: ContactCardProps) =
 					</div>
 
 					<div className="flex flex-col items-end gap-1">
-						<Badge variant={contact.activeDebtsCount > 0 ? 'destructive' : 'secondary'}>
+						<Badge
+							variant="secondary"
+							className="border border-white/40 bg-white/20 text-foreground backdrop-blur-md dark:border-white/20 dark:bg-white/10"
+						>
 							{contact.activeDebtsCount} {t('contacts.activeDebts').toLowerCase()}
 						</Badge>
 						<p className="numeric-text text-xs font-medium text-muted-foreground">
@@ -53,7 +56,7 @@ export const ContactCard = ({ contact, onClick, onAddDebt }: ContactCardProps) =
 						</p>
 						<GlassButton
 							type="button"
-							variant="primary"
+							variant="glass"
 							className="px-3 py-2 text-sm"
 							onClick={(event) => {
 								event.stopPropagation();

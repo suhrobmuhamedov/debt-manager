@@ -1,11 +1,10 @@
 import { AppLayout } from '../components/layout/AppLayout';
 import { Input } from '../components/ui/input';
-import { Button } from '../components/ui/button';
 import { ContactList } from '../components/contacts/ContactList';
 import { useContacts } from '../hooks/useContacts';
 import { useModalStore } from '../store/modalStore';
 import { useLocation } from 'wouter';
-import { RefreshCw, Search, PlusCircle } from 'lucide-react';
+import { RefreshCw, Search } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { BackButton } from '../components/common/BackButton';
 import { GlassButton } from '../components/ui/GlassButton';
@@ -31,33 +30,26 @@ export const Contacts = () => {
 
   return (
     <AppLayout>
-      <div
-        className="relative space-y-4 p-4"
-        style={{
-          backgroundColor: 'var(--tg-theme-secondary-bg-color, transparent)',
-        }}
-      >
+      <div className="space-y-4 p-4">
         <div className="space-y-2">
           <BackButton fallback="/" label={t('common.back')} />
-          <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center justify-between gap-3">
             <h1 className="text-2xl font-bold text-foreground">{t('contacts.title')}</h1>
             <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
+              <GlassButton
+                variant="glass"
                 onClick={() => refetch()}
                 disabled={isFetching}
-                className="gap-1"
+                className="h-12 gap-2 px-4 text-sm font-semibold whitespace-nowrap"
               >
                 <RefreshCw className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
                 {t('contacts.refresh')}
-              </Button>
+              </GlassButton>
               <GlassButton
                 onClick={handleAddClick}
                 variant="glass"
-                className="h-12 gap-2 px-6 text-sm font-semibold whitespace-nowrap"
+                className="h-12 px-6 text-sm font-semibold whitespace-nowrap"
               >
-                <PlusCircle className="h-4 w-4" />
                 {t('contacts.add')}
               </GlassButton>
             </div>
@@ -70,7 +62,7 @@ export const Contacts = () => {
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder={t('contacts.search')}
-            className="h-10 border-transparent bg-transparent pl-9"
+            className="h-11 border-transparent bg-transparent pl-9"
           />
         </GlassCard>
 

@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
-import { Card, CardContent } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { getInitials, formatPhone } from '../../lib/contact-utils';
+import { GlassCard } from '../ui/GlassCard';
 
 const gradients = [
   'from-sky-500 to-cyan-400',
@@ -51,8 +51,7 @@ export const UserAvatarCard = ({ user, language }: UserAvatarCardProps) => {
     : null;
 
   return (
-    <Card className="overflow-hidden border-gray-300 bg-white/90 shadow-sm dark:border-gray-600 dark:bg-gray-800/90">
-      <CardContent className="p-5">
+    <GlassCard className="overflow-hidden p-5">
         <div className="flex items-start gap-4">
           {user.photoUrl ? (
             <img
@@ -68,32 +67,31 @@ export const UserAvatarCard = ({ user, language }: UserAvatarCardProps) => {
 
           <div className="min-w-0 flex-1 space-y-2">
             <div>
-              <h1 className="truncate text-xl font-bold text-gray-900 dark:text-white">{fullName}</h1>
+              <h1 className="truncate text-xl font-bold text-foreground">{fullName}</h1>
               {user.username ? (
-                <p className="truncate text-sm text-gray-500 dark:text-gray-400">@{user.username}</p>
+                <p className="truncate text-sm text-muted-foreground">@{user.username}</p>
               ) : null}
             </div>
 
             {user.phone ? (
-              <a href={`tel:${user.phone}`} className="flex items-center gap-2 text-sm text-gray-700 transition-colors hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400">
+              <a href={`tel:${user.phone}`} className="flex items-center gap-2 text-sm text-foreground/80 transition-colors hover:text-sky-700 dark:hover:text-sky-300">
                 <span aria-hidden>📞</span>
                 <span>{formatPhone(user.phone)}</span>
               </a>
             ) : null}
 
             <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="secondary" className="rounded-full px-2.5 py-1 text-xs">
+              <Badge variant="secondary" className="rounded-full border border-white/40 bg-white/20 px-2.5 py-1 text-xs text-foreground backdrop-blur-md dark:border-white/20 dark:bg-white/10">
                 ID: {user.telegramId}
               </Badge>
               {joinedDate ? (
-                <span className="text-xs text-gray-500 dark:text-gray-400">
+                <span className="text-xs text-muted-foreground">
                   {t('profile.joinedAt')}: {joinedDate}
                 </span>
               ) : null}
             </div>
           </div>
         </div>
-      </CardContent>
-    </Card>
+    </GlassCard>
   );
 };
