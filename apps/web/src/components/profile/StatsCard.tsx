@@ -83,10 +83,10 @@ export const StatsCard = ({ stats, contactsCount, isLoading, isError, onRetry, o
             </div>
             <div 
               onClick={onContactsClick}
-              className={`rounded-2xl border border-purple-400/25 bg-purple-500/10 p-3 backdrop-blur-md dark:border-purple-500/25 dark:bg-purple-500/10 transition-all ${onContactsClick ? 'cursor-pointer hover:border-purple-400/40 hover:bg-purple-500/15' : ''}`}
+              className={`col-span-2 flex items-center justify-between rounded-2xl border border-purple-400/25 bg-purple-500/10 px-4 py-2.5 backdrop-blur-md dark:border-purple-500/25 dark:bg-purple-500/10 transition-all ${onContactsClick ? 'cursor-pointer hover:border-purple-400/40 hover:bg-purple-500/15' : ''}`}
             >
-              <p className="text-xs text-muted-foreground">👤 {t('profile.myContacts')}</p>
-              <p className="mt-1 text-sm font-semibold text-foreground">{contactsCount ?? 0}</p>
+              <p className="text-sm text-muted-foreground">👤 {t('profile.myContacts')}</p>
+              <p className="text-base font-bold text-foreground">{contactsCount ?? 0}</p>
             </div>
           </div>
         )}

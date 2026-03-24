@@ -11,10 +11,6 @@ export const BackButton = ({ fallback = '/', label }: BackButtonProps) => {
   const [, navigate] = useLocation();
 
   const handleBack = () => {
-    if (window.history.length > 1) {
-      window.history.back();
-      return;
-    }
     navigate(fallback);
   };
 

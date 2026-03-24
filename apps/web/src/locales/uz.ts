@@ -146,7 +146,8 @@ export const uz = {
     madeInUzbekistan: 'Made with love in Uzbekistan',
     notificationsOn: 'Yoqilgan',
     notificationsOff: 'O‘chirilgan',
-    statsLoadError: 'Statistikani yuklab bo‘lmadi',
+    statsLoadError: 'Statistikani yuklab bo\'lmadi',
     settingsDescription: 'Shaxsiy sozlamalarni shu yerdan boshqaring.',
+    myContacts: 'Kontaktlar',
   },
 } as const;

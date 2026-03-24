@@ -148,5 +148,6 @@ export const ru = {
     notificationsOff: 'Выключено',
     statsLoadError: 'Не удалось загрузить статистику',
     settingsDescription: 'Управляйте персональными настройками здесь.',
+    myContacts: 'Контакты',
   },
 } as const;
