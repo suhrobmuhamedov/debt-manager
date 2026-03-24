@@ -100,6 +100,8 @@ export const uz = {
     twoWayConfirmHint: 'Belgilansa, mos foydalanuvchiga Telegram orqali tasdiqlash xabari yuboriladi.',
     confirmFallbackManual: 'Qarzdorni Telegramdan topib bo\'lmadi. Havolani qo\'lda yuboring.',
     shareDesktopFallback: 'Telegram Desktop cheklovi sabab matn clipboardga nusxalandi. Telegram chatga paste qilib yuboring.',
+    confirmRequestSentSelf: 'Botga tasdiqlash xabari yuborildi. Uni qarzdorga forward qiling.',
+    confirmRequestNotSentSelf: 'Botga xabar yuborilmadi. Telegram botga /start bosing va qayta urinib ko\'ring.',
     note: 'Izoh',
     daysLeft: 'kun qoldi',
     daysOverdue: 'kun kechikdi',

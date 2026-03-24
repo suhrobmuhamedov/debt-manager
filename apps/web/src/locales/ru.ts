@@ -100,6 +100,8 @@ export const ru = {
     twoWayConfirmHint: 'Если включено, подходящему пользователю будет отправлен запрос подтверждения в Telegram.',
     confirmFallbackManual: 'Получатель не найден в Telegram. Отправьте ссылку вручную.',
     shareDesktopFallback: 'Из-за ограничения Telegram Desktop текст скопирован в буфер обмена. Вставьте его в чат Telegram.',
+    confirmRequestSentSelf: 'Сообщение для подтверждения отправлено в бота. Перешлите его заемщику.',
+    confirmRequestNotSentSelf: 'Не удалось отправить сообщение в бота. Нажмите /start в боте и попробуйте снова.',
     note: 'Примечание',
     daysLeft: 'дней осталось',
     daysOverdue: 'дней просрочено',

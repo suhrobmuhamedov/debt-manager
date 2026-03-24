@@ -75,30 +75,6 @@ const formatDebtDate = (date: Date | string | null): string => {
   });
 };
 
-const normalizePhoneForLookup = (value?: string | null): string => {
-  if (!value) {
-    return '';
-  }
-  return value.replace(/\D/g, '');
-};
-
-const findUserByPhone = async (phone?: string | null) => {
-  const normalizedPhone = normalizePhoneForLookup(phone);
-  if (!normalizedPhone) {
-    return null;
-  }
-
-  const [matched] = await db
-    .select()
-    .from(users)
-    .where(
-      sql`REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(${users.phone}, ' ', ''), '+', ''), '-', ''), '(', ''), ')', '') = ${normalizedPhone}`
-    )
-    .limit(1);
-
-  return matched ?? null;
-};
-
 const sendTelegramText = async (telegramId: string, text: string): Promise<void> => {
   const botToken = process.env.BOT_TOKEN;
   if (!botToken || !telegramId) {
@@ -400,30 +376,27 @@ export const debtsRouter = router({
           .where(eq(users.id, userId))
           .limit(1);
 
-        const receiverUser = await findUserByPhone(contact.phone);
-
-        if (!receiverUser?.telegramId) {
-          telegramNotification.reason = 'receiver_telegram_not_found';
-          console.warn(
-            `[debts.create:${requestId}] two-way confirmation requested, but receiver telegram not found (contactId=${contact.id})`
-          );
+        if (!creator?.telegramId) {
+          telegramNotification.reason = 'creator_telegram_missing';
+          console.warn(`[debts.create:${requestId}] creator telegram id missing (userId=${userId})`);
         } else {
           try {
             const senderName = creator?.firstName || 'Foydalanuvchi';
             const amountText = Number(input.amount).toLocaleString('uz-UZ');
             const currencyText = input.currency || 'UZS';
             const actionText = input.type === 'given' ? 'qarz berganligini' : 'qarz olganligini';
-            const messageText = `Salom Qarz nazorati tizimidan ismi ${senderName} sizga qarz miqdori ${amountText} valyuta birligi ${currencyText} ${actionText} bildiradi.`;
+            const returnDateText = formatDebtDate(returnDate);
+            const messageText = `Salom!\n${contact.name} uchun ${amountText} ${currencyText} miqdorida qarz yozildi.\nQaytarish muddati: ${returnDateText}.\n\nUshbu xabarni qarzdorga forward qiling va undan tugma orqali javob olishni so'rang.\n\n(${senderName} ${actionText})`;
 
             await sendTelegramConfirmationMessage({
-              telegramId: receiverUser.telegramId,
+              telegramId: creator.telegramId,
               token: confirmationToken,
               text: messageText,
             });
 
             telegramNotification.sent = true;
             console.info(
-              `[debts.create:${requestId}] confirmation message sent to telegramId=${receiverUser.telegramId}`
+              `[debts.create:${requestId}] confirmation message sent to creator telegramId=${creator.telegramId}`
             );
           } catch (error) {
             telegramNotification.reason = 'telegram_send_failed';

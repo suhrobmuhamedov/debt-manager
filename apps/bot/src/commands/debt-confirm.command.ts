@@ -1,6 +1,39 @@
 import { Context, Markup } from 'telegraf';
 import { confirmDebtByToken, denyDebtByToken } from '../utils/internal-api';
 
+type AxiosLikeError = {
+  response?: {
+    status?: number;
+    data?: {
+      error?: string;
+      message?: string;
+    };
+  };
+};
+
+const getApiErrorMessage = (error: unknown): string => {
+  const e = error as AxiosLikeError;
+  const status = e?.response?.status;
+  const apiMessage = e?.response?.data?.error || e?.response?.data?.message;
+
+  if (status === 404) {
+    return "❌ Bu havola yaroqsiz yoki muddati o'tgan.\nQarz egasidan yangi havola so'rang.";
+  }
+
+  if (status === 400 && apiMessage) {
+    const msg = apiMessage.toLowerCase();
+    if (msg.includes('expired') || msg.includes('token') || msg.includes('used') || msg.includes('not found')) {
+      return "❌ Bu havola yaroqsiz yoki muddati o'tgan.\nQarz egasidan yangi havola so'rang.";
+    }
+  }
+
+  if (status === 401) {
+    return '❌ Server avtorizatsiya xatosi. ADMIN ga murojaat qiling.';
+  }
+
+  return '❌ Server bilan aloqa xatosi. Keyinroq qayta urinib ko\'ring.';
+};
+
 const DEFAULT_BOT_USERNAME = 'Qarznazoratibot';
 
 const resolveBotUsername = (): string => {
@@ -63,7 +96,7 @@ export const handleDebtConfirmStartPayload = async (ctx: Context): Promise<boole
     return true;
   } catch (error) {
     console.error('handleDebtConfirmStartPayload error:', error);
-    await ctx.reply("❌ Bu havola yaroqsiz yoki muddati o'tgan.\nQarz egasidan yangi havola so'rang.");
+    await ctx.reply(getApiErrorMessage(error));
     return true;
   }
 };
@@ -97,7 +130,7 @@ export const handleDebtDenyStartPayload = async (ctx: Context): Promise<boolean>
     return true;
   } catch (error) {
     console.error('handleDebtDenyStartPayload error:', error);
-    await ctx.reply("❌ Bu havola yaroqsiz yoki muddati o'tgan.");
+    await ctx.reply(getApiErrorMessage(error));
     return true;
   }
 };
@@ -132,7 +165,7 @@ export const handleDebtConfirmCallback = async (ctx: Context, token: string) => 
   } catch (error) {
     console.error('handleDebtConfirmCallback error:', error);
     await ctx.answerCbQuery('Xatolik yuz berdi', { show_alert: true });
-    await ctx.reply("❌ Xatolik yuz berdi. Qayta urinib ko'ring.");
+    await ctx.reply(getApiErrorMessage(error));
   }
 };
 
@@ -158,6 +191,6 @@ export const handleDebtDenyCallback = async (ctx: Context, token: string) => {
   } catch (error) {
     console.error('handleDebtDenyCallback error:', error);
     await ctx.answerCbQuery('Xatolik yuz berdi', { show_alert: true });
-    await ctx.reply('❌ Xatolik yuz berdi.');
+    await ctx.reply(getApiErrorMessage(error));
   }
 };

@@ -4,7 +4,6 @@ import { toast } from 'sonner';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '../ui/sheet';
 import { trpc } from '../../lib/trpc';
 import { DebtForm, DebtFormValues } from '../debts/DebtForm';
-import { shareToTelegram } from '../../lib/telegram';
 
 export const CreateDebtModal = () => {
   const { type, data, close } = useModalStore();
@@ -15,12 +14,6 @@ export const CreateDebtModal = () => {
 
   const contactsQuery = trpc.contacts.getAll.useQuery(undefined, { enabled: isOpen });
 
-  const generateConfirmationLink = trpc.debts.generateConfirmationLink.useMutation({
-    onError: (error) => {
-      toast.error(error.message || t('common.error'));
-    },
-  });
-
   const createDebt = trpc.debts.create.useMutation({
     onSuccess: async (created, variables) => {
       await utils.dashboard.getStats.invalidate();
@@ -30,15 +23,11 @@ export const CreateDebtModal = () => {
       close();
 
       if (variables.twoWayConfirmation) {
-        try {
-          const result = await generateConfirmationLink.mutateAsync({ debtId: created.id });
-          const shareResult = await shareToTelegram(null, result.shareText);
-          toast.success(t('debts.linkSent'));
-          if (shareResult.copiedFallback) {
-            toast.info(t('debts.shareDesktopFallback'));
-          }
-        } catch {
-          // Error toast is handled by mutation onError above.
+        const sent = created.confirmation?.telegramNotification?.sent;
+        if (sent) {
+          toast.success(t('debts.confirmRequestSentSelf'));
+        } else {
+          toast.warning(t('debts.confirmRequestNotSentSelf'));
         }
       }
     },
