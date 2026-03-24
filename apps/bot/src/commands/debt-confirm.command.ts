@@ -2,6 +2,8 @@ import { Context, Markup } from 'telegraf';
 import { confirmDebtByToken, denyDebtByToken } from '../utils/internal-api';
 
 type AxiosLikeError = {
+  code?: string;
+  message?: string;
   response?: {
     status?: number;
     data?: {
@@ -29,6 +31,18 @@ const getApiErrorMessage = (error: unknown): string => {
 
   if (status === 401) {
     return '❌ Server avtorizatsiya xatosi. ADMIN ga murojaat qiling.';
+  }
+
+  if (status === 500) {
+    return '❌ Server ichki xatosi (500). Birozdan keyin urinib ko\'ring yoki admin loglarini tekshirsin.';
+  }
+
+  if (e?.code === 'ECONNABORTED' || e?.code === 'ETIMEDOUT') {
+    return '❌ Serverga ulanish timeout bo\'ldi. SERVER_URL va tarmoq holatini tekshiring.';
+  }
+
+  if (e?.code === 'ECONNREFUSED' || e?.code === 'ENOTFOUND') {
+    return '❌ Serverga ulanib bo\'lmadi. SERVER_URL noto\'g\'ri yoki server ishlamayapti.';
   }
 
   return '❌ Server bilan aloqa xatosi. Keyinroq qayta urinib ko\'ring.';

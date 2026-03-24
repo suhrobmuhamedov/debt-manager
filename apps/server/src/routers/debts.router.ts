@@ -94,11 +94,9 @@ const sendTelegramText = async (telegramId: string, text: string): Promise<void>
 
 const sendTelegramConfirmationMessage = async ({
   telegramId,
-  token,
   text,
 }: {
   telegramId: string;
-  token: string;
   text: string;
 }): Promise<void> => {
   const botToken = process.env.BOT_TOKEN;
@@ -113,14 +111,8 @@ const sendTelegramConfirmationMessage = async ({
       body: JSON.stringify({
         chat_id: telegramId,
         text,
-        reply_markup: {
-          inline_keyboard: [
-            [
-              { text: 'Tasdiqlash', callback_data: `debt_confirm_${token}` },
-              { text: 'Inkor qilish', callback_data: `debt_deny_${token}` },
-            ],
-          ],
-        },
+        parse_mode: 'HTML',
+        disable_web_page_preview: true,
       }),
     });
 
@@ -389,11 +381,10 @@ export const debtsRouter = router({
             const botUsername = resolveBotUsername();
             const confirmLink = `https://t.me/${botUsername}?start=confirm_${confirmationToken}`;
             const denyLink = `https://t.me/${botUsername}?start=deny_${confirmationToken}`;
-            const messageText = `Salom!\n${contact.name} uchun ${amountText} ${currencyText} miqdorida qarz yozildi.\nQaytarish muddati: ${returnDateText}.\n\nUshbu xabarni qarzdorga forward qiling. Agar forwardda tugmalar ko'rinmasa, quyidagi havolalardan foydalaning:\nTasdiqlash: ${confirmLink}\nInkor qilish: ${denyLink}\n\n(${senderName} ${actionText})`;
+            const messageText = `Salom!\n${contact.name} uchun ${amountText} ${currencyText} miqdorida qarz yozildi.\nQaytarish muddati: ${returnDateText}.\n\nUshbu xabarni qarzdorga forward qiling.\n<a href="${confirmLink}">Tasdiqlash</a> | <a href="${denyLink}">Inkor qilish</a>\n\n(${senderName} ${actionText})`;
 
             await sendTelegramConfirmationMessage({
               telegramId: creator.telegramId,
-              token: confirmationToken,
               text: messageText,
             });
 
@@ -687,10 +678,12 @@ export const debtsRouter = router({
         }
 
         const mirrorType = originalRow.debt.type === 'given' ? 'taken' : 'given';
+        const mirrorUuid = crypto.randomUUID();
 
-        const mirrorInsert = await tx
+        await tx
           .insert(debts)
           .values({
+            uuid: mirrorUuid,
             userId: receiverUser.id,
             contactId: receiverContactId,
             amount: originalRow.debt.amount,
@@ -707,7 +700,13 @@ export const debtsRouter = router({
           })
           .execute();
 
-        const mirrorDebtId = (mirrorInsert as { insertId?: number }).insertId;
+        const [mirrorDebt] = await tx
+          .select({ id: debts.id })
+          .from(debts)
+          .where(and(eq(debts.uuid, mirrorUuid), eq(debts.userId, receiverUser.id), isNull(debts.deletedAt)))
+          .limit(1);
+
+        const mirrorDebtId = mirrorDebt?.id;
         if (!mirrorDebtId) {
           throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to create mirror debt' });
         }
@@ -842,10 +841,12 @@ export const debtsRouter = router({
             .where(eq(debts.id, row.debt.id));
         } else {
           const mirrorType = row.debt.type === 'given' ? 'taken' : 'given';
+          const mirrorUuid = crypto.randomUUID();
 
-          const mirrorInsert = await tx
+          await tx
             .insert(debts)
             .values({
+              uuid: mirrorUuid,
               userId: denierUser.id,
               contactId: receiverContactId,
               amount: row.debt.amount,
@@ -862,7 +863,13 @@ export const debtsRouter = router({
             })
             .execute();
 
-          const mirrorDebtId = (mirrorInsert as { insertId?: number }).insertId;
+          const [mirrorDebt] = await tx
+            .select({ id: debts.id })
+            .from(debts)
+            .where(and(eq(debts.uuid, mirrorUuid), eq(debts.userId, denierUser.id), isNull(debts.deletedAt)))
+            .limit(1);
+
+          const mirrorDebtId = mirrorDebt?.id;
           if (!mirrorDebtId) {
             throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to create denied mirror debt' });
           }
