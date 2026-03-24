@@ -386,7 +386,10 @@ export const debtsRouter = router({
             const currencyText = input.currency || 'UZS';
             const actionText = input.type === 'given' ? 'qarz berganligini' : 'qarz olganligini';
             const returnDateText = formatDebtDate(returnDate);
-            const messageText = `Salom!\n${contact.name} uchun ${amountText} ${currencyText} miqdorida qarz yozildi.\nQaytarish muddati: ${returnDateText}.\n\nUshbu xabarni qarzdorga forward qiling va undan tugma orqali javob olishni so'rang.\n\n(${senderName} ${actionText})`;
+            const botUsername = resolveBotUsername();
+            const confirmLink = `https://t.me/${botUsername}?start=confirm_${confirmationToken}`;
+            const denyLink = `https://t.me/${botUsername}?start=deny_${confirmationToken}`;
+            const messageText = `Salom!\n${contact.name} uchun ${amountText} ${currencyText} miqdorida qarz yozildi.\nQaytarish muddati: ${returnDateText}.\n\nUshbu xabarni qarzdorga forward qiling. Agar forwardda tugmalar ko'rinmasa, quyidagi havolalardan foydalaning:\nTasdiqlash: ${confirmLink}\nInkor qilish: ${denyLink}\n\n(${senderName} ${actionText})`;
 
             await sendTelegramConfirmationMessage({
               telegramId: creator.telegramId,
