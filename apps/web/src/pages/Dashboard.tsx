@@ -92,14 +92,17 @@ export const Dashboard = () => {
   return (
     <AppLayout>
       <div className="p-4 space-y-6">
-        <div className="flex justify-center py-1">
-          <GlassButton
-            onClick={handleCreateDebt}
-            variant="primary"
-            className="flex h-14 items-center justify-center px-8 text-base"
-          >
-            + {t('debts.add')}
-          </GlassButton>
+        <div className="space-y-3">
+          <h1 className="text-2xl font-bold text-foreground">{t('dashboard.title')}</h1>
+          <div className="flex justify-center py-2">
+            <GlassButton
+              onClick={handleCreateDebt}
+              variant="primary"
+              className="flex h-12 items-center justify-center px-6 text-sm font-semibold whitespace-nowrap"
+            >
+              + {t('debts.add')}
+            </GlassButton>
+          </div>
         </div>
 
         {/* Stats Cards */}

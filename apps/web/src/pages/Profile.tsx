@@ -65,7 +65,7 @@ export const Profile = () => {
       >
         <div className="space-y-1">
           <BackButton fallback="/" label={t('common.back')} />
-          <h1 className="text-xl font-bold text-foreground">{t('profile.title')}</h1>
+          <h1 className="text-2xl font-bold text-foreground">{t('profile.title')}</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400">{t('profile.settingsDescription')}</p>
         </div>
 

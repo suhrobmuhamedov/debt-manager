@@ -9,9 +9,9 @@ interface GlassCardProps extends HTMLAttributes<HTMLDivElement> {
 
 export const GlassCard = ({ children, className, variant = 'light', ...props }: GlassCardProps) => {
   const variants = {
-    light: 'bg-white/10 border-white/20 shadow-2xl dark:bg-black/20 dark:border-white/10 dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.4)]',
-    dark: 'bg-black/20 border-white/10 shadow-2xl text-white',
-    colored: 'bg-gradient-to-br from-blue-500/20 to-purple-500/20 border-white/30 shadow-2xl',
+    light: 'bg-white/6 border-white/15 shadow-xl dark:bg-black/15 dark:border-white/8 dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.3)]',
+    dark: 'bg-black/15 border-white/8 shadow-xl text-white',
+    colored: 'bg-gradient-to-br from-blue-400/15 to-purple-400/15 border-white/20 shadow-xl',
   };
 
   return (

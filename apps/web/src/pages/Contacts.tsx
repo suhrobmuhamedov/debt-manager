@@ -40,7 +40,7 @@ export const Contacts = () => {
         <div className="space-y-2">
           <BackButton fallback="/" label={t('common.back')} />
           <div className="flex items-center justify-between gap-2">
-            <h1 className="text-xl font-bold text-foreground">{t('contacts.title')}</h1>
+            <h1 className="text-2xl font-bold text-foreground">{t('contacts.title')}</h1>
             <div className="flex items-center gap-2">
               <Button
                 variant="outline"
@@ -54,7 +54,7 @@ export const Contacts = () => {
               </Button>
               <GlassButton
                 onClick={handleAddClick}
-                className="h-10 gap-2 px-4 text-white"
+                className="h-12 gap-2 px-6 text-sm font-semibold whitespace-nowrap"
               >
                 <PlusCircle className="h-4 w-4" />
                 {t('contacts.add')}

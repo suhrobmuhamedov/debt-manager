@@ -86,7 +86,7 @@ export const ContactDetail = () => {
           <BackButton fallback="/contacts" label={t('common.back')} />
           <GlassButton
             onClick={() => open('CREATE_DEBT', { contactId })}
-            className="h-10 gap-2 px-4 text-sm text-white"
+            className="h-12 gap-2 px-6 text-sm font-semibold whitespace-nowrap"
           >
             + {t('debts.add')}
           </GlassButton>

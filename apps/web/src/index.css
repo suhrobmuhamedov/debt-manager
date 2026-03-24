@@ -21,16 +21,16 @@
     --ring: #3b82f6;
     --radius: 0.875rem;
 
-    --glass-bg: rgba(255, 255, 255, 0.1);
-    --glass-border: rgba(255, 255, 255, 0.2);
-    --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+    --glass-bg: rgba(255, 255, 255, 0.06);
+    --glass-border: rgba(255, 255, 255, 0.15);
+    --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.12);
     --debt-given: #3b82f6;
-    --debt-given-light: rgba(59, 130, 246, 0.2);
+    --debt-given-light: rgba(59, 130, 246, 0.15);
     --debt-taken: #f97316;
-    --debt-taken-light: rgba(249, 115, 22, 0.2);
-    --bg-gradient-start: #8EC5FC;
-    --bg-gradient-mid: #A18CD1;
-    --bg-gradient-end: #E0C3FC;
+    --debt-taken-light: rgba(249, 115, 22, 0.15);
+    --bg-gradient-start: #7fc7ff;
+    --bg-gradient-mid: #b38fd9;
+    --bg-gradient-end: #e8d5ff;
   }
 
   .dark {
