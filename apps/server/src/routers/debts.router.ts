@@ -34,6 +34,13 @@ const isExpired = (expiresAt: Date | null): boolean => {
   return expiresAt.getTime() < Date.now();
 };
 
+const DEFAULT_BOT_USERNAME = 'Qarznazoratibot';
+
+const resolveBotUsername = (): string => {
+  const raw = (process.env.BOT_USERNAME || DEFAULT_BOT_USERNAME).trim();
+  return raw.replace(/^@+/, '');
+};
+
 const validateReturnDate = ({
   givenDate,
   returnDate,
@@ -564,11 +571,7 @@ export const debtsRouter = router({
         })
         .where(eq(debts.id, debtRow.debt.id));
 
-      const botUsername = process.env.BOT_USERNAME;
-      if (!botUsername) {
-        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'BOT_USERNAME is not configured' });
-      }
-
+      const botUsername = resolveBotUsername();
       const link = `https://t.me/${botUsername}?start=confirm_${token}`;
       const amountText = Number(debtRow.debt.amount).toLocaleString('uz-UZ');
       const returnDateText = formatDebtDate(debtRow.debt.returnDate);

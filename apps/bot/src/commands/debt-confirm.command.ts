@@ -13,6 +13,13 @@ const formatDate = (value: string): string => {
   return date.toLocaleDateString('uz-UZ', { day: 'numeric', month: 'long', year: 'numeric' });
 };
 
+const DEFAULT_BOT_USERNAME = 'Qarznazoratibot';
+
+const resolveBotUsername = (): string => {
+  const raw = (process.env.BOT_USERNAME || DEFAULT_BOT_USERNAME).trim();
+  return raw.replace(/^@+/, '');
+};
+
 const extractStartPayload = (ctx: Context): string => {
   const text = 'text' in (ctx.message || {}) ? String((ctx.message as { text?: string }).text || '') : '';
   const parts = text.trim().split(' ');
@@ -90,18 +97,14 @@ export const handleDebtConfirmCallback = async (ctx: Context, token: string) => 
       username: ctx.from?.username,
     });
 
-    const botUsername = process.env.BOT_USERNAME;
-    const loginDeepLink = botUsername ? `https://t.me/${botUsername}?start=login_${token}` : null;
+    const botUsername = resolveBotUsername();
+    const loginDeepLink = `https://t.me/${botUsername}?start=login_${token}`;
 
     await ctx.editMessageText(
       "✅ Qarz tasdiqlandi!\nKeyingi bosqich uchun botdagi kirish tugmasini bosing.",
-      loginDeepLink
-        ? Markup.inlineKeyboard([
-            [Markup.button.url('🤖 Botga kirish', loginDeepLink)],
-          ])
-        : Markup.inlineKeyboard([
-            [Markup.button.webApp('📊 Ilovani ochish', process.env.WEB_APP_URL!)],
-          ])
+      Markup.inlineKeyboard([
+        [Markup.button.url('🤖 Botga kirish', loginDeepLink)],
+      ])
     );
 
     await ctx.answerCbQuery('Tasdiqlandi');
