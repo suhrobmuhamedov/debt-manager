@@ -51,13 +51,13 @@ export function shareToTelegram(link: string | null | undefined, text: string): 
 
   const openedViaScheme = window.open(tgScheme, '_blank');
   if (!openedViaScheme) {
-    window.open(shareUrl, '_blank');
+    window.location.href = shareUrl;
     return;
   }
 
   setTimeout(() => {
     if (document.visibilityState === 'visible') {
-      window.open(shareUrl, '_blank');
+      window.location.href = shareUrl;
     }
   }, 700);
 }

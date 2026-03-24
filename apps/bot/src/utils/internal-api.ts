@@ -6,7 +6,7 @@ const internalClient = axios.create({
   baseURL: serverUrl,
   timeout: 12000,
   headers: {
-    INTERNAL_API_KEY: process.env.INTERNAL_API_KEY,
+    'x-internal-api-key': process.env.INTERNAL_API_KEY,
   },
 });
 

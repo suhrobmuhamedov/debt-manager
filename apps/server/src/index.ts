@@ -42,9 +42,20 @@ app.get('/health', (_req, res) => {
 // Compression
 app.use(compression());
 
+const readInternalApiKey = (req: express.Request): string => {
+  const key = req.headers['x-internal-api-key']
+    || req.headers['internal_api_key']
+    || req.headers['internal-api-key'];
+
+  if (Array.isArray(key)) {
+    return String(key[0] || '');
+  }
+
+  return String(key || '');
+};
+
 const hasValidInternalApiKey = (req: express.Request) => {
-  const headerKey = req.headers['internal_api_key'];
-  return headerKey === process.env.INTERNAL_API_KEY;
+  return readInternalApiKey(req) === process.env.INTERNAL_API_KEY;
 };
 
 // Session — MemoryStore (tez, sodda)
@@ -99,7 +110,7 @@ app.post('/api/internal/confirm-debt', express.json(), async (req, res) => {
     const result = await caller.debts.confirmDebt({
       token,
       telegramId,
-      internalApiKey: String(req.headers['internal_api_key'] || ''),
+      internalApiKey: readInternalApiKey(req),
       firstName,
       lastName,
       username,
@@ -135,7 +146,7 @@ app.post('/api/internal/deny-debt', express.json(), async (req, res) => {
       token,
       telegramId,
       denierName,
-      internalApiKey: String(req.headers['internal_api_key'] || ''),
+      internalApiKey: readInternalApiKey(req),
     });
 
     return res.json(result);

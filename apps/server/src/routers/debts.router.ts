@@ -576,7 +576,7 @@ export const debtsRouter = router({
       const denyLink = `https://t.me/${botUsername}?start=deny_${token}`;
       const amountText = Number(debtRow.debt.amount).toLocaleString('uz-UZ');
       const returnDateText = formatDebtDate(debtRow.debt.returnDate);
-      const shareText = `Salom! Men sizga ${amountText} ${debtRow.debt.currency ?? 'UZS'} qarz berdim.\nQaytarish muddati: ${returnDateText}.\n\nTasdiqlash: ${confirmLink}\nInkor qilish: ${denyLink}`;
+      const shareText = `Salom! Men sizga ${amountText} ${debtRow.debt.currency ?? 'UZS'} qarz berdim.\nQaytarish muddati: ${returnDateText}.\n\n[Tasdiqlash](${confirmLink})\n[Inkor qilish](${denyLink})\n\nAgar markdown ishlamasa:\nTasdiqlash: ${confirmLink}\nInkor qilish: ${denyLink}`;
 
       return { token, link: confirmLink, confirmLink, denyLink, shareText, expiresAt };
     }),
