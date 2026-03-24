@@ -13,6 +13,7 @@ export type DebtFormValues = {
   givenDate: string;
   returnDate: string;
   note?: string;
+  twoWayConfirmation: boolean;
 };
 
 type ContactOption = {
@@ -86,6 +87,7 @@ export const DebtForm = ({
   const [givenDate, setGivenDate] = useState<string>(today);
   const [returnDate, setReturnDate] = useState<string>('');
   const [note, setNote] = useState<string>('');
+  const [twoWayConfirmation, setTwoWayConfirmation] = useState(false);
   const [errors, setErrors] = useState<{ amount?: string; returnDate?: string; contactId?: string }>({});
   const [showQuickAdd, setShowQuickAdd] = useState(false);
   const [quickName, setQuickName] = useState('');
@@ -145,6 +147,7 @@ export const DebtForm = ({
       givenDate,
       returnDate,
       note: note.trim() || undefined,
+      twoWayConfirmation,
     });
   };
 
@@ -327,6 +330,21 @@ export const DebtForm = ({
           rows={3}
           className="border-sky-200/65 bg-white/85 dark:border-slate-500/50 dark:bg-slate-700/45"
         />
+      </div>
+
+      <div className="rounded-xl border border-sky-200/60 bg-sky-50/55 p-3 dark:border-slate-500/40 dark:bg-slate-700/35">
+        <label className="flex cursor-pointer items-start gap-3">
+          <input
+            type="checkbox"
+            checked={twoWayConfirmation}
+            onChange={(event) => setTwoWayConfirmation(event.target.checked)}
+            className="mt-0.5 h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary"
+          />
+          <div>
+            <p className="text-sm font-medium text-foreground">{t('debts.twoWayConfirmLabel')}</p>
+            <p className="text-xs text-muted-foreground">{t('debts.twoWayConfirmHint')}</p>
+          </div>
+        </label>
       </div>
 
       <div className="flex gap-2 pt-1">

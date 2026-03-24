@@ -68,6 +68,30 @@ const formatDebtDate = (date: Date | string | null): string => {
   });
 };
 
+const normalizePhoneForLookup = (value?: string | null): string => {
+  if (!value) {
+    return '';
+  }
+  return value.replace(/\D/g, '');
+};
+
+const findUserByPhone = async (phone?: string | null) => {
+  const normalizedPhone = normalizePhoneForLookup(phone);
+  if (!normalizedPhone) {
+    return null;
+  }
+
+  const [matched] = await db
+    .select()
+    .from(users)
+    .where(
+      sql`REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(${users.phone}, ' ', ''), '+', ''), '-', ''), '(', ''), ')', '') = ${normalizedPhone}`
+    )
+    .limit(1);
+
+  return matched ?? null;
+};
+
 const sendTelegramText = async (telegramId: string, text: string): Promise<void> => {
   const botToken = process.env.BOT_TOKEN;
   if (!botToken || !telegramId) {
@@ -82,6 +106,48 @@ const sendTelegramText = async (telegramId: string, text: string): Promise<void>
     });
   } catch (error) {
     console.error('Telegram notification failed:', error);
+  }
+};
+
+const sendTelegramConfirmationMessage = async ({
+  telegramId,
+  token,
+  text,
+}: {
+  telegramId: string;
+  token: string;
+  text: string;
+}): Promise<void> => {
+  const botToken = process.env.BOT_TOKEN;
+  if (!botToken || !telegramId) {
+    return;
+  }
+
+  try {
+    const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: telegramId,
+        text,
+        reply_markup: {
+          inline_keyboard: [
+            [
+              { text: 'Tasdiqlash', callback_data: `debt_confirm_${token}` },
+              { text: 'Inkor qilish', callback_data: `debt_deny_${token}` },
+            ],
+          ],
+        },
+      }),
+    });
+
+    if (!response.ok) {
+      const bodyText = await response.text();
+      throw new Error(`Telegram API error: ${response.status} ${bodyText}`);
+    }
+  } catch (error) {
+    console.error('Telegram confirmation notification failed:', error);
+    throw error;
   }
 };
 
@@ -243,9 +309,11 @@ export const debtsRouter = router({
         givenDate: z.string(),
         returnDate: z.string().min(1, 'debts.returnDateRequired'),
         note: z.string().max(500).optional(),
+        twoWayConfirmation: z.boolean().default(false),
       })
     )
     .mutation(async ({ input, ctx }) => {
+      const requestId = crypto.randomUUID();
       const userId = ctx.userId!;
       const givenDate = toDateOnly(input.givenDate);
       const returnDate = toDateOnly(input.returnDate);
@@ -261,39 +329,111 @@ export const debtsRouter = router({
         throw new TRPCError({ code: 'NOT_FOUND' });
       }
 
-      const result = await db
-        .insert(debts)
-        .values({
-          userId,
-          contactId: input.contactId,
-          amount: input.amount.toString(),
-          paidAmount: '0',
-          currency: input.currency,
-          type: input.type,
-          status: 'pending',
-          confirmationStatus: 'not_required',
-          givenDate,
-          returnDate,
-          note: input.note,
-        })
-        .execute();
+      const createdDebtUuid = crypto.randomUUID();
+      const requiresTwoWayConfirmation = input.twoWayConfirmation;
+      const confirmationToken = requiresTwoWayConfirmation
+        ? crypto.randomUUID().replace(/-/g, '')
+        : null;
+      const confirmationExpiresAt = requiresTwoWayConfirmation
+        ? new Date(Date.now() + 48 * 60 * 60 * 1000)
+        : null;
 
-      const insertedId = (result as { insertId?: number }).insertId;
-      if (!insertedId) {
-        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+      try {
+        await db
+          .insert(debts)
+          .values({
+            uuid: createdDebtUuid,
+            userId,
+            contactId: input.contactId,
+            amount: input.amount.toString(),
+            paidAmount: '0',
+            currency: input.currency,
+            type: input.type,
+            status: 'pending',
+            confirmationStatus: requiresTwoWayConfirmation ? 'pending' : 'not_required',
+            confirmationToken,
+            confirmationExpiresAt,
+            givenDate,
+            returnDate,
+            note: input.note,
+          })
+          .execute();
+      } catch (error) {
+        console.error(`[debts.create:${requestId}] insert failed`, error);
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Debt create failed' });
       }
 
       const [inserted] = await db
         .select()
         .from(debts)
-        .where(eq(debts.id, insertedId))
+        .where(and(eq(debts.uuid, createdDebtUuid), eq(debts.userId, userId), isNull(debts.deletedAt)))
         .limit(1);
 
       if (!inserted) {
-        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        console.error(`[debts.create:${requestId}] created debt not found after insert`);
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Debt created but not readable' });
       }
 
-      return inserted;
+      let telegramNotification: {
+        attempted: boolean;
+        sent: boolean;
+        reason: string | null;
+      } = {
+        attempted: false,
+        sent: false,
+        reason: null,
+      };
+
+      if (requiresTwoWayConfirmation && confirmationToken) {
+        telegramNotification.attempted = true;
+
+        const [creator] = await db
+          .select()
+          .from(users)
+          .where(eq(users.id, userId))
+          .limit(1);
+
+        const receiverUser = await findUserByPhone(contact.phone);
+
+        if (!receiverUser?.telegramId) {
+          telegramNotification.reason = 'receiver_telegram_not_found';
+          console.warn(
+            `[debts.create:${requestId}] two-way confirmation requested, but receiver telegram not found (contactId=${contact.id})`
+          );
+        } else {
+          try {
+            const senderName = creator?.firstName || 'Foydalanuvchi';
+            const amountText = Number(input.amount).toLocaleString('uz-UZ');
+            const currencyText = input.currency || 'UZS';
+            const actionText = input.type === 'given' ? 'qarz berganligini' : 'qarz olganligini';
+            const messageText = `Salom Qarz nazorati tizimidan ismi ${senderName} sizga qarz miqdori ${amountText} valyuta birligi ${currencyText} ${actionText} bildiradi.`;
+
+            await sendTelegramConfirmationMessage({
+              telegramId: receiverUser.telegramId,
+              token: confirmationToken,
+              text: messageText,
+            });
+
+            telegramNotification.sent = true;
+            console.info(
+              `[debts.create:${requestId}] confirmation message sent to telegramId=${receiverUser.telegramId}`
+            );
+          } catch (error) {
+            telegramNotification.reason = 'telegram_send_failed';
+            console.error(`[debts.create:${requestId}] confirmation message failed`, error);
+          }
+        }
+      }
+
+      return {
+        ...inserted,
+        confirmation: {
+          required: requiresTwoWayConfirmation,
+          token: confirmationToken,
+          expiresAt: confirmationExpiresAt,
+          telegramNotification,
+        },
+      };
     }),
 
   update: protectedProcedure

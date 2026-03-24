@@ -90,11 +90,18 @@ export const handleDebtConfirmCallback = async (ctx: Context, token: string) => 
       username: ctx.from?.username,
     });
 
+    const botUsername = process.env.BOT_USERNAME;
+    const loginDeepLink = botUsername ? `https://t.me/${botUsername}?start=login_${token}` : null;
+
     await ctx.editMessageText(
-      "✅ Qarz tasdiqlandi!\nQarz daftaringizga avtomatik qo'shildi.",
-      Markup.inlineKeyboard([
-        [Markup.button.webApp('📊 Ilovani ochish', process.env.WEB_APP_URL!)],
-      ])
+      "✅ Qarz tasdiqlandi!\nKeyingi bosqich uchun botdagi kirish tugmasini bosing.",
+      loginDeepLink
+        ? Markup.inlineKeyboard([
+            [Markup.button.url('🤖 Botga kirish', loginDeepLink)],
+          ])
+        : Markup.inlineKeyboard([
+            [Markup.button.webApp('📊 Ilovani ochish', process.env.WEB_APP_URL!)],
+          ])
     );
 
     await ctx.answerCbQuery('Tasdiqlandi');

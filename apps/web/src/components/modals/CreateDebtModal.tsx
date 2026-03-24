@@ -22,13 +22,21 @@ export const CreateDebtModal = () => {
 
       const contactName = contactsQuery.data?.find((item) => item.id === variables.contactId)?.name || 'Contact';
       close();
-      open('DEBT_CONFIRMATION', {
-        debtId: created.id,
-        contactName,
-        amount: variables.amount,
-        currency: variables.currency,
-        returnDate: variables.returnDate,
-      });
+
+      const shouldOpenFallbackConfirmation =
+        variables.twoWayConfirmation &&
+        !created.confirmation?.telegramNotification?.sent;
+
+      if (shouldOpenFallbackConfirmation) {
+        toast.warning(t('debts.confirmFallbackManual'));
+        open('DEBT_CONFIRMATION', {
+          debtId: created.id,
+          contactName,
+          amount: variables.amount,
+          currency: variables.currency,
+          returnDate: variables.returnDate,
+        });
+      }
     },
     onError: (error) => {
       toast.error(error.message || t('common.error'));
