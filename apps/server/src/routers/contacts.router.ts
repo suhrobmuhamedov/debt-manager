@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { eq, and, isNull, inArray, sql, not } from 'drizzle-orm';
 import { protectedProcedure, router } from '../trpc';
 import { db } from '../db';
-import { contacts, debts } from '../db/schema';
+import { contacts, debts, payments } from '../db/schema';
 
 const phoneRegex = /^\+?\d{7,15}$/;
 
@@ -81,6 +81,30 @@ export const contactsRouter = router({
         )
         .orderBy(sql`${debts.createdAt} DESC`);
 
+      const debtIds = contactDebts.map((debt) => debt.id);
+      const paidAtRows = debtIds.length
+        ? await db
+            .select({
+              debtId: payments.debtId,
+              paidAt: sql<Date | null>`MAX(${payments.paymentDate})`,
+            })
+            .from(payments)
+            .where(inArray(payments.debtId, debtIds))
+            .groupBy(payments.debtId)
+        : [];
+
+      const paidAtByDebtId = new Map<number, Date | null>(
+        paidAtRows.map((row) => [row.debtId, row.paidAt])
+      );
+
+      const contactDebtsWithPaidAt = contactDebts.map((debt) => {
+        const paidAt = paidAtByDebtId.get(debt.id) ?? (debt.status === 'paid' ? debt.updatedAt : null);
+        return {
+          ...debt,
+          paidAt: paidAt ? new Date(paidAt).toISOString().split('T')[0] : null,
+        };
+      });
+
       const stats = contactDebts.reduce(
         (acc, debt) => {
           const amount = Number(debt.amount);
@@ -105,7 +129,7 @@ export const contactsRouter = router({
       return {
         contact,
         stats,
-        debts: contactDebts,
+        debts: contactDebtsWithPaidAt,
       };
     }),
 

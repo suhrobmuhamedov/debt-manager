@@ -13,6 +13,7 @@ interface DebtItemProps {
   type: 'given' | 'taken';
   status: 'pending' | 'partial' | 'paid' | null;
   returnDate: string | null;
+  paidAt?: string | null;
   confirmationStatus?: 'not_required' | 'pending' | 'confirmed' | 'denied' | null;
   confirmationExpiresAt?: string | null;
   onClick?: () => void;
@@ -25,6 +26,7 @@ export const DebtItem = ({
   type,
   status,
   returnDate,
+  paidAt,
   confirmationStatus,
   onClick
 }: DebtItemProps) => {
@@ -68,6 +70,10 @@ export const DebtItem = ({
   const deadlineLabel = dayDiff < 0
     ? `${Math.abs(dayDiff)} ${t('debts.daysOverdue')}`
     : `${dayDiff} ${t('debts.daysLeft')}`;
+  const paidDate = paidAt ? new Date(paidAt) : null;
+  const paidDateLabel = paidDate && !Number.isNaN(paidDate.getTime())
+    ? paidDate.toLocaleDateString('ru-RU')
+    : '—';
 
   const confirmationBadge = (() => {
     if (!confirmationStatus || confirmationStatus === 'not_required') {
@@ -117,15 +123,26 @@ export const DebtItem = ({
       <div className={`absolute -right-4 -top-4 h-24 w-24 rounded-full blur-3xl opacity-45 ${type === 'given' ? 'bg-blue-400' : 'bg-orange-400'}`} />
       {isPaid ? (
         <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-white/35 backdrop-blur-xl dark:bg-black/40">
-          <span
-            className={`rounded-full px-4 py-1.5 text-sm font-semibold ${
-              paidIsTaken
-                ? 'border border-red-500/60 bg-red-500/20 text-red-700 dark:text-red-300'
-                : 'border border-emerald-500/60 bg-emerald-500/20 text-emerald-700 dark:text-emerald-300'
-            }`}
-          >
-            To'landi
-          </span>
+          <div className="flex flex-col items-center gap-1.5">
+            <span
+              className={`rounded-full px-4 py-1.5 text-sm font-semibold ${
+                paidIsTaken
+                  ? 'border border-red-500/60 bg-red-500/20 text-red-700 dark:text-red-300'
+                  : 'border border-emerald-500/60 bg-emerald-500/20 text-emerald-700 dark:text-emerald-300'
+              }`}
+            >
+              To'landi
+            </span>
+            <span
+              className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                paidIsTaken
+                  ? 'border border-red-500/50 bg-red-500/15 text-red-700 dark:text-red-300'
+                  : 'border border-emerald-500/50 bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'
+              }`}
+            >
+              {paidDateLabel}
+            </span>
+          </div>
         </div>
       ) : null}
       <CardContent className="relative z-10 p-0">
@@ -143,9 +160,15 @@ export const DebtItem = ({
               <p>
                 {t('debts.returnDate')}: {deadline ? formatDate(deadline) : '—'}
               </p>
-              <span className={`inline-flex rounded-md px-2 py-0.5 text-xs font-medium ${isOverdue ? 'bg-red-600 text-white' : 'bg-blue-600 text-white'}`}>
-                {deadlineLabel}
-              </span>
+              {isPaid ? (
+                <span className={`inline-flex rounded-md px-2 py-0.5 text-xs font-medium ${paidIsTaken ? 'bg-red-600 text-white' : 'bg-green-600 text-white'}`}>
+                  To'langan sana: {paidDateLabel}
+                </span>
+              ) : (
+                <span className={`inline-flex rounded-md px-2 py-0.5 text-xs font-medium ${isOverdue ? 'bg-red-600 text-white' : 'bg-blue-600 text-white'}`}>
+                  {deadlineLabel}
+                </span>
+              )}
             </div>
           </div>
           <GlassButton variant="primary" className="ml-2 px-3 py-2 text-sm">

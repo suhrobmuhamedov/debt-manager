@@ -153,8 +153,31 @@ export const debtsRouter = router({
       const lastDebt = hasMore ? sliced[sliced.length - 1]?.debt : null;
       const nextCursor = lastDebt?.createdAt ? lastDebt.createdAt.getTime() : null;
 
+      const debtIds = sliced.map((row) => row.debt.id);
+      const paidAtRows = debtIds.length
+        ? await db
+            .select({
+              debtId: payments.debtId,
+              paidAt: sql<Date | null>`MAX(${payments.paymentDate})`,
+            })
+            .from(payments)
+            .where(inArray(payments.debtId, debtIds))
+            .groupBy(payments.debtId)
+        : [];
+
+      const paidAtByDebtId = new Map<number, Date | null>(
+        paidAtRows.map((row) => [row.debtId, row.paidAt])
+      );
+
       return {
-        items: sliced.map((row) => ({ ...row.debt, contactName: row.contactName })),
+        items: sliced.map((row) => {
+          const paidAt = paidAtByDebtId.get(row.debt.id) ?? (row.debt.status === 'paid' ? row.debt.updatedAt : null);
+          return {
+            ...row.debt,
+            contactName: row.contactName,
+            paidAt: paidAt ? new Date(paidAt).toISOString().split('T')[0] : null,
+          };
+        }),
         nextCursor,
       };
     }),

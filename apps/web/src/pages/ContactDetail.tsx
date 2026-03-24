@@ -167,6 +167,7 @@ export const ContactDetail = () => {
                 type={debt.type}
                 status={debt.status}
                 returnDate={debt.returnDate ? String(debt.returnDate).split('T')[0] : null}
+                paidAt={debt.paidAt ? String(debt.paidAt).split('T')[0] : null}
                 onClick={() => open('EDIT_DEBT', { debtId: debt.id })}
               />
             ))

@@ -1,7 +1,7 @@
 import { protectedProcedure, router } from '../trpc';
 import { db } from '../db';
-import { debts, contacts } from '../db/schema';
-import { eq, and, isNull } from 'drizzle-orm';
+import { debts, contacts, payments } from '../db/schema';
+import { eq, and, isNull, inArray, sql } from 'drizzle-orm';
 
 export const dashboardRouter = router({
   getStats: protectedProcedure.query(async ({ ctx }) => {
@@ -40,25 +40,47 @@ export const dashboardRouter = router({
     const overdueAmount = overdueDebts.reduce((sum, d) => sum + parseFloat(d.debt.amount), 0);
 
     // Recent debts (last 5)
-    const recentDebts = allDebts
+    const recentDebtRows = allDebts
       .sort((a, b) => {
         const aTime = a.debt.createdAt ? a.debt.createdAt.getTime() : 0;
         const bTime = b.debt.createdAt ? b.debt.createdAt.getTime() : 0;
         return bTime - aTime;
       })
-      .slice(0, 5)
-      .map(d => ({
-        id: d.debt.id,
-        contactName: d.contactName || 'Unknown',
-        amount: parseFloat(d.debt.amount),
-        currency: d.debt.currency,
-        type: d.debt.type,
-        status: d.debt.status,
-        confirmationStatus: d.debt.confirmationStatus,
-        confirmationExpiresAt: d.debt.confirmationExpiresAt ? d.debt.confirmationExpiresAt.toISOString() : null,
-        linkedDebtId: d.debt.linkedDebtId,
-        returnDate: d.debt.returnDate ? d.debt.returnDate.toISOString().split('T')[0] : null,
-      }));
+      .slice(0, 5);
+
+    const recentDebtIds = recentDebtRows.map((row) => row.debt.id);
+    const paidAtRows = recentDebtIds.length
+      ? await db
+          .select({
+            debtId: payments.debtId,
+            paidAt: sql<Date | null>`MAX(${payments.paymentDate})`,
+          })
+          .from(payments)
+          .where(inArray(payments.debtId, recentDebtIds))
+          .groupBy(payments.debtId)
+      : [];
+
+    const paidAtByDebtId = new Map<number, Date | null>(
+      paidAtRows.map((row) => [row.debtId, row.paidAt])
+    );
+
+    const recentDebts = recentDebtRows
+      .map((d) => {
+        const paidAt = paidAtByDebtId.get(d.debt.id) ?? (d.debt.status === 'paid' ? d.debt.updatedAt : null);
+        return {
+          id: d.debt.id,
+          contactName: d.contactName || 'Unknown',
+          amount: parseFloat(d.debt.amount),
+          currency: d.debt.currency,
+          type: d.debt.type,
+          status: d.debt.status,
+          paidAt: paidAt ? new Date(paidAt).toISOString().split('T')[0] : null,
+          confirmationStatus: d.debt.confirmationStatus,
+          confirmationExpiresAt: d.debt.confirmationExpiresAt ? d.debt.confirmationExpiresAt.toISOString() : null,
+          linkedDebtId: d.debt.linkedDebtId,
+          returnDate: d.debt.returnDate ? d.debt.returnDate.toISOString().split('T')[0] : null,
+        };
+      });
 
     return {
       totalGiven,
