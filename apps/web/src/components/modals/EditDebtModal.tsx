@@ -34,6 +34,21 @@ const formatDateDisplay = (date: Date | string | null | undefined): string => {
   });
 };
 
+const formatLongDateUz = (date: Date | string | null | undefined): string => {
+  if (!date) {
+    return '-';
+  }
+  const d = new Date(date);
+  if (Number.isNaN(d.getTime())) {
+    return '-';
+  }
+  return d.toLocaleDateString('uz-UZ', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+};
+
 export const EditDebtModal = () => {
   const { type, data, close } = useModalStore();
   const isOpen = type === 'EDIT_DEBT';
@@ -171,6 +186,23 @@ export const EditDebtModal = () => {
   const canSubmit = useMemo(() => {
     return Boolean(returnDate) && !updateMutation.isPending && !readOnlyMode;
   }, [returnDate, updateMutation.isPending, readOnlyMode]);
+
+  const paidDate = useMemo(() => {
+    if (!debt || debt.status !== 'paid') {
+      return null;
+    }
+
+    const paymentDates = payments
+      .map((entry) => new Date(entry.paymentDate))
+      .filter((d) => !Number.isNaN(d.getTime()))
+      .sort((a, b) => b.getTime() - a.getTime());
+
+    if (paymentDates.length > 0) {
+      return paymentDates[0];
+    }
+
+    return debt.updatedAt ? new Date(debt.updatedAt) : null;
+  }, [debt, payments]);
 
   const handleApplyAdjustment = () => {
     const adjustment = Number(adjustmentValue) || 0;
@@ -436,6 +468,16 @@ export const EditDebtModal = () => {
                     />
                   </div>
                 )}
+
+                {isPaid ? (
+                  <>
+                    <div className="h-px bg-white/30 dark:bg-white/10" />
+                    <div className="space-y-1 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs dark:border-emerald-500/40 dark:bg-emerald-500/15">
+                      <p className="text-foreground">Qaytarish sanasi: {formatLongDateUz(returnDate || debt.returnDate)}</p>
+                      <p className="text-foreground">To'langan sana: {formatDateDisplay(paidDate)}</p>
+                    </div>
+                  </>
+                ) : null}
               </div>
 
               {/* Note */}

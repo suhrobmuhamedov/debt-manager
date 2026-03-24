@@ -122,7 +122,7 @@ export const DebtItem = ({
     >
       <div className={`absolute -right-4 -top-4 h-24 w-24 rounded-full blur-3xl opacity-45 ${type === 'given' ? 'bg-blue-400' : 'bg-orange-400'}`} />
       {isPaid ? (
-        <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-white/35 backdrop-blur-xl dark:bg-black/40">
+        <div className="pointer-events-none absolute inset-0 z-10 flex justify-center bg-white/45 pt-3 backdrop-blur-xl dark:bg-black/45">
           <div className="flex flex-col items-center gap-1.5">
             <span
               className={`rounded-full px-4 py-1.5 text-sm font-semibold ${
@@ -156,20 +156,16 @@ export const DebtItem = ({
             <div className={`numeric-text text-lg font-semibold ${getTypeColor()}`}>
               {type === 'given' ? '+' : '-'}{formatCurrency(amount, currency || 'UZS')}
             </div>
-            <div className="mt-1 text-sm text-gray-600 dark:text-gray-300">
-              <p>
-                {t('debts.returnDate')}: {deadline ? formatDate(deadline) : '—'}
-              </p>
-              {isPaid ? (
-                <span className={`inline-flex rounded-md px-2 py-0.5 text-xs font-medium ${paidIsTaken ? 'bg-red-600 text-white' : 'bg-green-600 text-white'}`}>
-                  To'langan sana: {paidDateLabel}
-                </span>
-              ) : (
+            {!isPaid ? (
+              <div className="mt-1 text-sm text-gray-600 dark:text-gray-300">
+                <p>
+                  {t('debts.returnDate')}: {deadline ? formatDate(deadline) : '—'}
+                </p>
                 <span className={`inline-flex rounded-md px-2 py-0.5 text-xs font-medium ${isOverdue ? 'bg-red-600 text-white' : 'bg-blue-600 text-white'}`}>
                   {deadlineLabel}
                 </span>
-              )}
-            </div>
+              </div>
+            ) : null}
           </div>
           <GlassButton variant="primary" className="ml-2 px-3 py-2 text-sm">
             →
