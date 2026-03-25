@@ -64,7 +64,7 @@ export async function startCommand(ctx: Context) {
 
   const message = `Salom ${firstName}! 👋
 
-💳 Qarz Daftarim — shaxsiy qarz
+💳 Qarz Nazorati — shaxsiy qarz
 boshqaruv ilovangiz.
 
 ✅ Qarzlaringizni kiriting

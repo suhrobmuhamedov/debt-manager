@@ -5,24 +5,19 @@ export const mainKeyboard = Markup.inlineKeyboard([
     Markup.button.webApp('📊 Ilovani ochish', process.env.WEB_APP_URL!),
   ],
   [
-    Markup.button.callback('💰 Balans', 'show_balance'),
-    Markup.button.callback('❓ Yordam', 'show_help'),
+    Markup.button.callback('💰 Ma\'lumot', 'show_balance'),
+    Markup.button.callback('✍️ Taklif va shikoyat', 'show_help'),
   ],
 ]);
 
 export const helpText = `
-🤖 Debt Manager Bot yordami
+✍️ Taklif va shikoyat
 
-Bu bot sizga qarzlarni boshqarishda yordam beradi:
-- Qarz berish va olishni kuzatish
-- To'lovlarni qayd qilish
-- Eslatmalar olish
+Ilovadagi xatolik, taklif yoki shikoyatlaringizni quyidagi manzilga yuboring:
+@Muhamedov_S
 
-Qanday ishlatish:
-1. /start buyrug'ini bosing
-2. "📊 Ilovani ochish" tugmasini bosing
-3. Web ilovada qarzlarni qo'shing va boshqaring
-
-Muammo bo'lsa:
-@Muhamedov_S ga yozing
+Xabaringizda iloji bo'lsa quyidagilarni yozing:
+- Muammo nimada
+- Qaysi sahifada yuz berdi
+- Telefon modeli (ixtiyoriy)
 `;

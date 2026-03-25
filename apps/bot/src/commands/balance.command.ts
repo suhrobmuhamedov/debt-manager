@@ -55,12 +55,11 @@ Ilovani oching va boshlang! 👇`;
     }
 
     // Assuming the response has: totalGiven, totalTaken, overdueCount, pendingCount
-    const message = `💰 Sizning balans:
+    const message = `💰 Umumiy Holat:
 
 📤 Berilgan qarzlar: ${data.totalGiven?.toLocaleString() || 0} so'm
 📥 Olingan qarzlar: ${data.totalTaken?.toLocaleString() || 0} so'm
 ⚠️ Muddati o'tgan: ${data.overdueCount || 0} ta
-⏳ Kutayotgan: ${data.pendingCount || 0} ta
 
 📊 Batafsil ko'rish uchun ilovani oching`;
 

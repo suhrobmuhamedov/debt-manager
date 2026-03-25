@@ -121,7 +121,6 @@ export const buildForwardableReminderMessage = (payload: {
 
 	return [
 		intro,
-		`🧾 Turi: ${escapeHtml(formatDebtTypeLabel(payload.type))}`,
 		`👤 Ism: ${escapeHtml(payload.contactName)}`,
 		`📞 Telefon: ${escapeHtml(payload.contactPhone || 'Kiritilmagan')}`,
 		`${buildUsernameLine(payload.contactUsername)}`.trim(),
