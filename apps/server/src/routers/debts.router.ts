@@ -171,7 +171,7 @@ export const debtsRouter = router({
     .input(
       z.object({
         cursor: z.number().optional(),
-        limit: z.number().min(1).max(50).default(20),
+        limit: z.number().min(1).max(500).default(50),
         status: z.enum(['pending', 'partial', 'paid']).optional(),
         type: z.enum(['given', 'taken']).optional(),
       })

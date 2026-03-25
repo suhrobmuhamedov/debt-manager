@@ -15,7 +15,7 @@ export const Debts = () => {
   const { open } = useModalStore();
   const [tab, setTab] = useState<TabFilter>('all');
 
-  const debtsQuery = trpc.debts.getAll.useQuery({ limit: 200 });
+  const debtsQuery = trpc.debts.getAll.useQuery({ limit: 500 });
   const reminderMutation = trpc.debts.sendReminder.useMutation({
     onSuccess: (result) => {
       if (result.sentTo === 'counterparty') {
