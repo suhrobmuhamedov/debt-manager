@@ -39,6 +39,19 @@ export const ContactDetail = () => {
       toast.error(error.message || t('common.error'));
     },
   });
+  const reminderMutation = trpc.debts.sendReminder.useMutation({
+    onSuccess: (result) => {
+      if (result.sentTo === 'counterparty') {
+        toast.success(t('debts.reminderSentAuto', { name: result.recipientName }));
+        return;
+      }
+
+      toast.success(t('debts.reminderSentSelf'));
+    },
+    onError: (error) => {
+      toast.error(error.message || t('common.error'));
+    },
+  });
 
   const handleDelete = async () => {
     await deleteMutation.mutateAsync({ id: contactId });
@@ -171,6 +184,7 @@ export const ContactDetail = () => {
                 confirmationStatus={debt.confirmationStatus}
                 confirmationExpiresAt={debt.confirmationExpiresAt ? String(debt.confirmationExpiresAt) : null}
                 onClick={() => open('EDIT_DEBT', { debtId: debt.id })}
+                onReminder={debt.status !== 'paid' ? () => reminderMutation.mutate({ debtId: debt.id }) : undefined}
               />
             ))
           )}

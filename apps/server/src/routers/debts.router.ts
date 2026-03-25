@@ -638,7 +638,7 @@ export const debtsRouter = router({
         throw new TRPCError({ code: 'NOT_FOUND' });
       }
 
-      if (debtRow.debt.confirmationStatus === 'confirmed' || debtRow.debt.confirmationStatus === 'denied') {
+      if (debtRow.debt.confirmationStatus === 'confirmed') {
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'Debt already resolved' });
       }
 

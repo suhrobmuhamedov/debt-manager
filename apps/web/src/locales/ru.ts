@@ -94,6 +94,7 @@ export const ru = {
     confirmExpiry: 'Ссылка действительна 48 часов',
     linkSent: 'Ссылка отправлена',
     resendLink: 'Отправить повторно',
+    sendForConfirmation: 'Отправить на подтверждение',
     linkedDebt: 'Подтверждено с двух сторон',
     confirmedBtn: 'Подтверждено',
     denyBtn: 'Оспорить',

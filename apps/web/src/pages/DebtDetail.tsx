@@ -67,6 +67,7 @@ export const DebtDetail = () => {
 
   const debt = debtQuery.data.debt;
   const amount = Math.max(Number(debt.amount) - Number(debt.paidAmount), 0);
+  const canSendConfirmation = debt.confirmationStatus !== 'confirmed';
 
   const renderConfirmationBanner = () => {
     if (debt.confirmationStatus === 'pending') {
@@ -131,23 +132,33 @@ export const DebtDetail = () => {
 
         <Card>
           <CardContent className="space-y-2 p-4">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-2">
               <h1 className="text-lg font-bold text-foreground">{debtQuery.data.contact?.name || 'Unknown'}</h1>
-              <Badge variant={debt.status === 'paid' ? 'secondary' : 'outline'}>
-                {debt.status === 'paid' ? t('debts.paid') : debt.status === 'partial' ? t('debts.partial') : t('debts.pending')}
-              </Badge>
+              {debt.status === 'paid' ? <Badge variant="secondary">{t('debts.paid')}</Badge> : null}
             </div>
-            <p className="text-xl font-bold text-foreground">{formatCurrency(amount, debt.currency || 'UZS')}</p>
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-xl font-bold text-foreground">{formatCurrency(amount, debt.currency || 'UZS')}</p>
+              {!debt.status || debt.status !== 'paid' ? (
+                <Button
+                  variant="outline"
+                  className="h-10 px-3"
+                  onClick={() => reminderMutation.mutate({ debtId: debt.id })}
+                  disabled={reminderMutation.isPending}
+                >
+                  {t('debts.remind')}
+                </Button>
+              ) : null}
+            </div>
             <p className="text-sm text-muted-foreground">{t('debts.givenDate')}: {formatDate(debt.givenDate)}</p>
             <p className="text-sm text-muted-foreground">{t('debts.returnDate')}: {formatDate(debt.returnDate)}</p>
-            {debt.status !== 'paid' ? (
+            {canSendConfirmation ? (
               <Button
                 variant="outline"
                 className="mt-3 h-11 w-full"
-                onClick={() => reminderMutation.mutate({ debtId: debt.id })}
-                disabled={reminderMutation.isPending}
+                onClick={() => generateLinkMutation.mutate({ debtId: debt.id })}
+                disabled={generateLinkMutation.isPending}
               >
-                {t('debts.remind')}
+                {t('debts.sendForConfirmation')}
               </Button>
             ) : null}
           </CardContent>
