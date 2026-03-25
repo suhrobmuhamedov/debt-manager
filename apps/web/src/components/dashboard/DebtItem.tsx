@@ -99,7 +99,7 @@ export const DebtItem = ({
       return <span className="inline-flex items-center gap-1 animate-pulse rounded-full bg-yellow-300 px-2 py-1 text-xs font-semibold text-black">⏳ {t('debts.confirmPending')}</span>;
     }
     if (confirmationStatus === 'confirmed') {
-      return <span className="inline-flex items-center gap-1 rounded-full bg-green-600 px-2 py-1 text-xs font-semibold text-white">✅ {t('debts.confirmConfirmed')}</span>;
+      return <span className="inline-flex items-center gap-1 rounded-full bg-green-600 px-2 py-1 text-xs font-semibold text-white">{t('debts.confirmConfirmed')}</span>;
     }
     return <span className="inline-flex items-center gap-1 rounded-full bg-orange-500 px-2 py-1 text-xs font-semibold text-white">⚠️ {t('debts.confirmDenied')}</span>;
   })();
@@ -185,7 +185,7 @@ export const DebtItem = ({
               </div>
             ) : null}
           </div>
-          <div className="ml-2 flex flex-col-reverse items-stretch gap-1">
+          <div className="ml-2 flex items-center">
             {!isPaid && onReminder ? (
               <GlassButton
                 variant="glass"
@@ -198,9 +198,6 @@ export const DebtItem = ({
                 {t('debts.remind')}
               </GlassButton>
             ) : null}
-            <GlassButton variant="primary" className="px-3 py-2 text-sm">
-              →
-            </GlassButton>
           </div>
         </div>
       </CardContent>
