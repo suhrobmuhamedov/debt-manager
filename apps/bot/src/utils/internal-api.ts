@@ -51,3 +51,14 @@ export const denyDebtByToken = async (payload: {
   const response = await internalClient.post('/api/internal/deny-debt', payload);
   return response.data as { success: boolean };
 };
+
+export const syncBotUser = async (payload: {
+  telegramId: string;
+  firstName: string;
+  lastName?: string;
+  username?: string;
+  languageCode?: string;
+}) => {
+  const response = await internalClient.post('/api/internal/bot-user-sync', payload);
+  return response.data as { success: boolean; userId: number | null; created: boolean };
+};

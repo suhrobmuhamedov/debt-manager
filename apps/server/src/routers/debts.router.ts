@@ -5,6 +5,11 @@ import { eq, and, isNull, inArray, sql, lt } from 'drizzle-orm';
 import { protectedProcedure, publicProcedure, router } from '../trpc';
 import { db } from '../db';
 import { debts, contacts, payments, users } from '../db/schema';
+import {
+  buildDirectReminderMessage,
+  buildForwardableReminderMessage,
+  sendTelegramHtmlMessage,
+} from '../services/notification.service';
 
 type ConfirmActor = {
   telegramId: string;
@@ -73,6 +78,10 @@ const formatDebtDate = (date: Date | string | null): string => {
     month: 'long',
     year: 'numeric',
   });
+};
+
+const getFullName = (firstName?: string | null, lastName?: string | null): string => {
+  return [firstName, lastName].filter(Boolean).join(' ').trim() || 'Foydalanuvchi';
 };
 
 const sendTelegramText = async (telegramId: string, text: string): Promise<void> => {
@@ -273,6 +282,114 @@ export const debtsRouter = router({
 
     return overdue.map((row) => ({ ...row.debt, contactName: row.contactName }));
   }),
+
+  sendReminder: protectedProcedure
+    .input(z.object({ debtId: z.number() }))
+    .mutation(async ({ input, ctx }) => {
+      const userId = ctx.userId!;
+
+      const [row] = await db
+        .select({
+          debt: debts,
+          contact: contacts,
+          owner: users,
+        })
+        .from(debts)
+        .innerJoin(users, eq(users.id, debts.userId))
+        .leftJoin(contacts, eq(contacts.id, debts.contactId))
+        .where(and(eq(debts.id, input.debtId), eq(debts.userId, userId), isNull(debts.deletedAt)))
+        .limit(1);
+
+      if (!row) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Debt not found' });
+      }
+
+      if (row.debt.status === 'paid') {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Paid debt does not need reminder' });
+      }
+
+      if (!row.owner.telegramId || !row.owner.botStartedAt) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Botda /start bosilmagan. Avval botni ishga tushiring.' });
+      }
+
+      const remainingAmount = Math.max(Number(row.debt.amount) - Number(row.debt.paidAmount), 0);
+      const ownerName = getFullName(row.owner.firstName, row.owner.lastName);
+
+      let counterparty:
+        | {
+            telegramId: string;
+            firstName: string;
+            lastName: string | null;
+            username: string | null;
+            botStartedAt: Date | null;
+          }
+        | null = null;
+
+      if (row.debt.linkedDebtId) {
+        const [linkedRow] = await db
+          .select({
+            telegramId: users.telegramId,
+            firstName: users.firstName,
+            lastName: users.lastName,
+            username: users.username,
+            botStartedAt: users.botStartedAt,
+          })
+          .from(debts)
+          .innerJoin(users, eq(users.id, debts.userId))
+          .where(and(eq(debts.id, row.debt.linkedDebtId), isNull(debts.deletedAt)))
+          .limit(1);
+
+        counterparty = linkedRow || null;
+      }
+
+      if (
+        row.debt.type === 'given' &&
+        row.debt.confirmationStatus === 'confirmed' &&
+        counterparty?.telegramId &&
+        counterparty.botStartedAt
+      ) {
+        try {
+          await sendTelegramHtmlMessage(
+            counterparty.telegramId,
+            buildDirectReminderMessage({
+              ownerName,
+              ownerPhone: row.owner.phone,
+              ownerUsername: row.owner.username,
+              amount: remainingAmount,
+              currency: row.debt.currency,
+              returnDate: new Date(row.debt.returnDate),
+            })
+          );
+
+          return {
+            success: true as const,
+            sentTo: 'counterparty' as const,
+            recipientName: getFullName(counterparty.firstName, counterparty.lastName),
+          };
+        } catch (error) {
+          console.error(`[debts.sendReminder] direct send failed for debtId=${row.debt.id}`, error);
+        }
+      }
+
+      await sendTelegramHtmlMessage(
+        row.owner.telegramId,
+        buildForwardableReminderMessage({
+          contactName: row.contact?.name || 'Noma\'lum',
+          contactPhone: row.contact?.phone || null,
+          contactUsername: counterparty?.username || null,
+          amount: remainingAmount,
+          currency: row.debt.currency,
+          returnDate: new Date(row.debt.returnDate),
+          type: row.debt.type,
+        })
+      );
+
+      return {
+        success: true as const,
+        sentTo: 'self' as const,
+        recipientName: ownerName,
+      };
+    }),
 
   create: protectedProcedure
     .input(

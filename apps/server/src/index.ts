@@ -10,6 +10,7 @@ import { users, debts } from './db/schema';
 import { eq, and, isNull } from 'drizzle-orm';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
+import { startRemindersJob } from './jobs/reminders.job';
 
 // Load env
 dotenv.config({ path: path.resolve(__dirname, '.env') });
@@ -163,11 +164,66 @@ app.post('/api/internal/deny-debt', express.json(), async (req, res) => {
   }
 });
 
+app.post('/api/internal/bot-user-sync', express.json(), async (req, res) => {
+  try {
+    if (!hasValidInternalApiKey(req)) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const { telegramId, firstName, lastName, username, languageCode } = req.body ?? {};
+    if (!telegramId || !firstName) {
+      return res.status(400).json({ error: 'telegramId and firstName are required' });
+    }
+
+    const normalizedTelegramId = String(telegramId);
+
+    const [existing] = await db
+      .select()
+      .from(users)
+      .where(eq(users.telegramId, normalizedTelegramId))
+      .limit(1);
+
+    if (existing) {
+      await db
+        .update(users)
+        .set({
+          firstName: String(firstName),
+          lastName: lastName ? String(lastName) : null,
+          username: username ? String(username) : null,
+          languageCode: languageCode ? String(languageCode) : existing.languageCode,
+          botStartedAt: new Date(),
+        })
+        .where(eq(users.id, existing.id));
+
+      return res.json({ success: true, userId: existing.id, created: false });
+    }
+
+    await db.insert(users).values({
+      telegramId: normalizedTelegramId,
+      firstName: String(firstName),
+      lastName: lastName ? String(lastName) : null,
+      username: username ? String(username) : null,
+      languageCode: languageCode ? String(languageCode) : 'uz',
+      botStartedAt: new Date(),
+    });
+
+    const [created] = await db
+      .select()
+      .from(users)
+      .where(eq(users.telegramId, normalizedTelegramId))
+      .limit(1);
+
+    return res.json({ success: true, userId: created?.id ?? null, created: true });
+  } catch (error) {
+    console.error('Internal bot user sync error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Internal API — bot uchun
 app.get('/api/internal/stats/:telegramId', async (req, res) => {
   try {
-    const apiKey = req.headers['internal_api_key'];
-    if (apiKey !== process.env.INTERNAL_API_KEY) {
+    if (!hasValidInternalApiKey(req)) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
@@ -231,4 +287,5 @@ app.use((err: any, _req: express.Request, res: express.Response, _next: express.
 const PORT = parseInt(process.env.PORT || '8080', 10);
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);
+  startRemindersJob();
 });

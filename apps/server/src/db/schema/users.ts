@@ -11,6 +11,8 @@ export const users = mysqlTable(
 		username: varchar('username', { length: 100 }),
 		phone: varchar('phone', { length: 20 }),
 		languageCode: varchar('language_code', { length: 10 }).default('uz'),
+		botStartedAt: timestamp('bot_started_at'),
+		lastReminderDigestAt: timestamp('last_reminder_digest_at'),
 		createdAt: timestamp('created_at').defaultNow(),
 		updatedAt: timestamp('updated_at').defaultNow().onUpdateNow(),
 	},

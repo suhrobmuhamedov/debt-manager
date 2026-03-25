@@ -2,6 +2,7 @@ import { Context } from 'telegraf';
 import { Markup } from 'telegraf';
 import { mainKeyboard } from '../utils/keyboards';
 import { handleDebtConfirmStartPayload, handleDebtDenyStartPayload } from './debt-confirm.command';
+import { syncBotUser } from '../utils/internal-api';
 
 const extractStartPayload = (ctx: Context): string => {
   const text = 'text' in (ctx.message || {}) ? String((ctx.message as { text?: string }).text || '') : '';
@@ -10,6 +11,20 @@ const extractStartPayload = (ctx: Context): string => {
 };
 
 export async function startCommand(ctx: Context) {
+  if (ctx.from?.id && ctx.from.first_name) {
+    try {
+      await syncBotUser({
+        telegramId: String(ctx.from.id),
+        firstName: ctx.from.first_name,
+        lastName: ctx.from.last_name,
+        username: ctx.from.username,
+        languageCode: ctx.from.language_code,
+      });
+    } catch (error) {
+      console.error('Bot user sync failed:', error);
+    }
+  }
+
   const handled = await handleDebtConfirmStartPayload(ctx);
   if (handled) {
     return;

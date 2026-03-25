@@ -31,6 +31,19 @@ export const DebtDetail = () => {
       toast.error(error.message || t('common.error'));
     },
   });
+  const reminderMutation = trpc.debts.sendReminder.useMutation({
+    onSuccess: (result) => {
+      if (result.sentTo === 'counterparty') {
+        toast.success(t('debts.reminderSentAuto', { name: result.recipientName }));
+        return;
+      }
+
+      toast.success(t('debts.reminderSentSelf'));
+    },
+    onError: (error: { message?: string }) => {
+      toast.error(error.message || t('common.error'));
+    },
+  });
 
   if (!match) {
     return null;
@@ -127,6 +140,16 @@ export const DebtDetail = () => {
             <p className="text-xl font-bold text-foreground">{formatCurrency(amount, debt.currency || 'UZS')}</p>
             <p className="text-sm text-muted-foreground">{t('debts.givenDate')}: {formatDate(debt.givenDate)}</p>
             <p className="text-sm text-muted-foreground">{t('debts.returnDate')}: {formatDate(debt.returnDate)}</p>
+            {debt.status !== 'paid' ? (
+              <Button
+                variant="outline"
+                className="mt-3 h-11 w-full"
+                onClick={() => reminderMutation.mutate({ debtId: debt.id })}
+                disabled={reminderMutation.isPending}
+              >
+                {t('debts.remind')}
+              </Button>
+            ) : null}
           </CardContent>
         </Card>
 

@@ -17,6 +17,7 @@ interface DebtItemProps {
   confirmationStatus?: 'not_required' | 'pending' | 'confirmed' | 'denied' | null;
   confirmationExpiresAt?: string | null;
   onClick?: () => void;
+  onReminder?: () => void;
 }
 
 export const DebtItem = ({
@@ -28,7 +29,8 @@ export const DebtItem = ({
   returnDate,
   paidAt,
   confirmationStatus,
-  onClick
+  onClick,
+  onReminder,
 }: DebtItemProps) => {
   const { t } = useTranslation();
   const isPaid = status === 'paid';
@@ -183,9 +185,23 @@ export const DebtItem = ({
               </div>
             ) : null}
           </div>
-          <GlassButton variant="primary" className="ml-2 px-3 py-2 text-sm">
-            →
-          </GlassButton>
+          <div className="ml-2 flex items-center gap-2">
+            {!isPaid && onReminder ? (
+              <GlassButton
+                variant="glass"
+                className="px-3 py-2 text-xs font-semibold"
+                onClick={(event: React.MouseEvent<HTMLButtonElement>) => {
+                  event.stopPropagation();
+                  onReminder();
+                }}
+              >
+                {t('debts.remind')}
+              </GlassButton>
+            ) : null}
+            <GlassButton variant="primary" className="px-3 py-2 text-sm">
+              →
+            </GlassButton>
+          </div>
         </div>
       </CardContent>
     </GlassCard>

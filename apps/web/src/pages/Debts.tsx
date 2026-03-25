@@ -6,6 +6,7 @@ import { useModalStore } from '../store/modalStore';
 import { BackButton } from '../components/common/BackButton';
 import { useMemo } from 'react';
 import { GlassButton } from '../components/ui/GlassButton';
+import { toast } from 'sonner';
 
 export const Debts = () => {
   const { t } = useTranslation();
@@ -42,6 +43,19 @@ export const Debts = () => {
   );
 
   const overdueQuery = trpc.debts.getOverdue.useQuery(undefined, { enabled: filters.overdue });
+  const reminderMutation = trpc.debts.sendReminder.useMutation({
+    onSuccess: (result) => {
+      if (result.sentTo === 'counterparty') {
+        toast.success(t('debts.reminderSentAuto', { name: result.recipientName }));
+        return;
+      }
+
+      toast.success(t('debts.reminderSentSelf'));
+    },
+    onError: (error) => {
+      toast.error(error.message || t('common.error'));
+    },
+  });
 
   const fetchedItems = filters.overdue ? (overdueQuery.data || []) : (debtsQuery.data?.items || []);
   const baseItems =
@@ -95,10 +109,11 @@ export const Debts = () => {
                 type={debt.type}
                 status={debt.status}
                 returnDate={debt.returnDate ? String(debt.returnDate).split('T')[0] : null}
-                paidAt={debt.paidAt ? String(debt.paidAt).split('T')[0] : null}
+                paidAt={'paidAt' in debt && debt.paidAt ? String(debt.paidAt).split('T')[0] : null}
                 confirmationStatus={debt.confirmationStatus}
                 confirmationExpiresAt={debt.confirmationExpiresAt ? String(debt.confirmationExpiresAt) : null}
                 onClick={() => open('EDIT_DEBT', { debtId: debt.id })}
+                onReminder={debt.status !== 'paid' ? () => reminderMutation.mutate({ debtId: debt.id }) : undefined}
               />
             ))}
           </div>
