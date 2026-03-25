@@ -47,24 +47,6 @@ export const DebtItem = ({
             To'langan
           </Badge>
         );
-      case 'partial':
-        return (
-          <Badge
-            variant="secondary"
-            className="border border-white/40 bg-white/20 text-foreground backdrop-blur-md dark:border-white/20 dark:bg-white/10"
-          >
-            Qisman
-          </Badge>
-        );
-      case 'pending':
-        return (
-          <Badge
-            variant="outline"
-            className="border border-white/40 bg-white/20 text-foreground backdrop-blur-md dark:border-white/20 dark:bg-white/10"
-          >
-            Kutilmoqda
-          </Badge>
-        );
       default:
         return null;
     }
