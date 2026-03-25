@@ -15,7 +15,7 @@ if (!process.env.DATABASE_URL) {
 
 const pool = mysql.createPool({
 	uri: process.env.DATABASE_URL,
-	connectionLimit: 5,
+	connectionLimit: 10,   // parallel querylar uchun oshirildi (5 → 10)
 	connectTimeout: 10000,
 	waitForConnections: true,
 	queueLimit: 0,

@@ -1,95 +1,126 @@
 import { protectedProcedure, router } from '../trpc';
 import { db } from '../db';
 import { debts, contacts, payments } from '../db/schema';
-import { eq, and, isNull, inArray, sql } from 'drizzle-orm';
+import { eq, and, isNull, inArray, sql, sum, count, desc, gte, lte } from 'drizzle-orm';
 
 export const dashboardRouter = router({
   getStats: protectedProcedure.query(async ({ ctx }) => {
     const userId = ctx.userId!;
+    const now = new Date();
+    const todayStr = now.toISOString().split('T')[0];
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
 
-    // Get all debts with contacts for the user
-    const allDebts = await db
-      .select({
-        debt: debts,
+    // ✅ PARALLEL: 6 ta query bir vaqtda bajariladi (~sequential 6x o'rniga bitta round-trip)
+    const [
+      givenStats,
+      takenStats,
+      statusCounts,
+      overdueStats,
+      recentDebtRows,
+      paidThisMonthResult,
+    ] = await Promise.all([
+      // 1. Berilgan qarzlar jami (DB aggregation — JS summasi o'rniga)
+      db.select({ total: sum(debts.amount) })
+        .from(debts)
+        .where(and(eq(debts.userId, userId), eq(debts.type, 'given'), isNull(debts.deletedAt))),
+
+      // 2. Olingan qarzlar jami
+      db.select({ total: sum(debts.amount) })
+        .from(debts)
+        .where(and(eq(debts.userId, userId), eq(debts.type, 'taken'), isNull(debts.deletedAt))),
+
+      // 3. Holat bo'yicha guruhlangan soni (3 alohida query o'rniga 1 ta)
+      db.select({ status: debts.status, cnt: count() })
+        .from(debts)
+        .where(and(eq(debts.userId, userId), isNull(debts.deletedAt)))
+        .groupBy(debts.status),
+
+      // 4. Muddati o'tgan qarzlar (returnDate < bugun AND status != 'paid')
+      db.select({ count: count(), total: sum(debts.amount) })
+        .from(debts)
+        .where(
+          and(
+            eq(debts.userId, userId),
+            isNull(debts.deletedAt),
+            sql`${debts.status} != 'paid'`,
+            sql`${debts.returnDate} < ${todayStr}`
+          )
+        ),
+
+      // 5. So'nggi 5 qarz — contact nomi bilan JOIN (N+1 yo'q)
+      db.select({
+        id: debts.id,
+        amount: debts.amount,
+        currency: debts.currency,
+        type: debts.type,
+        status: debts.status,
+        returnDate: debts.returnDate,
+        createdAt: debts.createdAt,
+        updatedAt: debts.updatedAt,
+        confirmationStatus: debts.confirmationStatus,
+        confirmationExpiresAt: debts.confirmationExpiresAt,
+        linkedDebtId: debts.linkedDebtId,
         contactName: contacts.name,
       })
-      .from(debts)
-      .leftJoin(contacts, eq(debts.contactId, contacts.id))
-      .where(and(eq(debts.userId, userId), isNull(debts.deletedAt)));
+        .from(debts)
+        .leftJoin(contacts, eq(debts.contactId, contacts.id))
+        .where(and(eq(debts.userId, userId), isNull(debts.deletedAt)))
+        .orderBy(desc(debts.createdAt))
+        .limit(5),
 
-    // Calculate totals
-    const totalGiven = allDebts
-      .filter(d => d.debt.type === 'given')
-      .reduce((sum, d) => sum + parseFloat(d.debt.amount), 0);
+      // 6. Shu oy to'langan summa (debts orqali userId filtri)
+      db.select({ total: sum(payments.amount) })
+        .from(payments)
+        .innerJoin(debts, and(eq(payments.debtId, debts.id), eq(debts.userId, userId)))
+        .where(
+          and(
+            gte(payments.paymentDate, startOfMonth),
+            lte(payments.paymentDate, endOfMonth)
+          )
+        ),
+    ]);
 
-    const totalTaken = allDebts
-      .filter(d => d.debt.type === 'taken')
-      .reduce((sum, d) => sum + parseFloat(d.debt.amount), 0);
-
-    // Status counts
-    const pendingCount = allDebts.filter(d => d.debt.status === 'pending').length;
-    const partialCount = allDebts.filter(d => d.debt.status === 'partial').length;
-    const paidCount = allDebts.filter(d => d.debt.status === 'paid').length;
-
-    // Overdue calculations
-    const now = new Date();
-    const overdueDebts = allDebts.filter(d =>
-      d.debt.returnDate && new Date(d.debt.returnDate) < now && d.debt.status !== 'paid'
-    );
-    const overdueCount = overdueDebts.length;
-    const overdueAmount = overdueDebts.reduce((sum, d) => sum + parseFloat(d.debt.amount), 0);
-
-    // Recent debts (last 5)
-    const recentDebtRows = allDebts
-      .sort((a, b) => {
-        const aTime = a.debt.createdAt ? a.debt.createdAt.getTime() : 0;
-        const bTime = b.debt.createdAt ? b.debt.createdAt.getTime() : 0;
-        return bTime - aTime;
-      })
-      .slice(0, 5);
-
-    const recentDebtIds = recentDebtRows.map((row) => row.debt.id);
+    // So'nggi qarzlar uchun to'lov sanalarini olish (faqat kerak bo'lsa)
+    const recentDebtIds = recentDebtRows.map(r => r.id);
     const paidAtRows = recentDebtIds.length
       ? await db
           .select({
             debtId: payments.debtId,
-            paidAt: sql<Date | null>`MAX(${payments.paymentDate})`,
+            paidAt: sql<string | null>`MAX(${payments.paymentDate})`,
           })
           .from(payments)
           .where(inArray(payments.debtId, recentDebtIds))
           .groupBy(payments.debtId)
       : [];
 
-    const paidAtByDebtId = new Map<number, Date | null>(
-      paidAtRows.map((row) => [row.debtId, row.paidAt])
+    const paidAtByDebtId = new Map<number, string | null>(
+      paidAtRows.map(row => [row.debtId, row.paidAt])
     );
 
-    const recentDebts = recentDebtRows
-      .map((d) => {
-        const paidAt = paidAtByDebtId.get(d.debt.id) ?? (d.debt.status === 'paid' ? d.debt.updatedAt : null);
-        return {
-          id: d.debt.id,
-          contactName: d.contactName || 'Unknown',
-          amount: parseFloat(d.debt.amount),
-          currency: d.debt.currency,
-          type: d.debt.type,
-          status: d.debt.status,
-          paidAt: paidAt ? new Date(paidAt).toISOString().split('T')[0] : null,
-          confirmationStatus: d.debt.confirmationStatus,
-          confirmationExpiresAt: d.debt.confirmationExpiresAt ? d.debt.confirmationExpiresAt.toISOString() : null,
-          linkedDebtId: d.debt.linkedDebtId,
-          returnDate: d.debt.returnDate ? d.debt.returnDate.toISOString().split('T')[0] : null,
-        };
-      });
+    const recentDebts = recentDebtRows.map(d => ({
+      id: d.id,
+      contactName: d.contactName || 'Unknown',
+      amount: parseFloat(d.amount),
+      currency: d.currency,
+      type: d.type,
+      status: d.status,
+      paidAt: paidAtByDebtId.get(d.id) ?? (d.status === 'paid' ? d.updatedAt?.toISOString().split('T')[0] ?? null : null),
+      confirmationStatus: d.confirmationStatus,
+      confirmationExpiresAt: d.confirmationExpiresAt ? d.confirmationExpiresAt.toISOString() : null,
+      linkedDebtId: d.linkedDebtId,
+      returnDate: d.returnDate ? d.returnDate.toString() : null,
+    }));
 
     return {
-      totalGiven,
-      totalTaken,
-      pendingCount,
-      partialCount,
-      paidCount,
-      overdueCount,
-      overdueAmount,
+      totalGiven: Number(givenStats[0]?.total ?? 0),
+      totalTaken: Number(takenStats[0]?.total ?? 0),
+      pendingCount: Number(statusCounts.find(r => r.status === 'pending')?.cnt ?? 0),
+      partialCount: Number(statusCounts.find(r => r.status === 'partial')?.cnt ?? 0),
+      paidCount: Number(statusCounts.find(r => r.status === 'paid')?.cnt ?? 0),
+      overdueCount: Number(overdueStats[0]?.count ?? 0),
+      overdueAmount: Number(overdueStats[0]?.total ?? 0),
+      paidThisMonth: Number(paidThisMonthResult[0]?.total ?? 0),
       recentDebts,
     };
   }),

@@ -1,16 +1,17 @@
 import { Link, useLocation } from 'wouter';
 import { useTranslation } from 'react-i18next';
 import { Button } from '../ui/button';
+import { prefetchDebts, prefetchContacts, prefetchProfile } from '@/App';
 
 export const BottomNav = () => {
   const [location] = useLocation();
   const { t } = useTranslation();
 
   const navItems = [
-    { path: '/', label: t('nav.home'), icon: '🏠' },
-    { path: '/debts', label: t('nav.debts'), icon: '💳' },
-    { path: '/contacts', label: t('nav.contacts'), icon: '👥' },
-    { path: '/profile', label: t('nav.profile'), icon: '👤' },
+    { path: '/', label: t('nav.home'), icon: '🏠', prefetch: null },
+    { path: '/debts', label: t('nav.debts'), icon: '💳', prefetch: prefetchDebts },
+    { path: '/contacts', label: t('nav.contacts'), icon: '👥', prefetch: prefetchContacts },
+    { path: '/profile', label: t('nav.profile'), icon: '👤', prefetch: prefetchProfile },
   ];
 
   return (
@@ -22,8 +23,9 @@ export const BottomNav = () => {
             <Link key={item.path} href={item.path}>
               <Button
                 variant="ghost"
-                size="sm"
-                className={`h-auto min-w-16 flex-col items-center gap-1 rounded-xl px-2 py-2 ${
+                size="sm"                onMouseEnter={item.prefetch ?? undefined}
+                onFocus={item.prefetch ?? undefined}
+                onTouchStart={item.prefetch ?? undefined}                className={`h-auto min-w-16 flex-col items-center gap-1 rounded-xl px-2 py-2 ${
                   isActive
                     ? 'text-blue-600 dark:text-blue-300'
                     : 'text-slate-500 dark:text-slate-400'
