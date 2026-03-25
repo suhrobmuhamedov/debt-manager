@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 export type ContactFormValues = {
 	name: string;
 	phone: string;
+	telegramUsername?: string;
 	note?: string;
 };
 
@@ -29,6 +30,7 @@ export const ContactForm = ({
 	const { t } = useTranslation();
 	const [name, setName] = useState(initialValues?.name || '');
 	const [phone, setPhone] = useState(initialValues?.phone || '');
+	const [telegramUsername, setTelegramUsername] = useState(initialValues?.telegramUsername || '');
 	const [note, setNote] = useState(initialValues?.note || '');
 	const [errors, setErrors] = useState<{ name?: string; phone?: string }>({});
 
@@ -60,6 +62,7 @@ export const ContactForm = ({
 		await onSubmit({
 			name: name.trim(),
 			phone: normalizePhone(phone),
+			telegramUsername: telegramUsername.trim() || undefined,
 			note: note.trim() || undefined,
 		});
 	};
@@ -92,6 +95,17 @@ export const ContactForm = ({
 					className="border-sky-200/65 bg-white/85 dark:border-slate-500/50 dark:bg-slate-700/45"
 				/>
 				{errors.phone && <p className="text-xs text-red-600">{errors.phone}</p>}
+			</div>
+
+			<div className="space-y-1.5">
+				<label className="text-sm font-medium text-foreground">{t('contacts.telegramUsername')}</label>
+				<Input
+					value={telegramUsername}
+					onChange={(event) => setTelegramUsername(event.target.value)}
+					placeholder={t('contacts.telegramUsernamePlaceholder')}
+					maxLength={100}
+					className="border-sky-200/65 bg-white/85 dark:border-slate-500/50 dark:bg-slate-700/45"
+				/>
 			</div>
 
 			<div className="space-y-1.5">

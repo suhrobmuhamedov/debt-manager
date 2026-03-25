@@ -28,6 +28,8 @@ export const uz = {
     empty: "Kontaktlar yo'q",
     name: 'Ism',
     phone: 'Telefon',
+    telegramUsername: 'Telegram username',
+    telegramUsernamePlaceholder: '@username (ixtiyoriy)',
     note: 'Izoh',
     save: 'Saqlash',
     cancel: 'Bekor qilish',

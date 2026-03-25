@@ -138,6 +138,7 @@ export const contactsRouter = router({
       z.object({
         name: z.string().trim().min(2).max(100),
         phone: z.string().trim().min(7).max(15).regex(phoneRegex, 'Telefon raqam formati noto\'g\'ri'),
+        telegramUsername: z.string().trim().max(100).optional(),
         note: z.string().max(500).optional(),
       })
     )
@@ -164,6 +165,7 @@ export const contactsRouter = router({
         userId,
         name: input.name.trim(),
         phone: input.phone,
+        telegramUsername: input.telegramUsername?.trim() || null,
         note: input.note?.trim() || null,
       });
 
@@ -198,8 +200,9 @@ export const contactsRouter = router({
           .max(15)
           .regex(phoneRegex, 'Telefon raqam formati noto\'g\'ri')
           .optional(),
+        telegramUsername: z.string().trim().max(100).optional().nullable(),
         note: z.string().max(500).optional(),
-      }).refine((value) => value.name !== undefined || value.phone !== undefined || value.note !== undefined, {
+      }).refine((value) => value.name !== undefined || value.phone !== undefined || value.telegramUsername !== undefined || value.note !== undefined, {
         message: 'Kamida bitta maydon yuborilishi kerak',
       })
     )
@@ -246,6 +249,7 @@ export const contactsRouter = router({
         .set({
           ...(input.name !== undefined ? { name: input.name.trim() } : {}),
           ...(input.phone !== undefined ? { phone: input.phone } : {}),
+          ...(input.telegramUsername !== undefined ? { telegramUsername: input.telegramUsername?.trim() || null } : {}),
           ...(input.note !== undefined ? { note: input.note?.trim() || null } : {}),
         })
         .where(and(eq(contacts.id, input.id), eq(contacts.userId, userId), isNull(contacts.deletedAt)));

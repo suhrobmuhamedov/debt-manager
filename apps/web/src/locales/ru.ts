@@ -28,6 +28,8 @@ export const ru = {
     empty: 'Контактов нет',
     name: 'Имя',
     phone: 'Телефон',
+    telegramUsername: 'Telegram username',
+    telegramUsernamePlaceholder: '@username (опционально)',
     note: 'Примечание',
     save: 'Сохранить',
     cancel: 'Отмена',

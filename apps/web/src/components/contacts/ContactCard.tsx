@@ -11,6 +11,7 @@ type ContactCardProps = {
 		id: number;
 		name: string;
 		phone: string | null;
+		telegramUsername?: string | null;
 		activeDebtsCount: number;
 		totalAmount: number;
 	};
@@ -41,6 +42,11 @@ export const ContactCard = ({ contact, onClick, onAddDebt }: ContactCardProps) =
 							<p className="truncate text-xs text-muted-foreground">
 								{contact.phone ? formatPhone(contact.phone) : t('contacts.noPhone')}
 							</p>
+							{contact.telegramUsername && (
+								<p className="truncate text-xs text-muted-foreground">
+									@{contact.telegramUsername}
+								</p>
+							)}
 						</div>
 					</div>
 

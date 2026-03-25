@@ -10,6 +10,7 @@ export const contacts = mysqlTable(
 			.references(() => users.id, { onDelete: 'cascade' }),
 		name: varchar('name', { length: 100 }).notNull(),
 		phone: varchar('phone', { length: 20 }),
+		telegramUsername: varchar('telegram_username', { length: 100 }),
 		note: text('note'),
 		createdAt: timestamp('created_at').defaultNow(),
 		updatedAt: timestamp('updated_at').defaultNow().onUpdateNow(),
