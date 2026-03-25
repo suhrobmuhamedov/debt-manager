@@ -5,6 +5,21 @@ import { Textarea } from '../ui/textarea';
 import { isValidPhone, normalizePhone } from '../../lib/contact-utils';
 import { useTranslation } from 'react-i18next';
 
+const UZ_PREFIX = '+998';
+
+const getUzLocalDigits = (phone?: string): string => {
+	if (!phone) {
+		return '';
+	}
+
+	const digits = phone.replace(/\D/g, '');
+	if (digits.startsWith('998')) {
+		return digits.slice(3, 12);
+	}
+
+	return digits.slice(0, 9);
+};
+
 export type ContactFormValues = {
 	name: string;
 	phone: string;
@@ -29,14 +44,15 @@ export const ContactForm = ({
 }: ContactFormProps) => {
 	const { t } = useTranslation();
 	const [name, setName] = useState(initialValues?.name || '');
-	const [phone, setPhone] = useState(initialValues?.phone || '');
+	const [phone, setPhone] = useState(getUzLocalDigits(initialValues?.phone));
 	const [telegramUsername, setTelegramUsername] = useState(initialValues?.telegramUsername || '');
 	const [note, setNote] = useState(initialValues?.note || '');
 	const [errors, setErrors] = useState<{ name?: string; phone?: string }>({});
+	const fullPhone = `${UZ_PREFIX}${phone}`;
 
 	const canSubmit = useMemo(() => {
-		return !isSubmitting && name.trim().length >= 2 && isValidPhone(phone);
-	}, [isSubmitting, name, phone]);
+		return !isSubmitting && name.trim().length >= 2 && phone.length === 9 && isValidPhone(fullPhone);
+	}, [fullPhone, isSubmitting, name, phone.length]);
 
 	const validate = () => {
 		const nextErrors: { name?: string; phone?: string } = {};
@@ -47,7 +63,7 @@ export const ContactForm = ({
 
 		if (!phone.trim()) {
 			nextErrors.phone = t('contacts.phoneRequired');
-		} else if (!isValidPhone(phone)) {
+		} else if (phone.length !== 9 || !isValidPhone(fullPhone)) {
 			nextErrors.phone = t('contacts.phoneInvalid');
 		}
 
@@ -61,7 +77,7 @@ export const ContactForm = ({
 
 		await onSubmit({
 			name: name.trim(),
-			phone: normalizePhone(phone),
+			phone: normalizePhone(fullPhone),
 			telegramUsername: telegramUsername.trim() || undefined,
 			note: note.trim() || undefined,
 		});
@@ -84,16 +100,21 @@ export const ContactForm = ({
 
 			<div className="space-y-1.5">
 				<label className="text-sm font-medium text-foreground">{t('contacts.phone')}</label>
-				<Input
-					value={phone}
-					onChange={(event) => setPhone(event.target.value)}
-					placeholder={t('contacts.phonePlaceholder')}
-					type="tel"
-					inputMode="numeric"
-					pattern="[0-9+]*"
-					maxLength={16}
-					className="border-sky-200/65 bg-white/85 dark:border-slate-500/50 dark:bg-slate-700/45"
-				/>
+				<div className="relative">
+					<span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-foreground/95">
+						{UZ_PREFIX}
+					</span>
+					<Input
+						value={phone}
+						onChange={(event) => setPhone(event.target.value.replace(/\D/g, '').slice(0, 9))}
+						placeholder="90 123 45 67"
+						type="tel"
+						inputMode="numeric"
+						pattern="[0-9]*"
+						maxLength={9}
+						className="border-sky-200/65 bg-white/85 pl-14 placeholder:text-slate-500 dark:border-slate-500/50 dark:bg-slate-700/45 dark:placeholder:text-slate-300"
+					/>
+				</div>
 				{errors.phone && <p className="text-xs text-red-600">{errors.phone}</p>}
 			</div>
 

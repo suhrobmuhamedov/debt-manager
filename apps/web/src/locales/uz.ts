@@ -69,6 +69,7 @@ export const uz = {
   debts: {
     title: 'Qarzlar',
     add: "Qarz qo'shish",
+    filterAll: 'Hammasi',
     given: 'Berilgan',
     taken: 'Olingan',
     pending: 'Kutilmoqda',
@@ -102,7 +103,7 @@ export const uz = {
     twoWayConfirmHint: 'Belgilansa, mos foydalanuvchiga Telegram orqali tasdiqlash xabari yuboriladi.',
     confirmFallbackManual: 'Qarzdorni Telegramdan topib bo\'lmadi. Havolani qo\'lda yuboring.',
     shareDesktopFallback: 'Telegram Desktop cheklovi sabab matn clipboardga nusxalandi. Telegram chatga paste qilib yuboring.',
-    confirmRequestSentSelf: 'Botga tasdiqlash xabari yuborildi. Uni qarzdorga forward qiling.',
+    confirmRequestSentSelf: 'Botga tasdiqlash xabari yuborildi. Uni qarzdorga yuboring.',
     confirmRequestNotSentSelf: 'Botga xabar yuborilmadi. Telegram botga /start bosing va qayta urinib ko\'ring.',
     remind: 'Eslatish',
     reminderSentSelf: 'Eslatma botga yuborildi. Uni kerakli odamga forward qiling.',

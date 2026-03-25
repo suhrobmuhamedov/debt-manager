@@ -4,52 +4,24 @@ import { trpc } from '../lib/trpc';
 import { DebtItem } from '../components/dashboard/DebtItem';
 import { useModalStore } from '../store/modalStore';
 import { BackButton } from '../components/common/BackButton';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { GlassButton } from '../components/ui/GlassButton';
 import { toast } from 'sonner';
+
+type TabFilter = 'all' | 'given' | 'taken' | 'paid';
 
 export const Debts = () => {
   const { t } = useTranslation();
   const { open } = useModalStore();
-  const search = typeof window !== 'undefined' ? window.location.search : '';
+  const [tab, setTab] = useState<TabFilter>('all');
 
-  const filters = useMemo(() => {
-    const params = new URLSearchParams(search);
-    const type = params.get('type');
-    const status = params.get('status');
-    const overdue = params.get('overdue') === '1';
-
-    return {
-      type: type === 'given' || type === 'taken' ? type : undefined,
-      status:
-        status === 'pending' || status === 'partial' || status === 'paid' || status === 'active'
-          ? status
-          : undefined,
-      overdue,
-    } as {
-      type?: 'given' | 'taken';
-      status?: 'pending' | 'partial' | 'paid' | 'active';
-      overdue: boolean;
-    };
-  }, [search]);
-
-  const debtsQuery = trpc.debts.getAll.useQuery(
-    {
-      limit: 50,
-      ...(filters.type ? { type: filters.type } : {}),
-      ...(filters.status && filters.status !== 'active' ? { status: filters.status } : {}),
-    },
-    { enabled: !filters.overdue }
-  );
-
-  const overdueQuery = trpc.debts.getOverdue.useQuery(undefined, { enabled: filters.overdue });
+  const debtsQuery = trpc.debts.getAll.useQuery({ limit: 200 });
   const reminderMutation = trpc.debts.sendReminder.useMutation({
     onSuccess: (result) => {
       if (result.sentTo === 'counterparty') {
         toast.success(t('debts.reminderSentAuto', { name: result.recipientName }));
         return;
       }
-
       toast.success(t('debts.reminderSentSelf'));
     },
     onError: (error) => {
@@ -57,24 +29,47 @@ export const Debts = () => {
     },
   });
 
-  const fetchedItems = filters.overdue ? (overdueQuery.data || []) : (debtsQuery.data?.items || []);
-  const baseItems =
-    filters.status === 'active'
-      ? fetchedItems.filter((item) => item.status === 'pending' || item.status === 'partial')
-      : fetchedItems;
-  const isLoading = filters.overdue ? overdueQuery.isLoading : debtsQuery.isLoading;
-  const queryError = filters.overdue ? overdueQuery.error : debtsQuery.error;
+  const isLoading = debtsQuery.isLoading;
+  const queryError = debtsQuery.error;
 
-  const items = baseItems.slice().sort((a, b) => {
-    const aPaid = a.status === 'paid' ? 1 : 0;
-    const bPaid = b.status === 'paid' ? 1 : 0;
-    if (aPaid !== bPaid) {
-      return aPaid - bPaid;
+  const tabFiltered = useMemo(() => {
+    const all = debtsQuery.data?.items || [];
+    switch (tab) {
+      case 'given': return all.filter((d) => d.type === 'given' && d.status !== 'paid');
+      case 'taken': return all.filter((d) => d.type === 'taken' && d.status !== 'paid');
+      case 'paid':  return all.filter((d) => d.status === 'paid');
+      default:      return all;
     }
-    const aCreatedAt = new Date(a.createdAt ?? 0).getTime();
-    const bCreatedAt = new Date(b.createdAt ?? 0).getTime();
-    return bCreatedAt - aCreatedAt;
-  });
+  }, [debtsQuery.data, tab]);
+
+  const items = useMemo(() => {
+    const todayMs = (() => { const d = new Date(); d.setHours(0, 0, 0, 0); return d.getTime(); })();
+    return tabFiltered.slice().sort((a, b) => {
+      const aPaid = a.status === 'paid' ? 1 : 0;
+      const bPaid = b.status === 'paid' ? 1 : 0;
+      if (aPaid !== bPaid) return aPaid - bPaid;
+      if (aPaid) {
+        const aP = new Date(a.returnDate ?? 0).getTime();
+        const bP = new Date(b.returnDate ?? 0).getTime();
+        return bP - aP;
+      }
+      const aMs = a.returnDate ? new Date(String(a.returnDate).split('T')[0]).getTime() : Infinity;
+      const bMs = b.returnDate ? new Date(String(b.returnDate).split('T')[0]).getTime() : Infinity;
+      const aOverdue = aMs < todayMs;
+      const bOverdue = bMs < todayMs;
+      if (aOverdue && bOverdue) return aMs - bMs;
+      if (aOverdue && !bOverdue) return -1;
+      if (!aOverdue && bOverdue) return 1;
+      return aMs - bMs;
+    });
+  }, [tabFiltered]);
+
+  const tabs: { key: TabFilter; label: string }[] = [
+    { key: 'all',   label: t('debts.filterAll') },
+    { key: 'given', label: t('debts.given') },
+    { key: 'taken', label: t('debts.taken') },
+    { key: 'paid',  label: t('debts.paid') },
+  ];
 
   return (
     <AppLayout>
@@ -90,6 +85,22 @@ export const Debts = () => {
             >
               + {t('debts.add')}
             </GlassButton>
+          </div>
+          <div className="flex gap-1.5">
+            {tabs.map(({ key, label }) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setTab(key)}
+                className={`flex-1 rounded-full border px-2 py-1.5 text-xs font-semibold transition-all ${
+                  tab === key
+                    ? 'border-white/50 bg-white/25 text-foreground shadow-sm backdrop-blur-md dark:border-white/25 dark:bg-white/15'
+                    : 'border-white/15 bg-white/8 text-muted-foreground backdrop-blur-sm dark:border-white/10 dark:bg-white/5'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
           </div>
         </div>
 

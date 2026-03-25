@@ -96,7 +96,7 @@ export const DebtItem = ({
       return null;
     }
     if (confirmationStatus === 'pending') {
-      return <span className="inline-flex items-center gap-1 animate-pulse rounded-full bg-yellow-300 px-2 py-1 text-xs font-semibold text-black">⏳ {t('debts.confirmPending')}</span>;
+      return <span className="inline-flex items-center gap-1 animate-pulse rounded-full bg-yellow-300 px-2 py-1 text-xs font-semibold text-black">{t('debts.confirmPending')}</span>;
     }
     if (confirmationStatus === 'confirmed') {
       return <span className="inline-flex items-center gap-1 rounded-full bg-green-600 px-2 py-1 text-xs font-semibold text-white">{t('debts.confirmConfirmed')}</span>;

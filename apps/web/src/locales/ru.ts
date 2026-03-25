@@ -69,6 +69,7 @@ export const ru = {
   debts: {
     title: 'Долги',
     add: 'Добавить долг',
+    filterAll: 'Все',
     given: 'Выданный',
     taken: 'Полученный',
     pending: 'Ожидает',
