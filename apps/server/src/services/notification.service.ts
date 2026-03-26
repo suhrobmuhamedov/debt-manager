@@ -162,6 +162,7 @@ export const buildForwardableReminderMessage = (payload: {
 	currency: string | null;
 	returnDate: Date;
 	type: 'given' | 'taken';
+	debtUrl?: string | null;
 }) => {
 	const ownerName = [payload.ownerFirstName, payload.ownerLastName].filter(Boolean).join(' ');
 
@@ -172,6 +173,7 @@ export const buildForwardableReminderMessage = (payload: {
 		`📞 Telefon: ${escapeHtml(payload.contactPhone || 'Kiritilmagan')}`,
 		`💵 Qarz miqdori: ${escapeHtml(formatAmount(payload.amount, payload.currency))}`,
 		`📅 Qaytarish sanasi: ${escapeHtml(formatReminderDate(payload.returnDate))}`,
+		payload.debtUrl ? `🔗 <a href="${payload.debtUrl}">Batafsil</a>` : '',
 	].filter(Boolean).join('\n');
 };
 
@@ -196,16 +198,19 @@ export const buildDirectReminderMessage = (payload: {
 };
 
 const buildDigestMessage = (items: Array<ReminderRow & { counterpartyUsername?: string | null }>) => {
+	const webAppUrl = (process.env.WEB_APP_URL || '').replace(/\/$/, '');
 	const body = items
 		.map((item) => {
 			const remainingAmount = Math.max(Number(item.amount) - Number(item.paidAmount), 0);
 			const ownerName = [item.ownerFirstName, item.ownerLastName].filter(Boolean).join(' ');
+			const debtUrl = webAppUrl ? `${webAppUrl}/debts/${item.id}` : null;
 			return [
 				`⏰ Eslatma: Salom ${escapeHtml(item.contactName || 'Noma\'lum')} qarzingiz haqida eslatma.`,
 				`👤 Kimdan: ${escapeHtml(ownerName || 'Noma\'lum')}`,
 				`📞 Telefon: ${escapeHtml(item.contactPhone || 'Kiritilmagan')}`,
 				`💵 Qarz miqdori: ${escapeHtml(formatAmount(remainingAmount, item.currency))}`,
 				`📅 Qaytarish sanasi: ${escapeHtml(formatReminderDate(item.returnDate))}`,
+				debtUrl ? `🔗 <a href="${debtUrl}">Batafsil</a>` : '',
 			].filter(Boolean).join('\n');
 		})
 		.join('\n\n');
