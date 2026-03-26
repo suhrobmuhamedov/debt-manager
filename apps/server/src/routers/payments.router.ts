@@ -28,6 +28,11 @@ export const paymentsRouter = router({
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Debt not found or access denied' });
       }
 
+      const isConfirmedTwoWay = currentDebt.confirmationStatus === 'confirmed' && !!currentDebt.linkedDebtId;
+      if (isConfirmedTwoWay && currentDebt.type !== 'given') {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Only lender can update confirmed debt' });
+      }
+
       const currentTotal = parseFloat(currentDebt.amount);
       const currentPaid = parseFloat(currentDebt.paidAmount);
       const remainingAmount = currentTotal - currentPaid;
@@ -40,16 +45,21 @@ export const paymentsRouter = router({
         const nextTotal = input.action === 'increase' ? currentTotal + input.amount : currentTotal;
         const nextPaid = input.action === 'payment' ? currentPaid + input.amount : currentPaid;
         const nextStatus = nextPaid === 0 ? 'pending' : nextPaid >= nextTotal ? 'paid' : 'partial';
+        const targetDebtIds = isConfirmedTwoWay && currentDebt.linkedDebtId
+          ? [input.debtId, currentDebt.linkedDebtId]
+          : [input.debtId];
 
-        await tx
-          .insert(payments)
-          .values({
-            debtId: input.debtId,
-            amount: input.amount.toString(),
-            paymentDate: new Date(input.actionDate),
-            note: input.action === 'increase' ? 'debt_increase:Qarzga qo\'shildi' : 'debt_payment:Qisman qaytarildi',
-          })
-          .execute();
+        for (const targetDebtId of targetDebtIds) {
+          await tx
+            .insert(payments)
+            .values({
+              debtId: targetDebtId,
+              amount: input.amount.toString(),
+              paymentDate: new Date(input.actionDate),
+              note: input.action === 'increase' ? 'debt_increase:Qarzga qo\'shildi' : 'debt_payment:To\'lov qilindi',
+            })
+            .execute();
+        }
 
         const [timelineEntry] = await tx
           .select()
@@ -57,14 +67,16 @@ export const paymentsRouter = router({
           .where(eq(payments.id, sql`LAST_INSERT_ID()`))
           .limit(1);
 
-        await tx
-          .update(debts)
-          .set({
-            amount: nextTotal.toString(),
-            paidAmount: nextPaid.toString(),
-            status: nextStatus,
-          })
-          .where(eq(debts.id, input.debtId));
+        for (const targetDebtId of targetDebtIds) {
+          await tx
+            .update(debts)
+            .set({
+              amount: nextTotal.toString(),
+              paidAmount: nextPaid.toString(),
+              status: nextStatus,
+            })
+            .where(eq(debts.id, targetDebtId));
+        }
 
         const [updatedDebt] = await tx
           .select()
@@ -103,6 +115,11 @@ export const paymentsRouter = router({
 
       const currentDebt = debt[0];
 
+      const isConfirmedTwoWay = currentDebt.confirmationStatus === 'confirmed' && !!currentDebt.linkedDebtId;
+      if (isConfirmedTwoWay && currentDebt.type !== 'given') {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Only lender can update confirmed debt' });
+      }
+
       if (currentDebt.status === 'paid') {
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'Debt is already paid' });
       }
@@ -114,16 +131,22 @@ export const paymentsRouter = router({
 
       // Transaction: create payment and update debt
       const result = await db.transaction(async (tx) => {
+        const targetDebtIds = isConfirmedTwoWay && currentDebt.linkedDebtId
+          ? [input.debtId, currentDebt.linkedDebtId]
+          : [input.debtId];
+
         // Insert payment
-        await tx
-          .insert(payments)
-          .values({
-            debtId: input.debtId,
-            amount: input.amount.toString(), // decimal as string
-            paymentDate: new Date(input.paymentDate),
-            note: input.note,
-          })
-          .execute();
+        for (const targetDebtId of targetDebtIds) {
+          await tx
+            .insert(payments)
+            .values({
+              debtId: targetDebtId,
+              amount: input.amount.toString(), // decimal as string
+              paymentDate: new Date(input.paymentDate),
+              note: input.note,
+            })
+            .execute();
+        }
 
         // Get the inserted payment id (since MySQL doesn't support returning)
         const insertedPayment = await tx
@@ -143,13 +166,15 @@ export const paymentsRouter = router({
         const newStatus = newPaidAmount === parseFloat(currentDebt.amount) ? 'paid' :
                          newPaidAmount > 0 ? 'partial' : 'pending';
 
-        await tx
-          .update(debts)
-          .set({
-            paidAmount: newPaidAmount.toString(),
-            status: newStatus,
-          })
-          .where(eq(debts.id, input.debtId));
+        for (const targetDebtId of targetDebtIds) {
+          await tx
+            .update(debts)
+            .set({
+              paidAmount: newPaidAmount.toString(),
+              status: newStatus,
+            })
+            .where(eq(debts.id, targetDebtId));
+        }
 
         // Get updated debt
         const [updatedDebt] = await tx
@@ -200,6 +225,9 @@ export const paymentsRouter = router({
         .select({
           payment: payments,
           debtUserId: debts.userId,
+          debtType: debts.type,
+          confirmationStatus: debts.confirmationStatus,
+          linkedDebtId: debts.linkedDebtId,
         })
         .from(payments)
         .innerJoin(debts, eq(payments.debtId, debts.id))
@@ -208,6 +236,15 @@ export const paymentsRouter = router({
 
       if (!paymentWithDebt.length || paymentWithDebt[0].debtUserId !== userId) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Payment not found or access denied' });
+      }
+
+      const debtMeta = paymentWithDebt[0];
+      if (debtMeta.confirmationStatus === 'confirmed' && debtMeta.linkedDebtId && debtMeta.debtType !== 'given') {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Only lender can update confirmed debt' });
+      }
+
+      if (debtMeta.confirmationStatus === 'confirmed' && debtMeta.linkedDebtId) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Delete payment is disabled for confirmed two-way debts' });
       }
 
       const debtId = paymentWithDebt[0].payment.debtId;

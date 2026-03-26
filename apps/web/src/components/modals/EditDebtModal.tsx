@@ -122,7 +122,12 @@ export const EditDebtModal = () => {
   const paidAmount = Number(debt?.paidAmount ?? 0);
   const remainingAmount = Math.max(totalAmount - paidAmount, 0);
   const isPaid = debt?.status === 'paid' || remainingAmount === 0;
-  const readOnlyMode = isPaid;
+  const isLockedForCounterparty = Boolean(
+    debt?.confirmationStatus === 'confirmed' &&
+    debt?.linkedDebtId &&
+    debt?.type !== 'given'
+  );
+  const readOnlyMode = isPaid || isLockedForCounterparty;
 
   const increaseTotal = payments
     .filter((entry) => (entry.note || '').startsWith('debt_increase:'))
@@ -280,9 +285,16 @@ export const EditDebtModal = () => {
                 <p className="text-2xl font-bold text-foreground">{contact?.name || 'Unknown'}</p>
                 <div className="flex items-center gap-2">
                   {contact?.phone ? (
-                    <p className="text-sm text-muted-foreground">{contact.phone}</p>
+                    <a href={`tel:${contact.phone}`} className="text-sm text-primary underline-offset-4 hover:underline">
+                      {contact.phone}
+                    </a>
                   ) : null}
-                  {readOnlyMode ? (
+                  {isLockedForCounterparty ? (
+                    <Badge variant="outline" className="text-xs">
+                      Faqat qarz bergan tomon tahrirlay oladi
+                    </Badge>
+                  ) : null}
+                  {isPaid ? (
                     <Badge variant="secondary" className="border border-emerald-500/40 bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">
                       To'landi - faqat ko'rish
                     </Badge>

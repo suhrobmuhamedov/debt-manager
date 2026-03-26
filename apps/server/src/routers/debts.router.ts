@@ -557,18 +557,51 @@ export const debtsRouter = router({
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Paid debt cannot be updated' });
       }
 
+      const isConfirmedTwoWay = existing.confirmationStatus === 'confirmed' && !!existing.linkedDebtId;
+      if (isConfirmedTwoWay && existing.type !== 'given') {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Only lender can update confirmed debt' });
+      }
+
+      if (input.amount !== undefined && input.amount < Number(existing.paidAmount)) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Amount cannot be less than already paid amount' });
+      }
+
       const givenDate = new Date(existing.givenDate);
       const returnDate = toDateOnly(input.returnDate);
       validateReturnDate({ givenDate, returnDate });
 
-      await db
-        .update(debts)
-        .set({
-          returnDate,
-          ...(input.note !== undefined ? { note: input.note } : {}),
-          ...(input.amount !== undefined ? { amount: input.amount.toString() } : {}),
-        })
-        .where(eq(debts.id, input.id));
+      await db.transaction(async (tx) => {
+        const amountValue = input.amount !== undefined ? input.amount.toString() : existing.amount;
+        const paidValue = existing.paidAmount;
+        const nextStatus = Number(paidValue) <= 0
+          ? 'pending'
+          : Number(paidValue) >= Number(amountValue)
+            ? 'paid'
+            : 'partial';
+
+        await tx
+          .update(debts)
+          .set({
+            returnDate,
+            status: nextStatus,
+            ...(input.note !== undefined ? { note: input.note } : {}),
+            ...(input.amount !== undefined ? { amount: amountValue } : {}),
+          })
+          .where(eq(debts.id, input.id));
+
+        if (isConfirmedTwoWay && existing.linkedDebtId) {
+          await tx
+            .update(debts)
+            .set({
+              returnDate,
+              amount: amountValue,
+              paidAmount: paidValue,
+              status: nextStatus,
+              ...(input.note !== undefined ? { note: input.note } : {}),
+            })
+            .where(eq(debts.id, existing.linkedDebtId));
+        }
+      });
 
       const [updated] = await db
         .select()
@@ -596,6 +629,11 @@ export const debtsRouter = router({
 
       if (!existing) {
         throw new TRPCError({ code: 'NOT_FOUND' });
+      }
+
+      const isConfirmedTwoWay = existing.confirmationStatus === 'confirmed' && !!existing.linkedDebtId;
+      if (isConfirmedTwoWay && existing.type !== 'given') {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Only lender can delete confirmed debt' });
       }
 
       await db.update(debts).set({ deletedAt: new Date() }).where(eq(debts.id, input.id));

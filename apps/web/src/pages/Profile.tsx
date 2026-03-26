@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocation } from 'wouter';
 import { AppLayout } from '../components/layout/AppLayout';
 import { Button } from '../components/ui/button';
@@ -19,18 +19,34 @@ import { toast } from 'sonner';
 import { BackButton } from '../components/common/BackButton';
 import { GlassCard } from '../components/ui/GlassCard';
 import { GlassButton } from '../components/ui/GlassButton';
+import { Input } from '../components/ui/input';
+import { normalizePhone } from '../lib/contact-utils';
 
 export const Profile = () => {
-  const { user, logout } = useAuthStore();
+  const { user, logout, setUser } = useAuthStore();
   const [, navigate] = useLocation();
   const { language, theme, notificationsEnabled, setLanguage, setTheme, setNotifications } = useSettingsStore();
   const { t } = useTranslation();
   const [sheetMode, setSheetMode] = useState<'about' | 'privacy'>('about');
   const [sheetOpen, setSheetOpen] = useState(false);
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [username, setUsername] = useState('');
+  const [phone, setPhone] = useState('');
 
   const statsQuery = trpc.dashboard.getStats.useQuery();
   const contactsQuery = trpc.contacts.getAll.useQuery();
+
+  useEffect(() => {
+    if (!user) {
+      return;
+    }
+    setFirstName(user.firstName || '');
+    setLastName(user.lastName || '');
+    setUsername(user.username || '');
+    setPhone(user.phone || '');
+  }, [user]);
 
   const navigateToDebts = (query: string) => {
     navigate(`/debts${query}`);
@@ -49,6 +65,25 @@ export const Profile = () => {
       toast.error(error.message || t('common.error'));
     },
   });
+
+  const updateProfileMutation = trpc.auth.updateMe.useMutation({
+    onSuccess: (updated) => {
+      setUser({ ...updated, token: user?.token });
+      toast.success(t('contacts.savedSuccess'));
+    },
+    onError: (error) => {
+      toast.error(error.message || t('common.error'));
+    },
+  });
+
+  const handleProfileSave = () => {
+    updateProfileMutation.mutate({
+      firstName: firstName.trim(),
+      lastName: lastName.trim() || null,
+      username: username.trim() || null,
+      phone: normalizePhone(phone.trim()) || null,
+    });
+  };
 
   if (!user) {
     return (
@@ -74,6 +109,36 @@ export const Profile = () => {
         </div>
 
         <UserAvatarCard user={user} language={language} />
+
+        <GlassCard className="space-y-3">
+          <h2 className="px-1 text-sm font-semibold text-foreground">Profil ma'lumotlari</h2>
+          <div className="space-y-2">
+            <label className="text-xs text-muted-foreground">Ism</label>
+            <Input value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="Ismingiz" />
+          </div>
+          <div className="space-y-2">
+            <label className="text-xs text-muted-foreground">Familiya</label>
+            <Input value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Familiyangiz" />
+          </div>
+          <div className="space-y-2">
+            <label className="text-xs text-muted-foreground">Telegram username</label>
+            <Input value={username} onChange={(e) => setUsername(e.target.value)} placeholder="@username" />
+          </div>
+          <div className="space-y-2">
+            <label className="text-xs text-muted-foreground">Telefon raqami</label>
+            <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+998901234567" />
+          </div>
+          <div className="space-y-2">
+            <label className="text-xs text-muted-foreground">Telegram ID (o'zgarmaydi)</label>
+            <Input value={user.telegramId} disabled />
+          </div>
+          <GlassButton
+            onClick={handleProfileSave}
+            disabled={updateProfileMutation.isPending || !firstName.trim()}
+          >
+            {updateProfileMutation.isPending ? t('common.loading') : t('contacts.save')}
+          </GlassButton>
+        </GlassCard>
 
         <StatsCard
           stats={statsQuery.data ? {

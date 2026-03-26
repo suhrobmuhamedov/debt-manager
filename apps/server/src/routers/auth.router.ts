@@ -7,6 +7,9 @@ import { db } from '../db';
 import { users } from '../db/schema';
 import { verifyTelegramInitData } from '../utils/telegram.utils';
 
+const phoneRegex = /^\+?\d{7,15}$/;
+const usernameRegex = /^@?[a-zA-Z0-9_]{5,32}$/;
+
 export const authRouter = router({
   telegramLogin: publicProcedure
     .input(z.object({ initData: z.string() }))
@@ -101,4 +104,53 @@ export const authRouter = router({
     if (!user) throw new TRPCError({ code: 'UNAUTHORIZED' });
     return user;
   }),
+
+  updateMe: protectedProcedure
+    .input(
+      z.object({
+        firstName: z.string().trim().min(2).max(100),
+        lastName: z.string().trim().max(100).optional().nullable(),
+        username: z
+          .string()
+          .trim()
+          .regex(usernameRegex, 'Username formati noto\'g\'ri')
+          .optional()
+          .nullable(),
+        phone: z
+          .string()
+          .trim()
+          .regex(phoneRegex, 'Telefon raqam formati noto\'g\'ri')
+          .optional()
+          .nullable(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const userId = ctx.userId!;
+
+      const normalizedUsername = input.username
+        ? input.username.replace(/^@+/, '')
+        : null;
+
+      await db
+        .update(users)
+        .set({
+          firstName: input.firstName,
+          lastName: input.lastName || null,
+          username: normalizedUsername,
+          phone: input.phone || null,
+        })
+        .where(eq(users.id, userId));
+
+      const [updated] = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, userId))
+        .limit(1);
+
+      if (!updated) {
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'User update failed' });
+      }
+
+      return updated;
+    }),
 });
