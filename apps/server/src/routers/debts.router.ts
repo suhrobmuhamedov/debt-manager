@@ -377,6 +377,8 @@ export const debtsRouter = router({
           contactName: row.contact?.name || 'Noma\'lum',
           contactPhone: row.contact?.phone || null,
           contactUsername: counterparty?.username || null,
+          ownerFirstName: row.owner.firstName,
+          ownerLastName: row.owner.lastName,
           amount: remainingAmount,
           currency: row.debt.currency,
           returnDate: new Date(row.debt.returnDate),

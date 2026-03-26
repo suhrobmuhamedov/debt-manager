@@ -1,5 +1,5 @@
 import { Context, Markup } from 'telegraf';
-import { confirmDebtByToken, denyDebtByToken } from '../utils/internal-api';
+import { confirmDebtByToken, denyDebtByToken, getConfirmationDetails } from '../utils/internal-api';
 
 type AxiosLikeError = {
   code?: string;
@@ -61,6 +61,15 @@ const extractStartPayload = (ctx: Context): string => {
   return parts.length > 1 ? parts.slice(1).join(' ').trim() : '';
 };
 
+const formatConfirmAmount = (amount: number, currency: string): string => {
+  return `${amount.toLocaleString('uz-UZ')} ${currency}`;
+};
+
+const formatConfirmDate = (dateStr: string): string => {
+  const d = new Date(dateStr);
+  return d.toLocaleDateString('uz-UZ', { day: 'numeric', month: 'long', year: 'numeric' });
+};
+
 export const handleDebtConfirmStartPayload = async (ctx: Context): Promise<boolean> => {
   const payload = extractStartPayload(ctx);
   if (!payload.startsWith('confirm_')) {
@@ -74,38 +83,44 @@ export const handleDebtConfirmStartPayload = async (ctx: Context): Promise<boole
   }
 
   try {
-    const telegramId = ctx.from?.id?.toString();
-    if (!telegramId) {
-      await ctx.reply('❌ Telegram ID topilmadi.');
+    const details = await getConfirmationDetails(token);
+
+    if (!details.isValid) {
+      if (details.status === 'confirmed') {
+        await ctx.reply("✅ Bu qarz allaqachon tasdiqlangan.");
+      } else if (details.status === 'denied') {
+        await ctx.reply("❌ Bu qarz allaqachon rad etilgan.");
+      } else {
+        await ctx.reply("❌ Bu havola yaroqsiz yoki muddati o'tgan.\nQarz egasidan yangi havola so'rang.");
+      }
       return true;
     }
 
-    await confirmDebtByToken({
-      token,
-      telegramId,
-      firstName: ctx.from?.first_name,
-      lastName: ctx.from?.last_name,
-      username: ctx.from?.username,
-    });
+    const amountText = formatConfirmAmount(details.amount, details.currency);
+    const dateText = formatConfirmDate(details.returnDate);
 
-    const telegramUserId = ctx.from?.id ? String(ctx.from.id) : '';
-    const baseUrl = process.env.WEB_APP_URL || '';
-    if (baseUrl) {
-      const loginUrl = new URL(baseUrl);
-      if (telegramUserId) {
-        loginUrl.searchParams.set('tgUserId', telegramUserId);
+    const message = [
+      '🔔 <b>Qarz tasdiqlash so\u02bbrovi</b>',
+      '',
+      `👤 <b>Kimdan:</b> ${details.creatorFirstName}`,
+      `💵 <b>Miqdori:</b> ${amountText}`,
+      `📅 <b>Qaytarish sanasi:</b> ${dateText}`,
+      '',
+      '✅ Tasdiqlash yoki ❌ Rad etish uchun tugmani bosing.',
+    ].join('\n');
+
+    await ctx.reply(
+      message,
+      {
+        parse_mode: 'HTML',
+        ...Markup.inlineKeyboard([
+          [
+            Markup.button.callback('✅ Tasdiqlash', `debt_confirm_${token}`),
+            Markup.button.callback('❌ Rad etish', `debt_deny_${token}`),
+          ],
+        ]),
       }
-      loginUrl.searchParams.set('source', 'debt_confirm');
-
-      await ctx.reply(
-        "✅ Qarz tasdiqlandi.\nilovaga kirish uchun kirish tugmasini bosing",
-        Markup.inlineKeyboard([
-          [Markup.button.webApp('🔐 Kirish', loginUrl.toString())],
-        ])
-      );
-    } else {
-      await ctx.reply("✅ Qarz tasdiqlandi.");
-    }
+    );
 
     return true;
   } catch (error) {

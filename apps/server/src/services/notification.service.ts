@@ -156,20 +156,20 @@ export const buildForwardableReminderMessage = (payload: {
 	contactName: string;
 	contactPhone?: string | null;
 	contactUsername?: string | null;
+	ownerFirstName: string;
+	ownerLastName: string | null;
 	amount: number;
 	currency: string | null;
 	returnDate: Date;
 	type: 'given' | 'taken';
 }) => {
-	const intro = payload.type === 'given'
-		? '⏰ Eslatma: ushbu qarzni qaytarish muddati yaqinlashmoqda.'
-		: '⏰ Eslatma: ushbu qarz bo\'yicha to\'lov muddati yaqinlashmoqda.';
+	const ownerName = [payload.ownerFirstName, payload.ownerLastName].filter(Boolean).join(' ');
 
 	return [
-		intro,
-		`👤 Ism: ${escapeHtml(payload.contactName)}`,
+		`⏰ Salom ${escapeHtml(payload.contactName)} 🖐🏻 qarzingiz haqida eslatma.`,
+		`👤 Kimdan: ${escapeHtml(ownerName)}`,
+		`👤 Kimga: ${escapeHtml(payload.contactName)}`,
 		`📞 Telefon: ${escapeHtml(payload.contactPhone || 'Kiritilmagan')}`,
-		`${buildUsernameLine(payload.contactUsername)}`.trim(),
 		`💵 Qarz miqdori: ${escapeHtml(formatAmount(payload.amount, payload.currency))}`,
 		`📅 Qaytarish sanasi: ${escapeHtml(formatReminderDate(payload.returnDate))}`,
 	].filter(Boolean).join('\n');

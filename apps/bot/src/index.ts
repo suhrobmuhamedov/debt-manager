@@ -126,6 +126,20 @@ async function releaseBotLock() {
   }
 }
 
+async function setupBotInfo() {
+  try {
+    await bot.telegram.setMyDescription(
+      '👋 Salom! Qarz Nazorati botiga xush kelibsiz.\n\n'
+      + '📩 Siz qarz tasdiqlash havolasini ochdingiz.\n\n'
+      + '👇 Davom etish uchun quyidagi <b>Boshlash</b> tugmasini bosing — '
+      + 'qarz ma\u02bblumotlari va tasdiqlash tugmalari ko\u02bbrsatiladi.',
+      { language_code: 'uz' }
+    );
+  } catch (e) {
+    console.warn('setMyDescription failed:', e);
+  }
+}
+
 async function launchBotWithRetry() {
   if (isLaunching) return;
   isLaunching = true;
@@ -138,6 +152,7 @@ async function launchBotWithRetry() {
       await bot.telegram.deleteWebhook({ drop_pending_updates: true });
       await bot.launch({ dropPendingUpdates: true });
       console.log('Bot ishga tushdi!');
+      void setupBotInfo();
       break;
     } catch (err: any) {
       const errorCode = err?.response?.error_code;
