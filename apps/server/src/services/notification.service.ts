@@ -36,6 +36,52 @@ const formatDateOnly = (date: Date): string => {
 	}).format(date);
 };
 
+const parseGmtOffsetMinutes = (offsetLabel: string): number => {
+	if (offsetLabel === 'GMT' || offsetLabel === 'UTC') {
+		return 0;
+	}
+
+	const match = offsetLabel.match(/^GMT([+-])(\d{1,2})(?::?(\d{2}))?$/);
+	if (!match) {
+		return 0;
+	}
+
+	const sign = match[1] === '-' ? -1 : 1;
+	const hours = Number(match[2] || '0');
+	const minutes = Number(match[3] || '0');
+	return sign * (hours * 60 + minutes);
+};
+
+const getTimeZoneOffsetMinutes = (date: Date, timeZone: string): number => {
+	const parts = new Intl.DateTimeFormat('en-US', {
+		timeZone,
+		timeZoneName: 'shortOffset',
+		hour: '2-digit',
+		hour12: false,
+	}).formatToParts(date);
+
+	const offsetLabel = parts.find((part) => part.type === 'timeZoneName')?.value || 'GMT';
+	return parseGmtOffsetMinutes(offsetLabel);
+};
+
+const getZonedDayStartUtc = (date = new Date()) => {
+	const parts = new Intl.DateTimeFormat('en-CA', {
+		timeZone: DEFAULT_TIME_ZONE,
+		year: 'numeric',
+		month: '2-digit',
+		day: '2-digit',
+	}).formatToParts(date);
+
+	const map = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+	const year = Number(map.year || '1970');
+	const month = Number(map.month || '01');
+	const day = Number(map.day || '01');
+
+	const utcMidnightGuess = new Date(Date.UTC(year, month - 1, day, 0, 0, 0));
+	const offsetMinutes = getTimeZoneOffsetMinutes(utcMidnightGuess, DEFAULT_TIME_ZONE);
+	return new Date(utcMidnightGuess.getTime() - offsetMinutes * 60 * 1000);
+};
+
 const getZonedDateParts = (date = new Date()) => {
 	const parts = new Intl.DateTimeFormat('en-CA', {
 		timeZone: DEFAULT_TIME_ZONE,
@@ -151,20 +197,20 @@ export const buildDirectReminderMessage = (payload: {
 
 const buildDigestMessage = (items: Array<ReminderRow & { counterpartyUsername?: string | null }>) => {
 	const body = items
-		.map((item, index) => {
+		.map((item) => {
 			const remainingAmount = Math.max(Number(item.amount) - Number(item.paidAmount), 0);
+			const ownerName = [item.ownerFirstName, item.ownerLastName].filter(Boolean).join(' ');
 			return [
-				`${index + 1}. <b>${escapeHtml(item.contactName || 'Noma\'lum')}</b>`,
-				`🧾 ${escapeHtml(formatDebtTypeLabel(item.type))}`,
-				`📞 ${escapeHtml(item.contactPhone || 'Kiritilmagan')}`,
-				item.counterpartyUsername ? `🔗 @${escapeHtml(item.counterpartyUsername)}` : '',
-				`💵 ${escapeHtml(formatAmount(remainingAmount, item.currency))}`,
-				`📅 ${escapeHtml(formatReminderDate(item.returnDate))}`,
+				`⏰ Eslatma: Salom ${escapeHtml(item.contactName || 'Noma\'lum')} qarzingiz haqida eslatma.`,
+				`👤 Kimdan: ${escapeHtml(ownerName || 'Noma\'lum')}`,
+				`📞 Telefon: ${escapeHtml(item.contactPhone || 'Kiritilmagan')}`,
+				`💵 Qarz miqdori: ${escapeHtml(formatAmount(remainingAmount, item.currency))}`,
+				`📅 Qaytarish sanasi: ${escapeHtml(formatReminderDate(item.returnDate))}`,
 			].filter(Boolean).join('\n');
 		})
 		.join('\n\n');
 
-	return `⏰ <b>Muddati yaqinlashgan qarzlar</b>\n\n${body}`;
+	return `<b>Muddati yaqinlashgan qarzlar</b>\n\n${body}`;
 };
 
 const getCounterpartyUsernames = async (rows: ReminderRow[]): Promise<Map<number, string | null>> => {
@@ -193,10 +239,9 @@ export const sendDailyDueSoonReminderDigests = async (): Promise<{ processedUser
 		return { processedUsers: 0, sentUsers: 0 };
 	}
 
-	const today = new Date(`${dateKey}T00:00:00`);
-	const limitDate = new Date(today);
-	limitDate.setDate(limitDate.getDate() + 3);
-	const todayKey = formatDateOnly(today);
+	const todayStartUtc = getZonedDayStartUtc(now);
+	const limitDate = new Date(todayStartUtc.getTime() + 3 * 24 * 60 * 60 * 1000);
+	const todayKey = dateKey;
 	const limitKey = formatDateOnly(limitDate);
 
 	const dueSoonRows = await db
@@ -226,7 +271,7 @@ export const sendDailyDueSoonReminderDigests = async (): Promise<{ processedUser
 				sql`${debts.status} IN ('pending', 'partial')`,
 				sql`${debts.returnDate} >= ${todayKey}`,
 				sql`${debts.returnDate} <= ${limitKey}`,
-				sql`(${users.lastReminderDigestAt} IS NULL OR DATE(${users.lastReminderDigestAt}) < ${todayKey})`
+				sql`(${users.lastReminderDigestAt} IS NULL OR ${users.lastReminderDigestAt} < ${todayStartUtc})`
 			)
 		) as ReminderRow[];
 

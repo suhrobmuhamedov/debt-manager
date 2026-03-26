@@ -144,7 +144,7 @@ export const EditDebtModal = () => {
           date: new Date(entry.paymentDate),
           amount: Number(entry.amount),
           kind: isIncrease ? ('increase' as const) : ('payment' as const),
-          title: isIncrease ? "Qarzga qo'shildi" : "Qisman qaytarildi",
+          title: isIncrease ? "Qarzga qo'shildi" : "To'lov qilindi",
         };
       });
 
@@ -171,7 +171,7 @@ export const EditDebtModal = () => {
         ? "Qarzga qo'shildi"
         : runningBalance === 0
           ? "To'landi"
-          : "Qisman qaytarildi";
+          : "To'lov qilindi";
 
       built.push({
         ...entry,
