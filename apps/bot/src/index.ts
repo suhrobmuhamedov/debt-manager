@@ -133,7 +133,7 @@ async function setupBotInfo() {
       + '📩 Siz qarz tasdiqlash havolasini ochdingiz.\n\n'
       + '👇 Davom etish uchun quyidagi <b>Boshlash</b> tugmasini bosing — '
       + 'qarz ma\u02bblumotlari va tasdiqlash tugmalari ko\u02bbrsatiladi.',
-      { language_code: 'uz' }
+      'uz'
     );
   } catch (e) {
     console.warn('setMyDescription failed:', e);
