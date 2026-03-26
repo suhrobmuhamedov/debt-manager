@@ -149,10 +149,10 @@ export const EditDebtModal = () => {
       });
 
     let runningBalance = initialAmount;
-    const built = [
+    const built: Array<{ id: string; date: Date; title: string; amount: number; kind: 'created' | 'increase' | 'payment'; balance: number }> = [
       {
         id: `created-${debt.id}`,
-        date: new Date(debt.createdAt),
+        date: new Date(debt.createdAt ?? Date.now()),
         title: 'Qarz yaratildi',
         amount: initialAmount,
         kind: 'created' as const,
@@ -279,22 +279,9 @@ export const EditDebtModal = () => {
               <div className="space-y-1">
                 <p className="text-2xl font-bold text-foreground">{contact?.name || 'Unknown'}</p>
                 <div className="flex items-center gap-2">
-                  <Badge
-                    variant={
-                      debt.status === 'paid'
-                        ? 'secondary'
-                        : debt.status === 'partial'
-                          ? 'outline'
-                          : 'destructive'
-                    }
-                    className="text-xs"
-                  >
-                    {debt.status === 'paid'
-                      ? t('debts.paid')
-                      : debt.status === 'partial'
-                        ? t('debts.partial')
-                        : t('debts.pending')}
-                  </Badge>
+                  {contact?.phone ? (
+                    <p className="text-sm text-muted-foreground">{contact.phone}</p>
+                  ) : null}
                   {readOnlyMode ? (
                     <Badge variant="secondary" className="border border-emerald-500/40 bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">
                       To'landi - faqat ko'rish
