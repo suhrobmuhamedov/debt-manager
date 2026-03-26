@@ -1,5 +1,5 @@
-import { Suspense, lazy, useState } from 'react';
-import { Router, Route, Switch } from 'wouter';
+import { Suspense, lazy, useEffect, useState } from 'react';
+import { Router, Route, Switch, useLocation } from 'wouter';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
 import { trpc, trpcClient } from './lib/trpc';
@@ -30,6 +30,45 @@ function PageLoader() {
   );
 }
 
+function AppRoutes() {
+  const [, navigate] = useLocation();
+
+  useEffect(() => {
+    const startParam = window.Telegram?.WebApp?.initDataUnsafe &&
+      (window.Telegram.WebApp.initDataUnsafe as { start_param?: string }).start_param;
+
+    if (!startParam) {
+      return;
+    }
+
+    const match = startParam.match(/^debt_(\d+)$/);
+    if (!match) {
+      return;
+    }
+
+    const debtId = Number(match[1]);
+    if (Number.isFinite(debtId)) {
+      navigate(`/debts/${debtId}`);
+    }
+  }, [navigate]);
+
+  return (
+    <AuthWrapper>
+      <Suspense fallback={<PageLoader />}>
+        <Switch>
+          <Route path="/" component={Dashboard} />
+          <Route path="/debts" component={Debts} />
+          <Route path="/debts/:id" component={DebtDetail} />
+          <Route path="/contacts" component={Contacts} />
+          <Route path="/contacts/:id" component={ContactDetail} />
+          <Route path="/profile" component={Profile} />
+          <Route component={NotFound} />
+        </Switch>
+      </Suspense>
+    </AuthWrapper>
+  );
+}
+
 function App() {
   const [queryClient] = useState(() => new QueryClient());
 
@@ -37,19 +76,7 @@ function App() {
     <trpc.Provider client={trpcClient} queryClient={queryClient}>
       <QueryClientProvider client={queryClient}>
         <Router>
-          <AuthWrapper>
-            <Suspense fallback={<PageLoader />}>
-              <Switch>
-                <Route path="/" component={Dashboard} />
-                <Route path="/debts" component={Debts} />
-                <Route path="/debts/:id" component={DebtDetail} />
-                <Route path="/contacts" component={Contacts} />
-                <Route path="/contacts/:id" component={ContactDetail} />
-                <Route path="/profile" component={Profile} />
-                <Route component={NotFound} />
-              </Switch>
-            </Suspense>
-          </AuthWrapper>
+          <AppRoutes />
         </Router>
 
         <ModalRenderer />

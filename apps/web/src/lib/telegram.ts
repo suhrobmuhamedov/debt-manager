@@ -11,6 +11,7 @@ declare global {
             username?: string;
             language_code?: string;
           };
+          start_param?: string;
         };
         ready: () => void;
         expand: () => void;

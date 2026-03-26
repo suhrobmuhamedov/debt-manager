@@ -46,6 +46,11 @@ const resolveBotUsername = (): string => {
   return raw.replace(/^@+/, '');
 };
 
+const buildMiniAppDebtLink = (debtId: number): string => {
+  const botUsername = resolveBotUsername();
+  return `https://t.me/${botUsername}?startapp=debt_${debtId}`;
+};
+
 const validateReturnDate = ({
   givenDate,
   returnDate,
@@ -383,9 +388,7 @@ export const debtsRouter = router({
           currency: row.debt.currency,
           returnDate: new Date(row.debt.returnDate),
           type: row.debt.type,
-          debtUrl: process.env.WEB_APP_URL
-            ? `${process.env.WEB_APP_URL.replace(/\/$/, '')}/debts/${row.debt.id}`
-            : null,
+          debtUrl: buildMiniAppDebtLink(row.debt.id),
         })
       );
 

@@ -19,7 +19,7 @@ const toDateInput = (value: Date | string | null | undefined) => {
   return Number.isNaN(date.getTime()) ? '' : date.toISOString().split('T')[0];
 };
 
-const formatDateDisplay = (date: Date | string | null | undefined): string => {
+const formatDateDisplay = (date: Date | string | null | undefined, locale: string): string => {
   if (!date) {
     return '-';
   }
@@ -27,14 +27,14 @@ const formatDateDisplay = (date: Date | string | null | undefined): string => {
   if (Number.isNaN(d.getTime())) {
     return '-';
   }
-  return d.toLocaleDateString('uz-UZ', {
+  return d.toLocaleDateString(locale, {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
   });
 };
 
-const formatLongDateUz = (date: Date | string | null | undefined): string => {
+const formatLongDate = (date: Date | string | null | undefined, locale: string): string => {
   if (!date) {
     return '-';
   }
@@ -42,7 +42,7 @@ const formatLongDateUz = (date: Date | string | null | undefined): string => {
   if (Number.isNaN(d.getTime())) {
     return '-';
   }
-  return d.toLocaleDateString('uz-UZ', {
+  return d.toLocaleDateString(locale, {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
@@ -53,7 +53,8 @@ export const EditDebtModal = () => {
   const { type, data, close } = useModalStore();
   const isOpen = type === 'EDIT_DEBT';
   const debtId = typeof data?.debtId === 'number' ? data.debtId : undefined;
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const uiLocale = i18n.language === 'ru' ? 'ru-RU' : 'uz-UZ';
   const utils = trpc.useUtils();
 
   const debtQuery = trpc.debts.getById.useQuery(
@@ -149,7 +150,7 @@ export const EditDebtModal = () => {
           date: new Date(entry.paymentDate),
           amount: Number(entry.amount),
           kind: isIncrease ? ('increase' as const) : ('payment' as const),
-          title: isIncrease ? "Qarzga qo'shildi" : "To'lov qilindi",
+          title: isIncrease ? t('debts.historyIncrease') : t('debts.historyPayment'),
         };
       });
 
@@ -158,7 +159,7 @@ export const EditDebtModal = () => {
       {
         id: `created-${debt.id}`,
         date: new Date(debt.createdAt ?? Date.now()),
-        title: 'Qarz yaratildi',
+        title: t('debts.historyCreated'),
         amount: initialAmount,
         kind: 'created' as const,
         balance: initialAmount,
@@ -173,10 +174,10 @@ export const EditDebtModal = () => {
       }
 
       const entryTitle = entry.kind === 'increase'
-        ? "Qarzga qo'shildi"
+        ? t('debts.historyIncrease')
         : runningBalance === 0
-          ? "To'landi"
-          : "To'lov qilindi";
+          ? t('debts.paid')
+          : t('debts.historyPayment');
 
       built.push({
         ...entry,
@@ -186,7 +187,7 @@ export const EditDebtModal = () => {
     });
 
     return built;
-  }, [debt, initialAmount, payments]);
+  }, [debt, initialAmount, payments, t]);
 
   const canSubmit = useMemo(() => {
     return Boolean(returnDate) && !updateMutation.isPending && !readOnlyMode;
@@ -226,7 +227,7 @@ export const EditDebtModal = () => {
     }
 
     if (adjustmentMode === 'subtract' && adjustment > remainingAmount) {
-      toast.error("Kiritilgan summa qolgan qarzdan katta bo'lmasligi kerak");
+      toast.error(t('debts.overPaymentError'));
       return;
     }
 
@@ -291,12 +292,12 @@ export const EditDebtModal = () => {
                   ) : null}
                   {isLockedForCounterparty ? (
                     <Badge variant="outline" className="text-xs">
-                      Faqat qarz bergan tomon tahrirlay oladi
+                      {t('debts.onlyLenderCanEdit')}
                     </Badge>
                   ) : null}
                   {isPaid ? (
                     <Badge variant="secondary" className="border border-emerald-500/40 bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">
-                      To'landi - faqat ko'rish
+                      {t('debts.paidReadOnly')}
                     </Badge>
                   ) : null}
                 </div>
@@ -312,7 +313,7 @@ export const EditDebtModal = () => {
                 {adjustmentMode ? (
                   <div className="rounded-lg border border-sky-300/50 bg-sky-50/50 p-3 dark:border-sky-600/40 dark:bg-sky-950/20">
                     <p className="mb-2 text-xs font-medium text-foreground">
-                      {adjustmentMode === 'add' ? "Qarz miqdoriga qo'shish" : "Qarzdan to'lov ayirish"}
+                      {adjustmentMode === 'add' ? t('debts.addToDebt') : t('debts.subtractFromDebt')}
                     </p>
                     <div className="flex gap-2">
                       <Input
@@ -321,7 +322,7 @@ export const EditDebtModal = () => {
                         step="1"
                         value={adjustmentValue}
                         onChange={(event) => setAdjustmentValue(event.target.value)}
-                        placeholder="Miqdor"
+                        placeholder={t('debts.amount')}
                         autoFocus
                         className="h-10 flex-1"
                       />
@@ -372,7 +373,7 @@ export const EditDebtModal = () => {
                       </Button>
                       <div className="flex-1 rounded-lg border border-sky-300/50 bg-sky-50/50 px-3 py-2 text-center dark:border-sky-600/40 dark:bg-sky-950/20">
                         <p className="text-2xl font-bold text-foreground">{formatCurrency(remainingAmount, debt.currency || 'UZS')}</p>
-                        <p className="text-xs text-muted-foreground">Jami: {formatCurrency(totalAmount, debt.currency || 'UZS')} | To'langan: {formatCurrency(paidAmount, debt.currency || 'UZS')}</p>
+                        <p className="text-xs text-muted-foreground">{t('debts.totalLabel')}: {formatCurrency(totalAmount, debt.currency || 'UZS')} | {t('debts.paidLabel')}: {formatCurrency(paidAmount, debt.currency || 'UZS')}</p>
                       </div>
                       <Button
                         type="button"
@@ -392,7 +393,7 @@ export const EditDebtModal = () => {
                       onClick={handleFullRepay}
                       className="h-10 w-full bg-emerald-600 text-white hover:bg-emerald-700"
                     >
-                      To'liq qaytarildi
+                      {t('debts.markFullyPaid')}
                     </Button>
                   </div>
                 )}
@@ -406,14 +407,14 @@ export const EditDebtModal = () => {
                     {timeline.map((entry) => (
                       <div key={entry.id} className="flex items-center justify-between rounded-md bg-white/50 px-2 py-1.5 dark:bg-white/5">
                         <div className="min-w-0">
-                          <p className="text-xs font-medium text-foreground">{formatDateDisplay(entry.date)}</p>
+                          <p className="text-xs font-medium text-foreground">{formatDateDisplay(entry.date, uiLocale)}</p>
                           <p className="text-xs text-muted-foreground">{entry.title}</p>
                         </div>
                         <div className="text-right">
                           <p className={`text-xs font-semibold ${entry.kind === 'payment' ? 'text-emerald-600 dark:text-emerald-400' : entry.kind === 'increase' ? 'text-amber-700 dark:text-amber-300' : 'text-sky-700 dark:text-sky-300'}`}>
                             {entry.kind === 'payment' ? '-' : '+'}{formatCurrency(entry.amount, debt.currency || 'UZS')}
                           </p>
-                          <p className="text-[11px] text-muted-foreground">Qoldiq: {formatCurrency(entry.balance, debt.currency || 'UZS')}</p>
+                          <p className="text-[11px] text-muted-foreground">{t('debts.remainingLabel')}: {formatCurrency(entry.balance, debt.currency || 'UZS')}</p>
                         </div>
                       </div>
                     ))}
@@ -427,7 +428,7 @@ export const EditDebtModal = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-xs text-muted-foreground">{t('debts.givenDate')}</p>
-                    <p className="text-sm font-semibold text-foreground">{formatDateDisplay(debt.givenDate)}</p>
+                    <p className="text-sm font-semibold text-foreground">{formatDateDisplay(debt.givenDate, uiLocale)}</p>
                   </div>
                   <div className="h-8 w-8 rounded-lg bg-sky-100 flex items-center justify-center dark:bg-sky-900/40">
                     <Lock className="h-4 w-4 text-sky-600 dark:text-sky-300" />
@@ -440,7 +441,7 @@ export const EditDebtModal = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-xs text-muted-foreground">{t('debts.returnDate')}</p>
-                    <p className="text-sm font-semibold text-foreground">{formatDateDisplay(returnDate)}</p>
+                    <p className="text-sm font-semibold text-foreground">{formatDateDisplay(returnDate, uiLocale)}</p>
                   </div>
                   <Button
                     type="button"
@@ -472,8 +473,8 @@ export const EditDebtModal = () => {
                   <>
                     <div className="h-px bg-white/30 dark:bg-white/10" />
                     <div className="space-y-1 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs dark:border-emerald-500/40 dark:bg-emerald-500/15">
-                      <p className="text-foreground">Qaytarish sanasi: {formatLongDateUz(returnDate || debt.returnDate)}</p>
-                      <p className="text-foreground">To'langan sana: {formatDateDisplay(paidDate)}</p>
+                      <p className="text-foreground">{t('debts.returnDate')}: {formatLongDate(returnDate || debt.returnDate, uiLocale)}</p>
+                      <p className="text-foreground">{t('debts.paidDate')}: {formatDateDisplay(paidDate, uiLocale)}</p>
                     </div>
                   </>
                 ) : null}
@@ -510,7 +511,7 @@ export const EditDebtModal = () => {
                 disabled={!canSubmit || debtQuery.isLoading || Boolean(debtQuery.error)}
                 className="flex-1"
               >
-                {readOnlyMode ? "Faqat ma'lumot" : updateMutation.isPending ? t('contacts.updating') : t('contacts.edit')}
+                {readOnlyMode ? t('debts.readOnlyInfo') : updateMutation.isPending ? t('contacts.updating') : t('contacts.edit')}
               </Button>
             </DialogFooter>
           </>

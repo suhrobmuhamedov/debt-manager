@@ -129,6 +129,18 @@ const buildUsernameLine = (username: string | null | undefined): string => {
 	return username ? `\n🔗 Telegram: @${escapeHtml(username)}` : '';
 };
 
+const DEFAULT_BOT_USERNAME = 'Qarznazoratibot';
+
+const resolveBotUsername = (): string => {
+	const raw = (process.env.BOT_USERNAME || DEFAULT_BOT_USERNAME).trim();
+	return raw.replace(/^@+/, '');
+};
+
+const buildMiniAppDebtLink = (debtId: number): string => {
+	const botUsername = resolveBotUsername();
+	return `https://t.me/${botUsername}?startapp=debt_${debtId}`;
+};
+
 export const sendTelegramHtmlMessage = async (telegramId: string, html: string): Promise<void> => {
 	const botToken = process.env.BOT_TOKEN;
 	if (!botToken || !telegramId) {
@@ -198,19 +210,18 @@ export const buildDirectReminderMessage = (payload: {
 };
 
 const buildDigestMessage = (items: Array<ReminderRow & { counterpartyUsername?: string | null }>) => {
-	const webAppUrl = (process.env.WEB_APP_URL || '').replace(/\/$/, '');
 	const body = items
 		.map((item) => {
 			const remainingAmount = Math.max(Number(item.amount) - Number(item.paidAmount), 0);
 			const ownerName = [item.ownerFirstName, item.ownerLastName].filter(Boolean).join(' ');
-			const debtUrl = webAppUrl ? `${webAppUrl}/debts/${item.id}` : null;
+			const debtUrl = buildMiniAppDebtLink(item.id);
 			return [
 				`⏰ Eslatma: Salom ${escapeHtml(item.contactName || 'Noma\'lum')} qarzingiz haqida eslatma.`,
 				`👤 Kimdan: ${escapeHtml(ownerName || 'Noma\'lum')}`,
 				`📞 Telefon: ${escapeHtml(item.contactPhone || 'Kiritilmagan')}`,
 				`💵 Qarz miqdori: ${escapeHtml(formatAmount(remainingAmount, item.currency))}`,
 				`📅 Qaytarish sanasi: ${escapeHtml(formatReminderDate(item.returnDate))}`,
-				debtUrl ? `🔗 <a href="${debtUrl}">Batafsil</a>` : '',
+				`🔗 <a href="${debtUrl}">Batafsil</a>`,
 			].filter(Boolean).join('\n');
 		})
 		.join('\n\n');

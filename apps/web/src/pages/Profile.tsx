@@ -14,13 +14,28 @@ import { ThemeSelector } from '../components/profile/ThemeSelector';
 import { LanguageSelector } from '../components/profile/LanguageSelector';
 import { SettingsItem } from '../components/profile/SettingsItem';
 import { AboutSheet } from '../components/profile/AboutSheet';
-import { Bell, Info, Shield } from 'lucide-react';
+import { Bell, ChevronDown, ChevronUp, Info, Shield } from 'lucide-react';
 import { toast } from 'sonner';
 import { BackButton } from '../components/common/BackButton';
 import { GlassCard } from '../components/ui/GlassCard';
 import { GlassButton } from '../components/ui/GlassButton';
 import { Input } from '../components/ui/input';
 import { normalizePhone } from '../lib/contact-utils';
+
+const UZ_PREFIX = '+998';
+
+const getUzLocalDigits = (phone?: string | null): string => {
+  if (!phone) {
+    return '';
+  }
+
+  const digits = phone.replace(/\D/g, '');
+  if (digits.startsWith('998')) {
+    return digits.slice(3, 12);
+  }
+
+  return digits.slice(0, 9);
+};
 
 export const Profile = () => {
   const { user, logout, setUser } = useAuthStore();
@@ -33,7 +48,8 @@ export const Profile = () => {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [username, setUsername] = useState('');
-  const [phone, setPhone] = useState('');
+  const [phoneLocal, setPhoneLocal] = useState('');
+  const [isProfileEditOpen, setIsProfileEditOpen] = useState(false);
 
   const statsQuery = trpc.dashboard.getStats.useQuery();
   const contactsQuery = trpc.contacts.getAll.useQuery();
@@ -45,7 +61,7 @@ export const Profile = () => {
     setFirstName(user.firstName || '');
     setLastName(user.lastName || '');
     setUsername(user.username || '');
-    setPhone(user.phone || '');
+    setPhoneLocal(getUzLocalDigits(user.phone));
   }, [user]);
 
   const navigateToDebts = (query: string) => {
@@ -70,6 +86,7 @@ export const Profile = () => {
     onSuccess: (updated) => {
       setUser({ ...updated, token: user?.token });
       toast.success(t('contacts.savedSuccess'));
+      setIsProfileEditOpen(false);
     },
     onError: (error) => {
       toast.error(error.message || t('common.error'));
@@ -81,7 +98,7 @@ export const Profile = () => {
       firstName: firstName.trim(),
       lastName: lastName.trim() || null,
       username: username.trim() || null,
-      phone: normalizePhone(phone.trim()) || null,
+      phone: normalizePhone(`${UZ_PREFIX}${phoneLocal}`) || null,
     });
   };
 
@@ -111,33 +128,59 @@ export const Profile = () => {
         <UserAvatarCard user={user} language={language} />
 
         <GlassCard className="space-y-3">
-          <h2 className="px-1 text-sm font-semibold text-foreground">Profil ma'lumotlari</h2>
-          <div className="space-y-2">
-            <label className="text-xs text-muted-foreground">Ism</label>
-            <Input value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="Ismingiz" />
-          </div>
-          <div className="space-y-2">
-            <label className="text-xs text-muted-foreground">Familiya</label>
-            <Input value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Familiyangiz" />
-          </div>
-          <div className="space-y-2">
-            <label className="text-xs text-muted-foreground">Telegram username</label>
-            <Input value={username} onChange={(e) => setUsername(e.target.value)} placeholder="@username" />
-          </div>
-          <div className="space-y-2">
-            <label className="text-xs text-muted-foreground">Telefon raqami</label>
-            <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+998901234567" />
-          </div>
-          <div className="space-y-2">
-            <label className="text-xs text-muted-foreground">Telegram ID (o'zgarmaydi)</label>
-            <Input value={user.telegramId} disabled />
-          </div>
-          <GlassButton
-            onClick={handleProfileSave}
-            disabled={updateProfileMutation.isPending || !firstName.trim()}
+          <button
+            type="button"
+            onClick={() => setIsProfileEditOpen((prev) => !prev)}
+            className="flex w-full items-center justify-between rounded-lg px-1 py-1 text-left"
           >
-            {updateProfileMutation.isPending ? t('common.loading') : t('contacts.save')}
-          </GlassButton>
+            <h2 className="text-sm font-semibold text-foreground">{t('profile.profileInfo')}</h2>
+            {isProfileEditOpen ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+          </button>
+
+          {isProfileEditOpen ? (
+            <>
+              <div className="space-y-2">
+                <label className="text-xs text-muted-foreground">{t('profile.firstNameLabel')}</label>
+                <Input value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder={t('profile.firstNamePlaceholder')} />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs text-muted-foreground">{t('profile.lastNameLabel')}</label>
+                <Input value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder={t('profile.lastNamePlaceholder')} />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs text-muted-foreground">{t('profile.telegramUsernameLabel')}</label>
+                <Input value={username} onChange={(e) => setUsername(e.target.value)} placeholder="@username" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs text-muted-foreground">{t('profile.phoneLabel')}</label>
+                <div className="relative">
+                  <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-foreground/95">
+                    {UZ_PREFIX}
+                  </span>
+                  <Input
+                    value={phoneLocal}
+                    onChange={(e) => setPhoneLocal(e.target.value.replace(/\D/g, '').slice(0, 9))}
+                    placeholder="90 123 45 67"
+                    type="tel"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    maxLength={9}
+                    className="pl-14"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs text-muted-foreground">{t('profile.telegramIdReadonly')}</label>
+                <Input value={user.telegramId} disabled />
+              </div>
+              <GlassButton
+                onClick={handleProfileSave}
+                disabled={updateProfileMutation.isPending || !firstName.trim()}
+              >
+                {updateProfileMutation.isPending ? t('common.loading') : t('contacts.save')}
+              </GlassButton>
+            </>
+          ) : null}
         </GlassCard>
 
         <StatsCard

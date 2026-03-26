@@ -5,6 +5,8 @@ import { Input } from '../ui/input';
 import { Textarea } from '../ui/textarea';
 import { isValidPhone, normalizePhone } from '../../lib/contact-utils';
 
+const UZ_PREFIX = '+998';
+
 export type DebtFormValues = {
   contactId: number;
   amount: number;
@@ -157,7 +159,7 @@ export const DebtForm = ({
     }
 
     const name = quickName.trim();
-    const phone = normalizePhone(quickPhone);
+    const phone = normalizePhone(`${UZ_PREFIX}${quickPhone}`);
 
     if (name.length < 2) {
       setQuickAddError(t('contacts.nameTooShort'));
@@ -224,13 +226,22 @@ export const DebtForm = ({
                   placeholder={t('contacts.namePlaceholder')}
                   className="h-10 border-sky-200/65 bg-white/85 dark:border-slate-500/50 dark:bg-slate-700/45"
                 />
-                <Input
-                  value={quickPhone}
-                  onChange={(event) => setQuickPhone(maskPhoneInput(event.target.value))}
-                  placeholder={t('contacts.phonePlaceholder')}
-                  className="h-10 border-sky-200/65 bg-white/85 dark:border-slate-500/50 dark:bg-slate-700/45"
-                />
-                <p className="text-[11px] text-muted-foreground">Format: +998 90 123 45 67</p>
+                <div className="relative">
+                  <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-foreground/95">
+                    {UZ_PREFIX}
+                  </span>
+                  <Input
+                    value={quickPhone}
+                    onChange={(event) => setQuickPhone(event.target.value.replace(/\D/g, '').slice(0, 9))}
+                    placeholder="90 123 45 67"
+                    type="tel"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    maxLength={9}
+                    className="h-10 border-sky-200/65 bg-white/85 pl-14 dark:border-slate-500/50 dark:bg-slate-700/45"
+                  />
+                </div>
+                <p className="text-[11px] text-muted-foreground">{t('contacts.phoneFormatHint')}</p>
                 {quickAddError ? <p className="text-xs text-red-600">{quickAddError}</p> : null}
                 <div className="flex gap-2">
                   <Button
