@@ -11,10 +11,12 @@ export const dashboardRouter = router({
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
 
-    // ✅ PARALLEL: 6 ta query bir vaqtda bajariladi (~sequential 6x o'rniga bitta round-trip)
+    // ✅ PARALLEL: 8 ta query bir vaqtda bajariladi (~sequential o'rniga bitta round-trip)
     const [
       givenStats,
       takenStats,
+      givenCountResult,
+      takenCountResult,
       statusCounts,
       overdueStats,
       recentDebtRows,
@@ -30,13 +32,23 @@ export const dashboardRouter = router({
         .from(debts)
         .where(and(eq(debts.userId, userId), eq(debts.type, 'taken'), isNull(debts.deletedAt))),
 
-      // 3. Holat bo'yicha guruhlangan soni (3 alohida query o'rniga 1 ta)
+      // 3a. Berilgan qarzlar soni (paid bo'lmagan)
+      db.select({ cnt: count() })
+        .from(debts)
+        .where(and(eq(debts.userId, userId), eq(debts.type, 'given'), sql`${debts.status} != 'paid'`, isNull(debts.deletedAt))),
+
+      // 3b. Olingan qarzlar soni (paid bo'lmagan)
+      db.select({ cnt: count() })
+        .from(debts)
+        .where(and(eq(debts.userId, userId), eq(debts.type, 'taken'), sql`${debts.status} != 'paid'`, isNull(debts.deletedAt))),
+
+      // 4. Holat bo'yicha guruhlangan soni (3 alohida query o'rniga 1 ta)
       db.select({ status: debts.status, cnt: count() })
         .from(debts)
         .where(and(eq(debts.userId, userId), isNull(debts.deletedAt)))
         .groupBy(debts.status),
 
-      // 4. Muddati o'tgan qarzlar (returnDate < bugun AND status != 'paid')
+      // 5. Muddati o'tgan qarzlar (returnDate < bugun AND status != 'paid')
       db.select({ count: count(), total: sum(debts.amount) })
         .from(debts)
         .where(
@@ -48,7 +60,7 @@ export const dashboardRouter = router({
           )
         ),
 
-      // 5. So'nggi 5 qarz — contact nomi bilan JOIN (N+1 yo'q)
+      // 6. So'nggi 5 qarz — contact nomi bilan JOIN (N+1 yo'q)
       db.select({
         id: debts.id,
         amount: debts.amount,
@@ -69,7 +81,7 @@ export const dashboardRouter = router({
         .orderBy(desc(debts.createdAt))
         .limit(5),
 
-      // 6. Shu oy to'langan summa (debts orqali userId filtri)
+      // 7. Shu oy to'langan summa (debts orqali userId filtri)
       db.select({ total: sum(payments.amount) })
         .from(payments)
         .innerJoin(debts, and(eq(payments.debtId, debts.id), eq(debts.userId, userId)))
@@ -114,7 +126,9 @@ export const dashboardRouter = router({
 
     return {
       totalGiven: Number(givenStats[0]?.total ?? 0),
+      givenCount: Number(givenCountResult[0]?.cnt ?? 0),
       totalTaken: Number(takenStats[0]?.total ?? 0),
+      takenCount: Number(takenCountResult[0]?.cnt ?? 0),
       pendingCount: Number(statusCounts.find(r => r.status === 'pending')?.cnt ?? 0),
       partialCount: Number(statusCounts.find(r => r.status === 'partial')?.cnt ?? 0),
       paidCount: Number(statusCounts.find(r => r.status === 'paid')?.cnt ?? 0),

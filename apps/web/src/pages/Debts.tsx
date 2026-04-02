@@ -4,16 +4,27 @@ import { trpc } from '../lib/trpc';
 import { DebtItem } from '../components/dashboard/DebtItem';
 import { useModalStore } from '../store/modalStore';
 import { BackButton } from '../components/common/BackButton';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { GlassButton } from '../components/ui/GlassButton';
 import { toast } from 'sonner';
+import { useLocation } from 'wouter';
 
 type TabFilter = 'all' | 'given' | 'taken' | 'paid';
 
 export const Debts = () => {
   const { t } = useTranslation();
   const { open } = useModalStore();
+  const [, params] = useLocation();
   const [tab, setTab] = useState<TabFilter>('all');
+
+  // URL'dan kelgan tab parametrini o'qish
+  useEffect(() => {
+    const searchParams = new URLSearchParams(params);
+    const tabParam = searchParams.get('tab') as TabFilter | null;
+    if (tabParam && ['all', 'given', 'taken', 'paid'].includes(tabParam)) {
+      setTab(tabParam);
+    }
+  }, [params]);
 
   const debtsQuery = trpc.debts.getAll.useQuery({ limit: 500 });
   const reminderMutation = trpc.debts.sendReminder.useMutation({

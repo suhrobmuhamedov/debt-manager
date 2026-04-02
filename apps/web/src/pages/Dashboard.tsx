@@ -93,7 +93,6 @@ export const Dashboard = () => {
     <AppLayout>
       <div className="p-4 space-y-6">
         <div className="space-y-3">
-          <h1 className="text-2xl font-bold text-foreground">{t('dashboard.title')}</h1>
           <div className="flex justify-center py-2">
             <GlassButton
               onClick={handleCreateDebt}
@@ -109,27 +108,20 @@ export const Dashboard = () => {
         <div className="grid grid-cols-2 gap-4">
           <StatCard
             title={t('dashboard.given')}
-            value={formatCurrency(stats.totalGiven, 'UZS')}
-            icon="💰"
+            value={stats.givenCount}
+            subtitle={formatCurrency(stats.totalGiven, 'UZS')}
+            icon="💸"
             variant="success"
-            onClick={() => navigateToDebts('?type=given')}
+            onClick={() => navigateToDebts('?tab=given')}
             className=""
           />
           <StatCard
             title={t('dashboard.taken')}
-            value={formatCurrency(stats.totalTaken, 'UZS')}
+            value={stats.takenCount}
+            subtitle={formatCurrency(stats.totalTaken, 'UZS')}
             icon="📥"
             variant="danger"
-            onClick={() => navigateToDebts('?type=taken')}
-            className=""
-          />
-          <StatCard
-            title={t('debts.pending')}
-            value={stats.pendingCount}
-            subtitle={t('dashboard.pendingCount')}
-            icon="⏳"
-            variant="warning"
-            onClick={() => navigateToDebts('?status=active')}
+            onClick={() => navigateToDebts('?tab=taken')}
             className=""
           />
           <StatCard
@@ -138,25 +130,10 @@ export const Dashboard = () => {
             subtitle={formatCurrency(stats.overdueAmount, 'UZS')}
             icon="⚠️"
             variant={stats.overdueCount > 0 ? "danger" : "default"}
-            onClick={() => navigateToDebts('?overdue=1')}
+            onClick={() => navigateToDebts('?tab=all')}
             className=""
           />
         </div>
-
-        {/* Net Balance */}
-        <GlassCard className="p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-sm font-medium text-gray-600 dark:text-gray-300">{t('dashboard.netBalance')}</h3>
-              <div className={`numeric-text text-2xl font-bold ${netBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {netBalance >= 0 ? '+' : ''}{formatCurrency(netBalance, 'UZS')}
-              </div>
-            </div>
-            <div className="text-4xl">
-              {netBalance >= 0 ? '📈' : '📉'}
-            </div>
-          </div>
-        </GlassCard>
 
         {/* Recent Debts */}
         <div className="space-y-4">
