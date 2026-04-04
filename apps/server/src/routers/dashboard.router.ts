@@ -64,6 +64,7 @@ export const dashboardRouter = router({
       db.select({
         id: debts.id,
         amount: debts.amount,
+        paidAmount: debts.paidAmount,
         currency: debts.currency,
         type: debts.type,
         status: debts.status,
@@ -113,7 +114,8 @@ export const dashboardRouter = router({
     const recentDebts = recentDebtRows.map(d => ({
       id: d.id,
       contactName: d.contactName || 'Unknown',
-      amount: parseFloat(d.amount),
+      amount: d.amount,
+      paidAmount: d.paidAmount,
       currency: d.currency,
       type: d.type,
       status: d.status,

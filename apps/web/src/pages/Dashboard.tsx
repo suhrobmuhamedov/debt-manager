@@ -132,7 +132,7 @@ export const Dashboard = () => {
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{t('dashboard.recentDebts')}</h2>
           </div>
 
-          {recentActiveDebts.length === 0 ? (
+          {recentActiveDebts.length === 0 && !isLoading ? (
             <EmptyState
               title={t('dashboard.noDebts')}
               description={t('dashboard.firstDebtHint')}
@@ -142,7 +142,7 @@ export const Dashboard = () => {
           ) : (
             <DebtList
               debts={recentActiveDebts}
-              isLoading={false}
+              isLoading={isLoading}
               tab="all"
               onEditDebt={handleDebtClick}
               maxItems={4}

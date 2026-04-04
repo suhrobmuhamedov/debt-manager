@@ -8,8 +8,8 @@ type TabFilter = 'all' | 'given' | 'taken' | 'overdue' | 'paid';
 interface Debt {
   id: number;
   contactName?: string;
-  amount: string;
-  paidAmount: string;
+  amount: string | number;
+  paidAmount?: string | number;
   currency?: string | null;
   type: 'given' | 'taken';
   status: 'pending' | 'partial' | 'paid' | null;
@@ -123,7 +123,7 @@ export const DebtList = ({
   return (
     <div className="space-y-3">
       {items.map((debt, index) => {
-        const remainingAmount = Number(debt.amount) - Number(debt.paidAmount);
+        const remainingAmount = Number(debt.amount) - Number(debt.paidAmount ?? 0);
         return (
           <div
             key={debt.id}
