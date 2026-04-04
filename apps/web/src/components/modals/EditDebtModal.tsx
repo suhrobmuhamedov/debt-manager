@@ -89,6 +89,8 @@ export const EditDebtModal = () => {
         utils.debts.getById.invalidate({ id: updated.id }),
         utils.contacts.getById.invalidate(),
       ]);
+      // Wait a bit for React Query to refetch the data
+      await new Promise(resolve => setTimeout(resolve, 100));
       toast.success(t('contacts.savedSuccess'));
       close();
     },
@@ -99,12 +101,15 @@ export const EditDebtModal = () => {
 
   const adjustDebtMutation = trpc.payments.adjustDebt.useMutation({
     onSuccess: async () => {
+      // Invalidate all related caches
       await Promise.all([
         utils.dashboard.getStats.invalidate(),
         utils.debts.getAll.invalidate(),
         utils.debts.getById.invalidate({ id: debtId }),
         utils.contacts.getById.invalidate(),
       ]);
+      // Wait a bit for React Query to refetch the data
+      await new Promise(resolve => setTimeout(resolve, 100));
       toast.success(t('contacts.savedSuccess'));
       setAdjustmentValue('');
       setActionDate(new Date().toISOString().split('T')[0]);
