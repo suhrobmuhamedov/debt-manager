@@ -57,22 +57,22 @@ export const StatCard = ({
           : undefined
       }
     >
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium text-slate-700 dark:text-slate-200">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 px-3 pb-1 pt-3">
+        <CardTitle className="text-xs font-medium leading-none text-slate-700 dark:text-slate-200 sm:text-sm">
           {title}
         </CardTitle>
         {icon && (
-          <div className="text-slate-500 dark:text-slate-300">
+          <div className="text-sm text-slate-500 dark:text-slate-300 sm:text-base">
             {icon}
           </div>
         )}
       </CardHeader>
-      <CardContent>
-        <div className="numeric-text mb-1 text-2xl font-bold text-slate-900 dark:text-white">
+      <CardContent className="px-3 pb-3 pt-0">
+        <div className="numeric-text mb-0.5 text-lg font-bold leading-none text-slate-900 dark:text-white sm:text-xl">
           {value}
         </div>
         {subtitle && (
-          <p className="mb-2 text-xs text-slate-600 dark:text-slate-300">
+          <p className="mb-1 text-[11px] leading-4 text-slate-600 dark:text-slate-300 sm:text-xs">
             {subtitle}
           </p>
         )}

@@ -9,7 +9,6 @@ import { useModalStore } from '../store/modalStore';
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'wouter';
 import { GlassButton } from '../components/ui/GlassButton';
-import { GlassCard } from '../components/ui/GlassCard';
 
 export const Dashboard = () => {
   const { data: stats, isLoading, error } = trpc.dashboard.getStats.useQuery();
@@ -34,8 +33,8 @@ export const Dashboard = () => {
       <AppLayout>
         <div className="p-4 space-y-6">
           {/* Stats Skeleton */}
-          <div className="grid grid-cols-2 gap-4">
-            {Array.from({ length: 4 }).map((_, i) => (
+          <div className="grid grid-cols-3 gap-2 sm:gap-3">
+            {Array.from({ length: 3 }).map((_, i) => (
               <SkeletonCard key={i} />
             ))}
           </div>
@@ -79,7 +78,6 @@ export const Dashboard = () => {
     );
   }
 
-  const netBalance = stats.totalGiven - stats.totalTaken;
   const recentActiveDebts = [...stats.recentDebts]
     .filter((debt) => debt.status !== 'paid')
     .sort((a, b) => {
@@ -105,7 +103,7 @@ export const Dashboard = () => {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-3 gap-2 sm:gap-3">
           <StatCard
             title={t('dashboard.given')}
             value={stats.givenCount}
@@ -113,7 +111,7 @@ export const Dashboard = () => {
             icon="💸"
             variant="success"
             onClick={() => navigateToDebts('?tab=given')}
-            className=""
+            className="min-h-[96px]"
           />
           <StatCard
             title={t('dashboard.taken')}
@@ -122,7 +120,7 @@ export const Dashboard = () => {
             icon="📥"
             variant="danger"
             onClick={() => navigateToDebts('?tab=taken')}
-            className=""
+            className="min-h-[96px]"
           />
           <StatCard
             title={t('dashboard.overdue')}
@@ -131,7 +129,7 @@ export const Dashboard = () => {
             icon="⚠️"
             variant={stats.overdueCount > 0 ? "danger" : "default"}
             onClick={() => navigateToDebts('?tab=all')}
-            className=""
+            className="min-h-[96px]"
           />
         </div>
 

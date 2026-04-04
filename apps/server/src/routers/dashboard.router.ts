@@ -22,15 +22,15 @@ export const dashboardRouter = router({
       recentDebtRows,
       paidThisMonthResult,
     ] = await Promise.all([
-      // 1. Berilgan qarzlar jami (DB aggregation — JS summasi o'rniga)
+      // 1. Berilgan aktiv qarzlar jami (paid bo'lmagan)
       db.select({ total: sum(debts.amount) })
         .from(debts)
-        .where(and(eq(debts.userId, userId), eq(debts.type, 'given'), isNull(debts.deletedAt))),
+        .where(and(eq(debts.userId, userId), eq(debts.type, 'given'), sql`${debts.status} != 'paid'`, isNull(debts.deletedAt))),
 
-      // 2. Olingan qarzlar jami
+      // 2. Olingan aktiv qarzlar jami (paid bo'lmagan)
       db.select({ total: sum(debts.amount) })
         .from(debts)
-        .where(and(eq(debts.userId, userId), eq(debts.type, 'taken'), isNull(debts.deletedAt))),
+        .where(and(eq(debts.userId, userId), eq(debts.type, 'taken'), sql`${debts.status} != 'paid'`, isNull(debts.deletedAt))),
 
       // 3a. Berilgan qarzlar soni (paid bo'lmagan)
       db.select({ cnt: count() })
