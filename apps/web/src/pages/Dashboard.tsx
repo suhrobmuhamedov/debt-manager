@@ -1,6 +1,6 @@
 import { AppLayout } from '../components/layout/AppLayout';
 import { StatCard } from '../components/dashboard/StatCard';
-import { DebtItem } from '../components/dashboard/DebtItem';
+import { DebtList } from '../components/shared/DebtList';
 import { EmptyState } from '../components/dashboard/EmptyState';
 import { SkeletonCard } from '../components/ui/skeleton-card';
 import { trpc } from '../lib/trpc';
@@ -78,14 +78,7 @@ export const Dashboard = () => {
     );
   }
 
-  const recentActiveDebts = [...stats.recentDebts]
-    .filter((debt) => debt.status !== 'paid')
-    .sort((a, b) => {
-      const aDate = a.returnDate ? new Date(a.returnDate).getTime() : 0;
-      const bDate = b.returnDate ? new Date(b.returnDate).getTime() : 0;
-      return bDate - aDate;
-    })
-    .slice(0, 4);
+  const recentActiveDebts = stats?.recentDebts || [];
 
   return (
     <AppLayout>
@@ -147,16 +140,13 @@ export const Dashboard = () => {
               onAction={handleCreateDebt}
             />
           ) : (
-            <div className="space-y-3">
-              {recentActiveDebts.map((debt, index) => (
-                <div key={debt.id} className="stagger-item" style={{ animationDelay: `${index * 48}ms` }}>
-                  <DebtItem
-                    {...debt}
-                    onClick={() => handleDebtClick(debt.id)}
-                  />
-                </div>
-              ))}
-            </div>
+            <DebtList
+              debts={recentActiveDebts}
+              isLoading={false}
+              tab="all"
+              onEditDebt={handleDebtClick}
+              maxItems={4}
+            />
           )}
         </div>
       </div>
