@@ -499,13 +499,14 @@ export const debtsRouter = router({
         } else {
           try {
             const senderName = creator?.firstName || 'Foydalanuvchi';
+            const contactNameDative = `${String(contact.name || '').trim()}ga`;
             const amountText = Number(input.amount).toLocaleString('uz-UZ');
             const currencyText = input.currency || 'UZS';
             const returnDateText = formatDebtDate(returnDate);
             const botUsername = resolveBotUsername();
             const confirmLink = `https://t.me/${botUsername}?start=confirm_${confirmationToken}`;
             const denyLink = `https://t.me/${botUsername}?start=deny_${confirmationToken}`;
-            const messageText = `Salom!\n${contact.name} uchun ${amountText} ${currencyText} miqdorida qarz yozildi.\nQaytarish muddati: ${returnDateText}.\n<a href="${confirmLink}">Tasdiqlash</a> | <a href="${denyLink}">Inkor qilish</a>\nUshbu xabarni qarzdorga yuboring.\n${senderName} dan.`;
+            const messageText = `Salom! ${senderName}dan ikki tomonlama tasdiqlash uchun tasdiqlash xabari yuborildi.\n${contactNameDative} ${amountText} ${currencyText} miqdorida qarz yozildi.\nQaytarish muddati: ${returnDateText}.\n<a href="${confirmLink}">Tasdiqlash</a> | <a href="${denyLink}">Inkor qilish</a>\nUshbu xabarni qarzdorga yuboring.`;
 
             await sendTelegramConfirmationMessage({
               telegramId: creator.telegramId,

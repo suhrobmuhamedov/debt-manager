@@ -109,7 +109,7 @@ export const EditDebtModal = () => {
       setAdjustmentValue('');
       setActionDate(new Date().toISOString().split('T')[0]);
       setAdjustmentMode(null);
-      void debtQuery.refetch();
+      close();
     },
     onError: (error) => {
       toast.error(error.message || t('common.error'));
@@ -129,6 +129,7 @@ export const EditDebtModal = () => {
     debt?.type !== 'given'
   );
   const readOnlyMode = isPaid || isLockedForCounterparty;
+  const debtTypeLabel = debt?.type === 'given' ? t('debts.given') : t('debts.taken');
 
   const increaseTotal = payments
     .filter((entry) => (entry.note || '').startsWith('debt_increase:'))
@@ -308,7 +309,7 @@ export const EditDebtModal = () => {
             <div className="space-y-5">
               {/* Amount with +/- adjustment */}
               <div className="space-y-3">
-                <p className="text-sm font-medium text-muted-foreground">{t('debts.amount')}</p>
+                <p className="text-sm font-medium text-muted-foreground">{t('debts.amount')} ({debtTypeLabel})</p>
 
                 {adjustmentMode ? (
                   <div className="rounded-lg border border-sky-300/50 bg-sky-50/50 p-3 dark:border-sky-600/40 dark:bg-sky-950/20">
