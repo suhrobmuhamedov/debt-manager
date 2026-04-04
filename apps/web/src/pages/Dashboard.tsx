@@ -1,6 +1,6 @@
 import { AppLayout } from '../components/layout/AppLayout';
 import { StatCard } from '../components/dashboard/StatCard';
-import { DebtList } from '../components/shared/DebtList';
+import { DebtItem } from '../components/dashboard/DebtItem';
 import { EmptyState } from '../components/dashboard/EmptyState';
 import { SkeletonCard } from '../components/ui/skeleton-card';
 import { trpc } from '../lib/trpc';
@@ -78,9 +78,14 @@ export const Dashboard = () => {
     );
   }
 
-  const recentActiveDebts = Array.isArray(stats?.recentDebts)
-    ? stats.recentDebts.filter((debt) => debt && typeof debt === 'object' && debt.status !== 'paid')
-    : [];
+  const recentActiveDebts = [...stats.recentDebts]
+    .filter((debt) => debt.status !== 'paid')
+    .sort((a, b) => {
+      const aDate = a.returnDate ? new Date(a.returnDate).getTime() : 0;
+      const bDate = b.returnDate ? new Date(b.returnDate).getTime() : 0;
+      return bDate - aDate;
+    })
+    .slice(0, 4);
 
   return (
     <AppLayout>
@@ -134,13 +139,7 @@ export const Dashboard = () => {
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{t('dashboard.recentDebts')}</h2>
           </div>
 
-          {isLoading ? (
-            <div className="space-y-3">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <SkeletonCard key={i} />
-              ))}
-            </div>
-          ) : recentActiveDebts.length === 0 ? (
+          {recentActiveDebts.length === 0 ? (
             <EmptyState
               title={t('dashboard.noDebts')}
               description={t('dashboard.firstDebtHint')}
@@ -148,13 +147,16 @@ export const Dashboard = () => {
               onAction={handleCreateDebt}
             />
           ) : (
-            <DebtList
-              debts={recentActiveDebts}
-              isLoading={false}
-              tab="all"
-              onEditDebt={handleDebtClick}
-              maxItems={4}
-            />
+            <div className="space-y-3">
+              {recentActiveDebts.map((debt, index) => (
+                <div key={debt.id} className="stagger-item" style={{ animationDelay: `${index * 48}ms` }}>
+                  <DebtItem
+                    {...debt}
+                    onClick={() => handleDebtClick(debt.id)}
+                  />
+                </div>
+              ))}
+            </div>
           )}
         </div>
       </div>
