@@ -54,16 +54,28 @@ Ilovani oching va boshlang! 👇`;
       return;
     }
 
-    // Assuming the response has: totalGiven, totalTaken, overdueCount, pendingCount
+    const totalGivenText = Number(data.totalGiven || 0).toLocaleString('uz-UZ');
+    const totalTakenText = Number(data.totalTaken || 0).toLocaleString('uz-UZ');
+    const activeGivenCount = Number(data.activeGivenCount || 0);
+    const activeTakenCount = Number(data.activeTakenCount || 0);
+    const activeGivenTotalText = Number(data.activeGivenTotal || 0).toLocaleString('uz-UZ');
+    const activeTakenTotalText = Number(data.activeTakenTotal || 0).toLocaleString('uz-UZ');
+    const webAppUrl = process.env.WEB_APP_URL || '';
+    const detailsLink = webAppUrl
+      ? `<a href="${webAppUrl}">📊 Batafsil ko'rish uchun ilovani oching</a>`
+      : `📊 Batafsil ko'rish uchun ilovani oching`;
+
     const message = `💰 Umumiy Holat:
 
-📤 Berilgan qarzlar: ${data.totalGiven?.toLocaleString() || 0} so'm
-📥 Olingan qarzlar: ${data.totalTaken?.toLocaleString() || 0} so'm
-⚠️ Muddati o'tgan: ${data.overdueCount || 0} ta
+📤 Berilgan qarzlar (jami): ${totalGivenText} so'm
+Aktiv Berilgan qarzlar (${activeGivenCount} ta): ${activeGivenTotalText} so'm
 
-📊 Batafsil ko'rish uchun ilovani oching`;
+📥 Olingan qarzlar (jami): ${totalTakenText} so'm
+Aktiv Olingan qarzlar (${activeTakenCount} ta): ${activeTakenTotalText} so'm
 
-    await ctx.reply(message, mainKeyboard);
+${detailsLink}`;
+
+    await ctx.replyWithHTML(message, mainKeyboard);
   } catch (error) {
     console.error('Balance fetch error:', error);
     const message = `Serverga ulanishda vaqtinchalik muammo bo'ldi.

@@ -258,6 +258,15 @@ app.get('/api/internal/stats/:telegramId', async (req, res) => {
       .filter(d => d.type === 'taken')
       .reduce((sum, d) => sum + parseFloat(d.amount), 0);
 
+    const activeGiven = allDebts.filter(d => d.type === 'given' && d.status !== 'paid');
+    const activeTaken = allDebts.filter(d => d.type === 'taken' && d.status !== 'paid');
+
+    const activeGivenCount = activeGiven.length;
+    const activeTakenCount = activeTaken.length;
+
+    const activeGivenTotal = activeGiven.reduce((sum, d) => sum + parseFloat(d.amount), 0);
+    const activeTakenTotal = activeTaken.reduce((sum, d) => sum + parseFloat(d.amount), 0);
+
     const overdueCount = allDebts.filter(d =>
       d.returnDate &&
       new Date(d.returnDate) < new Date() &&
@@ -268,6 +277,10 @@ app.get('/api/internal/stats/:telegramId', async (req, res) => {
       found: true,
       totalGiven,
       totalTaken,
+      activeGivenCount,
+      activeTakenCount,
+      activeGivenTotal,
+      activeTakenTotal,
       overdueCount,
       pendingCount: allDebts.filter(d => d.status === 'pending').length,
     });
