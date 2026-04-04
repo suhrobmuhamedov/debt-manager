@@ -103,7 +103,7 @@ export const Dashboard = () => {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-3 gap-2 sm:gap-3">
+        <div className="grid grid-cols-3 auto-rows-fr gap-2 sm:gap-3">
           <StatCard
             title={t('dashboard.given')}
             value={stats.givenCount}
@@ -111,7 +111,7 @@ export const Dashboard = () => {
             icon="💸"
             variant="success"
             onClick={() => navigateToDebts('?tab=given')}
-            className="min-h-[96px]"
+            className="min-h-[112px] w-full"
           />
           <StatCard
             title={t('dashboard.taken')}
@@ -120,7 +120,7 @@ export const Dashboard = () => {
             icon="📥"
             variant="danger"
             onClick={() => navigateToDebts('?tab=taken')}
-            className="min-h-[96px]"
+            className="min-h-[112px] w-full"
           />
           <StatCard
             title={t('dashboard.overdue')}
@@ -129,7 +129,7 @@ export const Dashboard = () => {
             icon="⚠️"
             variant={stats.overdueCount > 0 ? "danger" : "default"}
             onClick={() => navigateToDebts('?tab=overdue')}
-            className="min-h-[96px]"
+            className="min-h-[112px] w-full"
           />
         </div>
 

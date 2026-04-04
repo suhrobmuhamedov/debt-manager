@@ -123,7 +123,7 @@ export const dashboardRouter = router({
       confirmationStatus: d.confirmationStatus,
       confirmationExpiresAt: d.confirmationExpiresAt ? d.confirmationExpiresAt.toISOString() : null,
       linkedDebtId: d.linkedDebtId,
-      returnDate: d.returnDate ? d.returnDate.toString() : null,
+      returnDate: d.returnDate ? new Date(d.returnDate).toISOString().split('T')[0] : null,
     }));
 
     return {
