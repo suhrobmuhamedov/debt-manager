@@ -20,6 +20,7 @@ import { startCommand } from './commands/start.command';
 import { helpCommand } from './commands/help.command';
 import { balanceCommand } from './commands/balance.command';
 import { handleDebtConfirmCallback, handleDebtDenyCallback } from './commands/debt-confirm.command';
+import { getBotUserProfile } from './utils/internal-api';
 import { helpText } from './utils/keyboards';
 
 const bot = new Telegraf(process.env.BOT_TOKEN!);
@@ -72,6 +73,32 @@ bot.on('message', async (ctx) => {
   }
 
   try {
+    const telegramId = String(ctx.from.id);
+    const profile = await getBotUserProfile(telegramId).catch(() => ({
+      found: false,
+      phone: null,
+    }));
+    const fullName = [ctx.from.first_name, ctx.from.last_name].filter(Boolean).join(' ').trim() || '-';
+    const username = ctx.from.username ? `@${ctx.from.username}` : '-';
+    const phone = profile.found ? (profile.phone || '-') : '-';
+    const text = getMessageCommandText(ctx.message);
+    const preview = text ? text.slice(0, 200) : '[media yoki boshqa turdagi xabar]';
+
+    await ctx.telegram.sendMessage(
+      adminForwardTelegramId,
+      [
+        'Yangi xabar botga keldi:',
+        `Ism: ${fullName}`,
+        `Username: ${username}`,
+        `Telegram ID: ${telegramId}`,
+        `Telefon: ${phone}`,
+        `Chat turi: ${ctx.chat.type}`,
+        `Xabar: ${preview}`,
+        '',
+        'Quyida asl xabar forward qilinadi.',
+      ].join('\n')
+    );
+
     await ctx.telegram.forwardMessage(
       adminForwardTelegramId,
       ctx.chat.id,

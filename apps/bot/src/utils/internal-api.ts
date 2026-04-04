@@ -62,3 +62,15 @@ export const syncBotUser = async (payload: {
   const response = await internalClient.post('/api/internal/bot-user-sync', payload);
   return response.data as { success: boolean; userId: number | null; created: boolean };
 };
+
+export const getBotUserProfile = async (telegramId: string) => {
+  const response = await internalClient.get(`/api/internal/user-profile/${telegramId}`);
+  return response.data as {
+    found: boolean;
+    id?: number;
+    firstName?: string | null;
+    lastName?: string | null;
+    username?: string | null;
+    phone?: string | null;
+  };
+};

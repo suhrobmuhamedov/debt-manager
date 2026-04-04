@@ -277,6 +277,47 @@ app.get('/api/internal/stats/:telegramId', async (req, res) => {
   }
 });
 
+app.get('/api/internal/user-profile/:telegramId', async (req, res) => {
+  try {
+    if (!hasValidInternalApiKey(req)) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const telegramId = String(req.params.telegramId || '').trim();
+    if (!telegramId) {
+      return res.status(400).json({ error: 'Invalid telegram ID' });
+    }
+
+    const [user] = await db
+      .select({
+        id: users.id,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        username: users.username,
+        phone: users.phone,
+      })
+      .from(users)
+      .where(eq(users.telegramId, telegramId))
+      .limit(1);
+
+    if (!user) {
+      return res.json({ found: false });
+    }
+
+    return res.json({
+      found: true,
+      id: user.id,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      username: user.username,
+      phone: user.phone,
+    });
+  } catch (error) {
+    console.error('Internal user profile error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Error handler
 app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   console.error('Server error:', err);
