@@ -39,10 +39,19 @@ export const DebtList = ({
   maxItems,
 }: DebtListProps) => {
   const { t } = useTranslation();
+  const safeDebts = useMemo(() => {
+    if (!Array.isArray(debts)) {
+      return [] as Debt[];
+    }
+
+    return debts.filter((entry): entry is Debt => {
+      return Boolean(entry && typeof entry === 'object' && 'id' in entry && 'amount' in entry);
+    });
+  }, [debts]);
 
   // Filter by tab
   const tabFiltered = useMemo(() => {
-    const all = debts || [];
+    const all = safeDebts;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const todayMs = today.getTime();
@@ -63,7 +72,7 @@ export const DebtList = ({
       default:
         return all;
     }
-  }, [debts, tab]);
+  }, [safeDebts, tab]);
 
   // Sort items
   const items = useMemo(() => {
@@ -123,10 +132,14 @@ export const DebtList = ({
   return (
     <div className="space-y-3">
       {items.map((debt, index) => {
-        const remainingAmount = Number(debt.amount) - Number(debt.paidAmount ?? 0);
+        const amount = Number(debt.amount);
+        const paidAmount = Number(debt.paidAmount ?? 0);
+        const safeAmount = Number.isFinite(amount) ? amount : 0;
+        const safePaidAmount = Number.isFinite(paidAmount) ? paidAmount : 0;
+        const remainingAmount = Math.max(0, safeAmount - safePaidAmount);
         return (
           <div
-            key={debt.id}
+            key={typeof debt.id === 'number' ? debt.id : `${index}-${String(debt.id)}`}
             className="stagger-item"
             style={{ animationDelay: `${index * 48}ms` }}
           >

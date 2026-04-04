@@ -78,7 +78,9 @@ export const Dashboard = () => {
     );
   }
 
-  const recentActiveDebts = stats?.recentDebts || [];
+  const recentActiveDebts = Array.isArray(stats?.recentDebts)
+    ? stats.recentDebts.filter((debt) => debt && typeof debt === 'object' && debt.status !== 'paid')
+    : [];
 
   return (
     <AppLayout>
