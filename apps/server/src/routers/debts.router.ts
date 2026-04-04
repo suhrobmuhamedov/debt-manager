@@ -39,7 +39,7 @@ const isExpired = (expiresAt: Date | null): boolean => {
   return expiresAt.getTime() < Date.now();
 };
 
-const DEFAULT_BOT_USERNAME = 'Qarznazoratibot';
+const DEFAULT_BOT_USERNAME = 'QarzTrust_bot';
 
 const resolveBotUsername = (): string => {
   const raw = (process.env.BOT_USERNAME || DEFAULT_BOT_USERNAME).trim();

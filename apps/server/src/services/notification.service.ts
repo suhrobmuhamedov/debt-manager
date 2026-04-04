@@ -129,7 +129,7 @@ const buildUsernameLine = (username: string | null | undefined): string => {
 	return username ? `\n🔗 Telegram: @${escapeHtml(username)}` : '';
 };
 
-const DEFAULT_BOT_USERNAME = 'Qarznazoratibot';
+const DEFAULT_BOT_USERNAME = 'QarzTrust_bot';
 
 const resolveBotUsername = (): string => {
 	const raw = (process.env.BOT_USERNAME || DEFAULT_BOT_USERNAME).trim();

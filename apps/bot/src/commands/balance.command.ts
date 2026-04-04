@@ -60,11 +60,6 @@ Ilovani oching va boshlang! 👇`;
     const activeTakenCount = Number(data.activeTakenCount || 0);
     const activeGivenTotalText = Number(data.activeGivenTotal || 0).toLocaleString('uz-UZ');
     const activeTakenTotalText = Number(data.activeTakenTotal || 0).toLocaleString('uz-UZ');
-    const webAppUrl = process.env.WEB_APP_URL || '';
-    const detailsLink = webAppUrl
-      ? `<a href="${webAppUrl}">📊 Batafsil ko'rish uchun ilovani oching</a>`
-      : `📊 Batafsil ko'rish uchun ilovani oching`;
-
     const message = `💰 Umumiy Holat:
 
 📤 Berilgan qarzlar (jami): ${totalGivenText} so'm
@@ -73,9 +68,10 @@ Aktiv Berilgan qarzlar (${activeGivenCount} ta): ${activeGivenTotalText} so'm
 📥 Olingan qarzlar (jami): ${totalTakenText} so'm
 Aktiv Olingan qarzlar (${activeTakenCount} ta): ${activeTakenTotalText} so'm
 
-${detailsLink}`;
 
-    await ctx.replyWithHTML(message, mainKeyboard);
+📊 Batafsil ko'rish uchun ilovani oching`;
+
+  await ctx.reply(message, mainKeyboard);
   } catch (error) {
     console.error('Balance fetch error:', error);
     const message = `Serverga ulanishda vaqtinchalik muammo bo'ldi.

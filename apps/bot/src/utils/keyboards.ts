@@ -2,7 +2,7 @@ import { Markup } from 'telegraf';
 
 export const mainKeyboard = Markup.inlineKeyboard([
   [
-    Markup.button.webApp('📊 Ilovani ochish', process.env.WEB_APP_URL!),
+    Markup.button.webApp('📊 Batafsil ko\'rish uchun ilovani oching', process.env.WEB_APP_URL!),
   ],
   [
     Markup.button.callback('💰 Ma\'lumot', 'show_balance'),
