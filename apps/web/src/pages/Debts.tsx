@@ -9,22 +9,46 @@ import { GlassButton } from '../components/ui/GlassButton';
 import { toast } from 'sonner';
 import { useLocation } from 'wouter';
 
-type TabFilter = 'all' | 'given' | 'taken' | 'paid';
+type TabFilter = 'all' | 'given' | 'taken' | 'overdue' | 'paid';
 
 export const Debts = () => {
   const { t } = useTranslation();
   const { open } = useModalStore();
-  const [, params] = useLocation();
+  const [location] = useLocation();
   const [tab, setTab] = useState<TabFilter>('all');
 
   // URL'dan kelgan tab parametrini o'qish
   useEffect(() => {
-    const searchParams = new URLSearchParams(params);
+    const queryString = location.includes('?') ? location.split('?')[1] : '';
+    const searchParams = new URLSearchParams(queryString);
     const tabParam = searchParams.get('tab') as TabFilter | null;
-    if (tabParam && ['all', 'given', 'taken', 'paid'].includes(tabParam)) {
+
+    if (tabParam && ['all', 'given', 'taken', 'overdue', 'paid'].includes(tabParam)) {
       setTab(tabParam);
+      return;
     }
-  }, [params]);
+
+    // Legacy query params compatibility
+    const typeParam = searchParams.get('type');
+    const statusParam = searchParams.get('status');
+    const overdueParam = searchParams.get('overdue');
+
+    if (typeParam === 'given') {
+      setTab('given');
+      return;
+    }
+    if (typeParam === 'taken') {
+      setTab('taken');
+      return;
+    }
+    if (statusParam === 'paid') {
+      setTab('paid');
+      return;
+    }
+    if (overdueParam === '1' || overdueParam === 'true') {
+      setTab('overdue');
+    }
+  }, [location]);
 
   const debtsQuery = trpc.debts.getAll.useQuery({ limit: 500 });
   const reminderMutation = trpc.debts.sendReminder.useMutation({
@@ -45,9 +69,19 @@ export const Debts = () => {
 
   const tabFiltered = useMemo(() => {
     const all = debtsQuery.data?.items || [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayMs = today.getTime();
+
     switch (tab) {
       case 'given': return all.filter((d) => d.type === 'given' && d.status !== 'paid');
       case 'taken': return all.filter((d) => d.type === 'taken' && d.status !== 'paid');
+      case 'overdue':
+        return all.filter((d) => {
+          if (d.status === 'paid' || !d.returnDate) return false;
+          const dueMs = new Date(String(d.returnDate).split('T')[0]).getTime();
+          return dueMs < todayMs;
+        });
       case 'paid':  return all.filter((d) => d.status === 'paid');
       default:      return all;
     }
@@ -79,6 +113,7 @@ export const Debts = () => {
     { key: 'all',   label: t('debts.filterAll') },
     { key: 'given', label: t('debts.given') },
     { key: 'taken', label: t('debts.taken') },
+    { key: 'overdue', label: t('dashboard.overdue') },
     { key: 'paid',  label: t('debts.paid') },
   ];
 

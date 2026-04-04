@@ -128,7 +128,7 @@ export const Dashboard = () => {
             subtitle={formatCurrency(stats.overdueAmount, 'UZS')}
             icon="⚠️"
             variant={stats.overdueCount > 0 ? "danger" : "default"}
-            onClick={() => navigateToDebts('?tab=all')}
+            onClick={() => navigateToDebts('?tab=overdue')}
             className="min-h-[96px]"
           />
         </div>

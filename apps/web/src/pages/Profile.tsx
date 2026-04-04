@@ -196,7 +196,7 @@ export const Profile = () => {
           onRetry={() => statsQuery.refetch()}
           onGivenClick={() => navigateToDebts('?type=given')}
           onTakenClick={() => navigateToDebts('?type=taken')}
-          onOverdueClick={() => navigateToDebts('?overdue=1')}
+          onOverdueClick={() => navigateToDebts('?tab=overdue')}
           onPaidClick={() => navigateToDebts('?status=paid')}
           onContactsClick={navigateToContacts}
         />
