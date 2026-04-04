@@ -127,7 +127,7 @@ export const Dashboard = () => {
             value={formatCurrency(stats.overdueAmount, 'UZS')}
             subtitle={`${stats.overdueCount} ta`}
             icon="⚠️"
-            variant={stats.overdueCount > 0 ? "danger" : "default"}
+            variant="warning"
             onClick={() => navigateToDebts('?tab=overdue')}
             className="w-full"
           />

@@ -29,13 +29,13 @@ export const StatCard = ({
   const getVariantStyles = () => {
     switch (variant) {
       case 'success':
-        return 'bg-[var(--debt-given-light)] border-blue-400/20';
+        return 'border-l-4 border-l-emerald-500 bg-[var(--debt-given-light)] shadow-[inset_0_0_18px_rgba(16,185,129,0.08)]';
       case 'warning':
-        return 'bg-amber-400/15 border-amber-300/30';
+        return 'border-l-4 border-l-amber-500 bg-amber-400/12 shadow-[inset_0_0_18px_rgba(245,158,11,0.1)]';
       case 'danger':
-        return 'bg-[var(--debt-taken-light)] border-orange-300/30';
+        return 'border-l-4 border-l-rose-500 bg-[var(--debt-taken-light)] shadow-[inset_0_0_18px_rgba(244,63,94,0.08)]';
       default:
-        return '';
+        return 'border-l-4 border-l-slate-300';
     }
   };
 
@@ -57,25 +57,25 @@ export const StatCard = ({
           : undefined
       }
     >
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 px-3 pb-1 pt-2.5">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 px-3 pb-0.5 pt-2">
         <div className="flex items-center gap-1.5">
-          <CardTitle className="text-xs font-medium text-slate-700 dark:text-slate-200">
+          <CardTitle className="text-sm font-semibold leading-none text-slate-700 dark:text-slate-200">
             {title}
           </CardTitle>
           {icon && (
-            <div className="text-sm text-slate-500 dark:text-slate-300">
+            <div className="text-sm text-slate-600 dark:text-slate-300">
               {icon}
             </div>
           )}
         </div>
         {subtitle ? (
-          <span className="rounded-full border border-slate-300/70 bg-white/65 px-2 py-0.5 text-[11px] font-semibold text-slate-700 backdrop-blur-sm dark:border-white/20 dark:bg-white/10 dark:text-slate-200">
+          <span className="rounded-full border border-slate-300/70 bg-white/70 px-2.5 py-0.5 text-xs font-semibold text-slate-700 backdrop-blur-sm dark:border-white/20 dark:bg-white/10 dark:text-slate-200">
             {subtitle}
           </span>
         ) : null}
       </CardHeader>
-      <CardContent className="px-3 pb-2.5 pt-0">
-        <div className="numeric-text text-xl font-extrabold leading-tight text-slate-900 dark:text-white sm:text-2xl">
+      <CardContent className="px-3 pb-2 pt-0">
+        <div className="numeric-text text-[22px] font-extrabold leading-tight text-slate-900 dark:text-white sm:text-2xl">
           {value}
         </div>
         {trend && (
