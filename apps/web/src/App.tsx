@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
 import { trpc, trpcClient } from './lib/trpc';
 import { AuthWrapper } from './components/common/AuthWrapper';
+import { AppLayout } from './components/layout/AppLayout';
 
 // Dashboard — eager (birinchi ko'rinadigan sahifa, lazy qilinmaydi)
 import { Dashboard } from './pages/Dashboard';
@@ -24,9 +25,14 @@ export const prefetchProfile = () => import('./pages/Profile');
 
 function PageLoader() {
   return (
-    <div className="flex items-center justify-center min-h-[60vh]">
-      <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-    </div>
+    <AppLayout>
+      <div className="p-4 space-y-3">
+        <div className="h-5 w-28 rounded-md bg-white/25 dark:bg-white/10" />
+        <div className="h-20 rounded-2xl bg-white/25 dark:bg-white/10" />
+        <div className="h-20 rounded-2xl bg-white/25 dark:bg-white/10" />
+        <div className="h-20 rounded-2xl bg-white/25 dark:bg-white/10" />
+      </div>
+    </AppLayout>
   );
 }
 

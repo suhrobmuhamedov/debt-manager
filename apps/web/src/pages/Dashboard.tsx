@@ -108,7 +108,6 @@ export const Dashboard = () => {
             title={t('dashboard.given')}
             value={formatCurrency(stats.totalGiven, 'UZS')}
             subtitle={`${stats.givenCount} ta`}
-            icon="💸"
             variant="success"
             onClick={() => navigateToDebts('?tab=given')}
             className="w-full"
@@ -117,7 +116,6 @@ export const Dashboard = () => {
             title={t('dashboard.taken')}
             value={formatCurrency(stats.totalTaken, 'UZS')}
             subtitle={`${stats.takenCount} ta`}
-            icon="📥"
             variant="danger"
             onClick={() => navigateToDebts('?tab=taken')}
             className="w-full"
@@ -126,7 +124,6 @@ export const Dashboard = () => {
             title={t('dashboard.overdue')}
             value={formatCurrency(stats.overdueAmount, 'UZS')}
             subtitle={`${stats.overdueCount} ta`}
-            icon="⚠️"
             variant="warning"
             onClick={() => navigateToDebts('?tab=overdue')}
             className="w-full"

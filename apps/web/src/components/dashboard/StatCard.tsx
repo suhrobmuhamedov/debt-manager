@@ -57,25 +57,25 @@ export const StatCard = ({
           : undefined
       }
     >
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 px-2 pb-0 pt-0.5">
-        <div className="flex items-center gap-0.5">
-          <CardTitle className="text-sm font-semibold leading-none text-slate-700 dark:text-slate-200">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 px-3 pb-0.5 pt-1.5">
+        <div className="flex items-center gap-1">
+          <CardTitle className="text-[15px] font-semibold leading-none text-slate-700 dark:text-slate-200">
             {title}
           </CardTitle>
           {icon && (
-            <div className="text-sm leading-none text-slate-600 dark:text-slate-300">
+            <div className="text-base leading-none text-slate-600 dark:text-slate-300">
               {icon}
             </div>
           )}
         </div>
         {subtitle ? (
-          <span className="rounded-full border border-slate-300/70 bg-white/90 px-1.5 py-0 text-[11px] font-semibold leading-none text-slate-700 dark:border-white/20 dark:bg-slate-800/80 dark:text-slate-200">
+          <span className="rounded-full border border-slate-300/70 bg-white/90 px-2.5 py-0.5 text-base font-semibold leading-none text-slate-700 dark:border-white/20 dark:bg-slate-800/80 dark:text-slate-200">
             {subtitle}
           </span>
         ) : null}
       </CardHeader>
-      <CardContent className="px-2 pb-0.5 pt-0">
-        <div className="numeric-text text-[18px] font-extrabold leading-tight text-slate-900 dark:text-white sm:text-[20px]">
+      <CardContent className="px-3 pb-1.5 pt-0">
+        <div className="numeric-text text-[20px] font-extrabold leading-tight text-slate-900 dark:text-white sm:text-[22px]">
           {value}
         </div>
         {trend && (
