@@ -29,20 +29,20 @@ export const StatCard = ({
   const getVariantStyles = () => {
     switch (variant) {
       case 'success':
-        return 'border-l-4 border-l-emerald-500 bg-[var(--debt-given-light)] shadow-[inset_0_0_18px_rgba(16,185,129,0.08)]';
+        return 'border-l-4 border-l-emerald-500 bg-emerald-50/85 dark:bg-emerald-900/20';
       case 'warning':
-        return 'border-l-4 border-l-amber-500 bg-amber-400/12 shadow-[inset_0_0_18px_rgba(245,158,11,0.1)]';
+        return 'border-l-4 border-l-amber-500 bg-amber-50/85 dark:bg-amber-900/20';
       case 'danger':
-        return 'border-l-4 border-l-rose-500 bg-[var(--debt-taken-light)] shadow-[inset_0_0_18px_rgba(244,63,94,0.08)]';
+        return 'border-l-4 border-l-rose-500 bg-rose-50/85 dark:bg-rose-900/20';
       default:
-        return 'border-l-4 border-l-slate-300';
+        return 'border-l-4 border-l-slate-300 bg-white/90 dark:bg-slate-900/25';
     }
   };
 
   return (
     <GlassCard
       variant="colored"
-      className={`${getVariantStyles()} ${className || ''} ${onClick ? 'cursor-pointer' : ''}`}
+      className={`!rounded-2xl !p-0 border-slate-200/70 shadow-none backdrop-blur-none transition-none hover:scale-100 hover:shadow-none ${getVariantStyles()} ${className || ''} ${onClick ? 'cursor-pointer' : ''}`}
       onClick={onClick}
       role={onClick ? 'button' : undefined}
       tabIndex={onClick ? 0 : undefined}
@@ -69,7 +69,7 @@ export const StatCard = ({
           )}
         </div>
         {subtitle ? (
-          <span className="rounded-full border border-slate-300/70 bg-white/70 px-1.5 py-0 text-[11px] font-semibold leading-none text-slate-700 backdrop-blur-sm dark:border-white/20 dark:bg-white/10 dark:text-slate-200">
+          <span className="rounded-full border border-slate-300/70 bg-white/90 px-1.5 py-0 text-[11px] font-semibold leading-none text-slate-700 dark:border-white/20 dark:bg-slate-800/80 dark:text-slate-200">
             {subtitle}
           </span>
         ) : null}

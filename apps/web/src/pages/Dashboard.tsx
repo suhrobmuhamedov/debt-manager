@@ -95,7 +95,7 @@ export const Dashboard = () => {
             <GlassButton
               onClick={handleCreateDebt}
               variant="glass"
-              className="flex h-14 items-center justify-center px-7 text-base font-bold whitespace-nowrap shadow-lg shadow-emerald-500/20 ring-1 ring-white/35"
+              className="flex h-14 items-center justify-center px-7 text-base font-bold whitespace-nowrap shadow-sm ring-1 ring-white/20"
             >
               + {t('debts.add')}
             </GlassButton>
@@ -148,8 +148,8 @@ export const Dashboard = () => {
             />
           ) : (
             <div className="space-y-3">
-              {recentActiveDebts.map((debt, index) => (
-                <div key={debt.id} className="stagger-item" style={{ animationDelay: `${index * 48}ms` }}>
+              {recentActiveDebts.map((debt) => (
+                <div key={debt.id}>
                   <DebtItem
                     id={debt.id}
                     contactName={debt.contactName || 'Unknown'}

@@ -4,7 +4,6 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
 import { trpc, trpcClient } from './lib/trpc';
 import { AuthWrapper } from './components/common/AuthWrapper';
-import { ModalRenderer } from './components/modals/ModalRenderer';
 
 // Dashboard — eager (birinchi ko'rinadigan sahifa, lazy qilinmaydi)
 import { Dashboard } from './pages/Dashboard';
@@ -16,6 +15,7 @@ const Contacts = lazy(() => import('./pages/Contacts').then(m => ({ default: m.C
 const ContactDetail = lazy(() => import('./pages/ContactDetail').then(m => ({ default: m.ContactDetail })));
 const Profile = lazy(() => import('./pages/Profile').then(m => ({ default: m.Profile })));
 const NotFound = lazy(() => import('./pages/NotFound').then(m => ({ default: m.NotFound })));
+const ModalRenderer = lazy(() => import('./components/modals/ModalRenderer').then(m => ({ default: m.ModalRenderer })));
 
 // Prefetch funksiyalari — BottomNav hover/touch da chaqiradi
 export const prefetchDebts = () => import('./pages/Debts');
@@ -52,6 +52,26 @@ function AppRoutes() {
     }
   }, [navigate]);
 
+  useEffect(() => {
+    const runPrefetch = () => {
+      void prefetchDebts();
+      void prefetchContacts();
+      void prefetchProfile();
+    };
+
+    if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+      const idleId = (window as Window & { requestIdleCallback: (cb: () => void) => number }).requestIdleCallback(runPrefetch);
+      return () => {
+        if ('cancelIdleCallback' in window) {
+          (window as Window & { cancelIdleCallback: (id: number) => void }).cancelIdleCallback(idleId);
+        }
+      };
+    }
+
+    const timeoutId = window.setTimeout(runPrefetch, 1200);
+    return () => window.clearTimeout(timeoutId);
+  }, []);
+
   return (
     <AuthWrapper>
       <Suspense fallback={<PageLoader />}>
@@ -70,7 +90,17 @@ function AppRoutes() {
 }
 
 function App() {
-  const [queryClient] = useState(() => new QueryClient());
+  const [queryClient] = useState(() => new QueryClient({
+    defaultOptions: {
+      queries: {
+        staleTime: 60_000,
+        gcTime: 10 * 60_000,
+        refetchOnWindowFocus: false,
+        refetchOnReconnect: false,
+        retry: 1,
+      },
+    },
+  }));
 
   return (
     <trpc.Provider client={trpcClient} queryClient={queryClient}>
@@ -79,7 +109,9 @@ function App() {
           <AppRoutes />
         </Router>
 
-        <ModalRenderer />
+        <Suspense fallback={null}>
+          <ModalRenderer />
+        </Suspense>
         <Toaster position="top-center" richColors />
       </QueryClientProvider>
     </trpc.Provider>
