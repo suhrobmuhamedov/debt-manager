@@ -103,7 +103,7 @@ export const Dashboard = () => {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 gap-1.5">
+        <div className="grid grid-cols-1 gap-1">
           <StatCard
             title={t('dashboard.given')}
             value={formatCurrency(stats.totalGiven, 'UZS')}
