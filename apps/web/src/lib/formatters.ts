@@ -1,4 +1,4 @@
-import { format, formatDistanceToNow, differenceInDays } from 'date-fns';
+import { format, formatDistanceToNow, differenceInDays, isValid } from 'date-fns';
 import { uz } from 'date-fns/locale';
 
 export type MoneyInput = number | string | null | undefined;
@@ -84,8 +84,13 @@ export const formatCurrency = (
   return `${signPrefix}${formattedNumber} ${currencyLabel}`;
 };
 
-export const formatDate = (date: Date | string): string => {
+export const formatDate = (date: Date | string | null | undefined): string => {
+  if (date === null || date === undefined || date === '') return "Sana ko'rsatilmagan";
   const d = typeof date === 'string' ? new Date(date) : date;
+  if (!isValid(d)) {
+    console.warn('[formatDate] Invalid date value:', date);
+    return "Sana ko'rsatilmagan";
+  }
   return format(d, 'd MMMM yyyy', { locale: uz });
 };
 

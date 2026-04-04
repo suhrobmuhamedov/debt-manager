@@ -58,10 +58,16 @@ export const DebtItem = ({
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const deadline = returnDate ? new Date(returnDate) : null;
-  if (deadline) {
-    deadline.setHours(0, 0, 0, 0);
-  }
+  const deadline = (() => {
+    if (!returnDate) return null;
+    const d = new Date(returnDate);
+    if (Number.isNaN(d.getTime())) {
+      console.warn('[DebtItem] Invalid returnDate value:', returnDate);
+      return null;
+    }
+    d.setHours(0, 0, 0, 0);
+    return d;
+  })();
 
   const dayDiff = deadline ? Math.ceil((deadline.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)) : 0;
   const isOverdue = dayDiff < 0 && status !== 'paid';
