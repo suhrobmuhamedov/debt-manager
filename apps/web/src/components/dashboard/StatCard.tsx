@@ -57,29 +57,31 @@ export const StatCard = ({
           : undefined
       }
     >
-      <CardHeader className="flex flex-row items-start justify-between space-y-0 px-3 pb-1 pt-3 sm:px-4">
-        <CardTitle className="text-[11px] font-medium uppercase tracking-wide text-slate-600 dark:text-slate-300 sm:text-xs">
-          {title}
-        </CardTitle>
-        {icon && (
-          <div className="text-base text-slate-500 dark:text-slate-300 sm:text-lg">
-            {icon}
-          </div>
-        )}
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 px-3 pb-1 pt-2.5">
+        <div className="flex items-center gap-1.5">
+          <CardTitle className="text-xs font-medium text-slate-700 dark:text-slate-200">
+            {title}
+          </CardTitle>
+          {icon && (
+            <div className="text-sm text-slate-500 dark:text-slate-300">
+              {icon}
+            </div>
+          )}
+        </div>
+        {subtitle ? (
+          <span className="rounded-full border border-slate-300/70 bg-white/65 px-2 py-0.5 text-[11px] font-semibold text-slate-700 backdrop-blur-sm dark:border-white/20 dark:bg-white/10 dark:text-slate-200">
+            {subtitle}
+          </span>
+        ) : null}
       </CardHeader>
-      <CardContent className="flex flex-col gap-1.5 px-3 pb-3 pt-0 sm:px-4 sm:pb-4">
-        <div className="numeric-text text-2xl font-extrabold leading-none text-slate-900 dark:text-white sm:text-3xl">
+      <CardContent className="px-3 pb-2.5 pt-0">
+        <div className="numeric-text text-xl font-extrabold leading-tight text-slate-900 dark:text-white sm:text-2xl">
           {value}
         </div>
-        {subtitle && (
-          <p className="text-sm font-medium leading-5 text-slate-700 dark:text-slate-200">
-            {subtitle}
-          </p>
-        )}
         {trend && (
           <Badge
             variant={trend.isPositive ? 'default' : 'destructive'}
-            className="text-xs"
+            className="mt-1.5 text-xs"
           >
             {trend.isPositive ? '+' : ''}{trend.value}%
           </Badge>

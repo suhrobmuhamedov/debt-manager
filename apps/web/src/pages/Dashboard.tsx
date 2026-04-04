@@ -33,7 +33,7 @@ export const Dashboard = () => {
       <AppLayout>
         <div className="p-4 space-y-6">
           {/* Stats Skeleton */}
-          <div className="grid grid-cols-3 gap-2 sm:gap-3">
+          <div className="grid grid-cols-1 gap-2">
             {Array.from({ length: 3 }).map((_, i) => (
               <SkeletonCard key={i} />
             ))}
@@ -103,33 +103,33 @@ export const Dashboard = () => {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-3 auto-rows-fr gap-2 sm:gap-3">
+        <div className="grid grid-cols-1 gap-2">
           <StatCard
             title={t('dashboard.given')}
-            value={stats.givenCount}
-            subtitle={formatCurrency(stats.totalGiven, 'UZS')}
+            value={formatCurrency(stats.totalGiven, 'UZS')}
+            subtitle={`${stats.givenCount} ta`}
             icon="💸"
             variant="success"
             onClick={() => navigateToDebts('?tab=given')}
-            className="min-h-[112px] w-full"
+            className="w-full"
           />
           <StatCard
             title={t('dashboard.taken')}
-            value={stats.takenCount}
-            subtitle={formatCurrency(stats.totalTaken, 'UZS')}
+            value={formatCurrency(stats.totalTaken, 'UZS')}
+            subtitle={`${stats.takenCount} ta`}
             icon="📥"
             variant="danger"
             onClick={() => navigateToDebts('?tab=taken')}
-            className="min-h-[112px] w-full"
+            className="w-full"
           />
           <StatCard
             title={t('dashboard.overdue')}
-            value={stats.overdueCount}
-            subtitle={formatCurrency(stats.overdueAmount, 'UZS')}
+            value={formatCurrency(stats.overdueAmount, 'UZS')}
+            subtitle={`${stats.overdueCount} ta`}
             icon="⚠️"
             variant={stats.overdueCount > 0 ? "danger" : "default"}
             onClick={() => navigateToDebts('?tab=overdue')}
-            className="min-h-[112px] w-full"
+            className="w-full"
           />
         </div>
 
