@@ -48,7 +48,7 @@ const getApiErrorMessage = (error: unknown): string => {
   return '❌ Server bilan aloqa xatosi. Keyinroq qayta urinib ko\'ring.';
 };
 
-const DEFAULT_BOT_USERNAME = 'Qarznazoratibot';
+const DEFAULT_BOT_USERNAME = 'QarzTrust_bot';
 
 const resolveBotUsername = (): string => {
   const raw = (process.env.BOT_USERNAME || DEFAULT_BOT_USERNAME).trim();

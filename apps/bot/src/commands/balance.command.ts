@@ -71,7 +71,7 @@ Aktiv Olingan qarzlar (${activeTakenCount} ta): ${activeTakenTotalText} so'm
 
 📊 Batafsil ko'rish uchun ilovani oching`;
 
-  await ctx.reply(message, mainKeyboard);
+    await ctx.reply(message);
   } catch (error) {
     console.error('Balance fetch error:', error);
     const message = `Serverga ulanishda vaqtinchalik muammo bo'ldi.
