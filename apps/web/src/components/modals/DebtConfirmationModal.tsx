@@ -7,6 +7,7 @@ import { Card, CardContent } from '../ui/card';
 import { useModalStore } from '../../store/modalStore';
 import { trpc } from '../../lib/trpc';
 import { shareToTelegram } from '../../lib/telegram';
+import { formatCurrency } from '../../lib/formatters';
 
 export const DebtConfirmationModal = () => {
   const { type, data, close } = useModalStore();
@@ -53,7 +54,7 @@ export const DebtConfirmationModal = () => {
         <Card className="border-gray-300 dark:border-white/15">
           <CardContent className="space-y-1 p-4 text-sm">
             <p><span className="font-semibold">{contactName}</span></p>
-            <p>{amount.toLocaleString('uz-UZ')} {currency}</p>
+            <p>{formatCurrency(amount, currency)}</p>
             <p>{t('debts.returnDate')}: {returnDate}</p>
           </CardContent>
         </Card>

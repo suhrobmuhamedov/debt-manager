@@ -151,7 +151,16 @@ export const Dashboard = () => {
               {recentActiveDebts.map((debt, index) => (
                 <div key={debt.id} className="stagger-item" style={{ animationDelay: `${index * 48}ms` }}>
                   <DebtItem
-                    {...debt}
+                    id={debt.id}
+                    contactName={debt.contactName || 'Unknown'}
+                    amount={Math.max(Number(debt.amount) - Number(debt.paidAmount), 0)}
+                    currency={debt.currency}
+                    type={debt.type}
+                    status={debt.status}
+                    returnDate={debt.returnDate ? String(debt.returnDate).split('T')[0] : null}
+                    paidAt={'paidAt' in debt && debt.paidAt ? String(debt.paidAt).split('T')[0] : null}
+                    confirmationStatus={debt.confirmationStatus}
+                    confirmationExpiresAt={debt.confirmationExpiresAt ? String(debt.confirmationExpiresAt) : null}
                     onClick={() => handleDebtClick(debt.id)}
                   />
                 </div>

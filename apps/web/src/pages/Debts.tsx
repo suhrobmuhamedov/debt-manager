@@ -160,7 +160,7 @@ export const Debts = () => {
                 key={debt.id}
                 id={debt.id}
                 contactName={debt.contactName || 'Unknown'}
-                amount={Number(debt.amount) - Number(debt.paidAmount)}
+                amount={Math.max(Number(debt.amount) - Number(debt.paidAmount), 0)}
                 currency={debt.currency}
                 type={debt.type}
                 status={debt.status}

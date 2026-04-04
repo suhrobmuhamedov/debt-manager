@@ -153,7 +153,7 @@ export const DebtItem = ({
             </div>
             {!isPaid ? (
               <div className={`numeric-text text-lg font-semibold ${getTypeColor()}`}>
-                {type === 'given' ? '+' : '-'}{formatCurrency(amount, currency || 'UZS')}
+                {formatCurrency(amount, currency || 'UZS', { sign: type === 'given' ? 'plus' : 'minus' })}
               </div>
             ) : null}
             {!isPaid ? (

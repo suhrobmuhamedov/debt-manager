@@ -418,7 +418,7 @@ export const EditDebtModal = () => {
                         </div>
                         <div className="text-right">
                           <p className={`text-xs font-semibold ${entry.kind === 'payment' ? 'text-emerald-600 dark:text-emerald-400' : entry.kind === 'increase' ? 'text-amber-700 dark:text-amber-300' : 'text-sky-700 dark:text-sky-300'}`}>
-                            {entry.kind === 'payment' ? '-' : '+'}{formatCurrency(entry.amount, debt.currency || 'UZS')}
+                            {formatCurrency(entry.amount, debt.currency || 'UZS', { sign: entry.kind === 'payment' ? 'minus' : 'plus' })}
                           </p>
                           <p className="text-[11px] text-muted-foreground">{t('debts.remainingLabel')}: {formatCurrency(entry.balance, debt.currency || 'UZS')}</p>
                         </div>
