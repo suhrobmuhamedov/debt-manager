@@ -25,13 +25,62 @@ import { helpText } from './utils/keyboards';
 const bot = new Telegraf(process.env.BOT_TOKEN!);
 let isLaunching = false;
 let lockConnection: mysql.Connection | null = null;
+const adminForwardTelegramId = process.env.ADMIN_FORWARD_TELEGRAM_ID?.trim() || '';
 
 const BOT_LOCK_NAME = 'debt-manager-bot-poller';
+
+const getMessageCommandText = (message: unknown): string => {
+  if (!message || typeof message !== 'object') {
+    return '';
+  }
+
+  const candidate = message as { text?: unknown; caption?: unknown };
+  if (typeof candidate.text === 'string') {
+    return candidate.text.trim();
+  }
+  if (typeof candidate.caption === 'string') {
+    return candidate.caption.trim();
+  }
+  return '';
+};
+
+const isSlashCommandMessage = (message: unknown): boolean => {
+  const text = getMessageCommandText(message);
+  return text.startsWith('/');
+};
 
 // Register commands
 bot.start(startCommand);
 bot.help(helpCommand);
 bot.command('balance', balanceCommand);
+
+bot.on('message', async (ctx) => {
+  if (!adminForwardTelegramId) {
+    return;
+  }
+
+  if (!ctx.from?.id || !ctx.chat?.id || !('message_id' in ctx.message)) {
+    return;
+  }
+
+  if (String(ctx.from.id) === adminForwardTelegramId) {
+    return;
+  }
+
+  if (isSlashCommandMessage(ctx.message)) {
+    return;
+  }
+
+  try {
+    await ctx.telegram.forwardMessage(
+      adminForwardTelegramId,
+      ctx.chat.id,
+      ctx.message.message_id,
+    );
+  } catch (error) {
+    console.error('Admin message forward xatosi:', error);
+  }
+});
 
 // Handle callback queries
 bot.action('show_balance', async (ctx) => {
