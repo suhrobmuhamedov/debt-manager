@@ -19,8 +19,7 @@ export const Debts = () => {
 
   // URL'dan kelgan tab parametrini o'qish
   useEffect(() => {
-    const queryString = location.includes('?') ? location.split('?')[1] : '';
-    const searchParams = new URLSearchParams(queryString);
+    const searchParams = new URLSearchParams(window.location.search);
     const tabParam = searchParams.get('tab') as TabFilter | null;
 
     if (tabParam && ['all', 'given', 'taken', 'overdue', 'paid'].includes(tabParam)) {
