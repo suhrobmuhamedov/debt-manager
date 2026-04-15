@@ -167,7 +167,6 @@ export const Debts = () => {
           <div className="flex items-start justify-between gap-3">
             <div>
               <h1 className="text-2xl font-semibold text-[color:var(--foreground)]">{t("debts.title")}</h1>
-              <p className="text-sm text-[color:var(--muted-foreground)]">{t("dashboard.recentDebts")}</p>
             </div>
             <GlassButton
               onClick={handleCreateDebt}

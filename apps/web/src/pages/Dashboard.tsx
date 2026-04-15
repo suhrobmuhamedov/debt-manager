@@ -108,9 +108,7 @@ export const Dashboard = () => {
       <div className="space-y-5 px-4 py-4">
         <div className="space-y-3">
           <div className="space-y-1">
-            <p className="text-sm text-[color:var(--muted-foreground)]">{t("dashboard.title")}</p>
             <h1 className="text-2xl font-semibold text-[color:var(--foreground)]">{t("nav.home")}</h1>
-            <p className="max-w-sm text-sm text-[color:var(--muted-foreground)]">{t("dashboard.firstDebtHint")}</p>
           </div>
 
           <GlassButton
