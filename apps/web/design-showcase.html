@@ -1,0 +1,1726 @@
+<!DOCTYPE html>
+<html lang="uz" class="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Debt Manager — Design Showcase</title>
+<style>
+/* ═══════════════════════════════════════════════════════
+   DESIGN TOKENS — Muted Professional Palette
+   ═══════════════════════════════════════════════════════ */
+:root {
+  /* Muted, professional light mode palette */
+  --background: #f5f5f4;
+  --foreground: #44403c;
+  --card: #fafaf9;
+  --card-foreground: #44403c;
+  --primary: #57534e;
+  --primary-foreground: #fafaf9;
+  --secondary: #e7e5e4;
+  --secondary-foreground: #57534e;
+  --muted: #e7e5e4;
+  --muted-foreground: #78716c;
+  --accent: #d6d3d1;
+  --accent-foreground: #44403c;
+  --destructive: #b91c1c;
+  --destructive-foreground: #fafaf9;
+  --border: #d6d3d1;
+  --input: #e7e5e4;
+  --ring: #78716c;
+  --radius: 0.75rem;
+  
+  /* Subtle glass effects */
+  --glass-bg: rgba(250, 250, 249, 0.85);
+  --glass-border: rgba(214, 211, 209, 0.6);
+  --glass-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  
+  /* Muted debt status colors */
+  --debt-given: #15803d;
+  --debt-given-light: rgba(21, 128, 61, 0.08);
+  --debt-taken: #a16207;
+  --debt-taken-light: rgba(161, 98, 7, 0.08);
+  --debt-overdue: #b91c1c;
+  --debt-overdue-light: rgba(185, 28, 28, 0.08);
+  
+  /* Simple background */
+  --bg-gradient-start: #f5f5f4;
+  --bg-gradient-end: #e7e5e4;
+}
+
+.dark {
+  /* Muted dark mode palette */
+  --background: #1c1917;
+  --foreground: #d6d3d1;
+  --card: #292524;
+  --card-foreground: #e7e5e4;
+  --primary: #a8a29e;
+  --primary-foreground: #1c1917;
+  --secondary: #44403c;
+  --secondary-foreground: #d6d3d1;
+  --muted: #44403c;
+  --muted-foreground: #a8a29e;
+  --accent: #57534e;
+  --accent-foreground: #e7e5e4;
+  --destructive: #dc2626;
+  --destructive-foreground: #fafaf9;
+  --border: #44403c;
+  --input: #44403c;
+  --ring: #a8a29e;
+  
+  /* Dark glass effects */
+  --glass-bg: rgba(41, 37, 36, 0.9);
+  --glass-border: rgba(87, 83, 78, 0.4);
+  --glass-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  
+  /* Muted dark debt status colors */
+  --debt-given: #22c55e;
+  --debt-given-light: rgba(34, 197, 94, 0.1);
+  --debt-taken: #eab308;
+  --debt-taken-light: rgba(234, 179, 8, 0.1);
+  --debt-overdue: #ef4444;
+  --debt-overdue-light: rgba(239, 68, 68, 0.1);
+  
+  /* Simple dark background */
+  --bg-gradient-start: #1c1917;
+  --bg-gradient-end: #292524;
+}
+
+/* ═══════════════════════════════════════════════════════
+   BASE STYLES
+   ═══════════════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { min-height: 100%; }
+body {
+  background: linear-gradient(180deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
+  background-attachment: fixed;
+  color: var(--foreground);
+  font-size: 15px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+* { border-color: var(--border); }
+
+.numeric-text { font-variant-numeric: tabular-nums; }
+
+/* ═══════════════════════════════════════════════════════
+   GLASS SURFACE & GLASS INPUT — Subtle
+   ═══════════════════════════════════════════════════════ */
+.glass-surface {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: blur(12px);
+  color: var(--foreground);
+  border-radius: var(--radius);
+}
+
+.glass-input {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 0.625rem;
+  transition: border-color 150ms ease;
+}
+.glass-input:hover,
+.glass-input:focus {
+  border-color: var(--muted-foreground);
+}
+.glass-input:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(120, 113, 108, 0.1);
+}
+
+.glass-overlay { 
+  background: rgba(0, 0, 0, 0.5);
+}
+.dark .glass-overlay { 
+  background: rgba(0, 0, 0, 0.7);
+}
+
+/* ═══════════════════════════════════════════════════════
+   APP BG — No animations
+   ═══════════════════════════════════════════════════════ */
+.app-bg { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+.app-bg-gradient {
+  position: absolute; inset: 0;
+  background: linear-gradient(180deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
+}
+
+/* ═══════════════════════════════════════════════════════
+   REUSABLE COMPONENT CLASSES — Muted
+   ═══════════════════════════════════════════════════════ */
+
+/* GlassCard */
+.glass-card {
+  border-radius: var(--radius);
+  border: 1px solid var(--glass-border);
+  padding: 0.5rem;
+  background: var(--glass-bg);
+  box-shadow: var(--glass-shadow);
+}
+
+/* Card */
+.card {
+  display: flex; flex-direction: column; gap: 1rem;
+  overflow: hidden; border-radius: var(--radius); padding: 1rem;
+  font-size: 0.875rem;
+}
+.card-header { display: grid; grid-auto-rows: min-content; align-items: start; gap: 0.25rem; }
+.card-content { padding: 0; }
+.card-title { font-size: 1rem; line-height: 1.4; font-weight: 600; }
+.card-footer {
+  display: flex; align-items: center;
+  border-top: 1px solid var(--border); border-radius: 0 0 var(--radius) var(--radius);
+  background: var(--muted); padding: 1rem;
+}
+.dark .card-footer { 
+  background: rgba(255, 255, 255, 0.02); 
+}
+
+/* Button variants — Muted */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+  white-space: nowrap; border-radius: 0.625rem; border: 1px solid transparent;
+  font-size: 14px; font-weight: 500; cursor: pointer;
+  transition: background-color 150ms ease; outline: none;
+}
+.btn:disabled { pointer-events: none; opacity: 0.5; }
+
+.btn-default {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+.btn-default:hover { 
+  background: var(--foreground);
+}
+
+.btn-destructive {
+  background: var(--destructive);
+  color: var(--destructive-foreground);
+}
+.btn-destructive:hover { 
+  background: #991b1b;
+}
+
+.btn-outline {
+  background: transparent;
+  border-color: var(--border);
+  color: var(--foreground);
+}
+.btn-outline:hover { 
+  background: var(--muted);
+}
+
+.btn-secondary {
+  background: var(--secondary);
+  color: var(--secondary-foreground);
+}
+.btn-secondary:hover { 
+  background: var(--border);
+}
+
+.btn-ghost {
+  border-color: transparent; background: transparent;
+  color: var(--foreground);
+}
+.btn-ghost:hover { 
+  background: var(--muted);
+}
+
+.btn-sm { height: 2.25rem; padding: 0 0.875rem; font-size: 0.8125rem; }
+.btn-md { height: 2.75rem; padding: 0 1.25rem; }
+.btn-lg { height: 3rem; padding: 0 1.75rem; }
+.btn-icon { height: 2.75rem; width: 2.75rem; border-radius: 9999px; padding: 0; }
+
+/* GlassButton — Muted */
+.glass-btn {
+  border-radius: 0.625rem; border: 1px solid transparent;
+  padding: 0.75rem 1.5rem; font-weight: 500;
+  transition: background-color 150ms ease; cursor: pointer; outline: none;
+}
+.glass-btn:disabled { pointer-events: none; opacity: 0.5; }
+
+.glass-btn-primary {
+  background: rgba(87, 83, 78, 0.1);
+  border-color: rgba(87, 83, 78, 0.2);
+  color: var(--foreground);
+}
+.glass-btn-primary:hover { 
+  background: rgba(87, 83, 78, 0.2);
+}
+
+.glass-btn-danger {
+  background: rgba(185, 28, 28, 0.08);
+  border-color: rgba(185, 28, 28, 0.2);
+  color: var(--destructive);
+}
+.glass-btn-danger:hover { 
+  background: rgba(185, 28, 28, 0.15);
+}
+
+.glass-btn-success {
+  background: rgba(21, 128, 61, 0.08);
+  border-color: rgba(21, 128, 61, 0.2);
+  color: var(--debt-given);
+}
+.glass-btn-success:hover { 
+  background: rgba(21, 128, 61, 0.15);
+}
+
+.glass-btn-glass {
+  background: var(--glass-bg);
+  border-color: var(--glass-border);
+  color: var(--foreground);
+}
+.glass-btn-glass:hover { 
+  background: var(--card);
+}
+
+/* Badge — Muted */
+.badge {
+  display: inline-flex; width: fit-content; flex-shrink: 0;
+  align-items: center; justify-content: center; gap: 0.25rem;
+  overflow: hidden; border-radius: 9999px; border: 1px solid transparent;
+  padding: 0.25rem 0.625rem; font-size: 0.75rem; font-weight: 500;
+  white-space: nowrap;
+}
+.badge-default { 
+  background: var(--debt-given-light); 
+  color: var(--debt-given); 
+  border-color: rgba(21, 128, 61, 0.2);
+}
+.badge-secondary { 
+  background: rgba(87, 83, 78, 0.08); 
+  color: var(--foreground); 
+  border-color: var(--border);
+}
+.badge-destructive { 
+  background: var(--debt-overdue-light); 
+  color: var(--destructive); 
+  border-color: rgba(185, 28, 28, 0.2);
+}
+.badge-outline { 
+  background: var(--debt-taken-light); 
+  color: var(--debt-taken); 
+  border-color: rgba(161, 98, 7, 0.2);
+}
+
+/* Confirmation badges — Muted */
+.confirm-pending {
+  display: inline-flex; align-items: center; gap: 0.25rem;
+  border-radius: 9999px; 
+  background: var(--debt-taken-light);
+  padding: 0.25rem 0.625rem;
+  font-size: 0.75rem; font-weight: 500; 
+  color: var(--debt-taken);
+  border: 1px solid rgba(161, 98, 7, 0.2);
+}
+.confirm-confirmed {
+  display: inline-flex; align-items: center; gap: 0.25rem;
+  border-radius: 9999px; 
+  background: var(--debt-given-light);
+  padding: 0.25rem 0.625rem;
+  font-size: 0.75rem; font-weight: 500; 
+  color: var(--debt-given);
+  border: 1px solid rgba(21, 128, 61, 0.2);
+}
+.confirm-denied {
+  display: inline-flex; align-items: center; gap: 0.25rem;
+  border-radius: 9999px; 
+  background: var(--debt-overdue-light);
+  padding: 0.25rem 0.625rem;
+  font-size: 0.75rem; font-weight: 500; 
+  color: var(--destructive);
+  border: 1px solid rgba(185, 28, 28, 0.2);
+}
+
+/* Input */
+.input {
+  height: 2.75rem; width: 100%; min-width: 0;
+  padding: 0.75rem 1rem; font-size: 0.9375rem; 
+  color: var(--foreground);
+  outline: none;
+}
+.input::placeholder { color: var(--muted-foreground); opacity: 0.6; }
+.input:disabled { pointer-events: none; cursor: not-allowed; opacity: 0.5; }
+
+/* Textarea */
+.textarea {
+  min-height: 6rem; width: 100%;
+  padding: 0.75rem 1rem; font-size: 0.9375rem; 
+  color: var(--foreground);
+  outline: none; resize: vertical;
+}
+.textarea::placeholder { color: var(--muted-foreground); opacity: 0.6; }
+
+/* Select trigger */
+.select-trigger {
+  display: flex; width: 100%; align-items: center; justify-content: space-between;
+  gap: 0.375rem; white-space: nowrap;
+  padding: 0.75rem 1rem; font-size: 0.9375rem; 
+  color: var(--foreground);
+  outline: none; cursor: pointer; height: 2.75rem;
+}
+
+/* Skeleton */
+.skeleton {
+  border-radius: 0.375rem; 
+  background: var(--muted);
+}
+
+/* Loading spinner */
+.spinner {
+  width: 2.5rem; height: 2.5rem;
+  border: 2px solid var(--border); 
+  border-top-color: var(--muted-foreground);
+  border-radius: 9999px; 
+  animation: spin 1s linear infinite;
+}
+@keyframes spin { 
+  to { transform: rotate(360deg); } 
+}
+
+/* Bottom nav */
+.bottom-nav {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 40;
+  border-top: 1px solid var(--border);
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  padding-bottom: env(safe-area-inset-bottom, 20px);
+}
+.bottom-nav-inner {
+  display: flex; height: 56px; max-width: 28rem; margin: 0 auto;
+  align-items: center; justify-content: space-around;
+}
+.nav-item {
+  display: flex; flex-direction: column; align-items: center; gap: 0.25rem;
+  border-radius: 0.5rem; padding: 0.5rem 0.875rem; min-width: 3.5rem;
+  background: transparent; border: none; cursor: pointer; 
+  color: var(--muted-foreground);
+  font-family: inherit;
+  transition: color 150ms ease;
+}
+.nav-item:hover {
+  color: var(--foreground);
+}
+.nav-item.active { 
+  color: var(--foreground);
+}
+.nav-item.active .nav-label { font-weight: 500; }
+.nav-icon { font-size: 1.25rem; line-height: 1; }
+.nav-label { font-size: 11px; }
+
+/* Settings item */
+.settings-item {
+  display: flex; width: 100%; align-items: center; justify-content: space-between;
+  border-radius: 0.625rem; 
+  border: 1px solid var(--border);
+  background: var(--card); 
+  padding: 0.875rem 1rem; 
+  text-align: left; cursor: pointer;
+  color: var(--foreground); 
+  font-family: inherit; 
+  font-size: 14px;
+  transition: background-color 150ms ease;
+}
+.settings-item:hover { 
+  background: var(--muted);
+}
+.settings-item.danger {
+  border-color: rgba(185, 28, 28, 0.2);
+  background: var(--debt-overdue-light);
+  color: var(--destructive);
+}
+.settings-item.danger:hover {
+  background: rgba(185, 28, 28, 0.12);
+}
+.settings-item-left { display: flex; align-items: center; gap: 0.75rem; }
+.settings-item-right { display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; color: var(--muted-foreground); }
+
+/* Tab pills */
+.tab-pills { display: flex; gap: 0.375rem; flex-wrap: wrap; }
+.tab-pill {
+  flex: 1; min-width: fit-content;
+  border-radius: 9999px; 
+  border: 1px solid var(--border);
+  background: var(--card); 
+  padding: 0.5rem 0.875rem; 
+  font-size: 0.8125rem; font-weight: 500;
+  color: var(--muted-foreground); 
+  cursor: pointer; 
+  font-family: inherit;
+  transition: all 150ms ease;
+  white-space: nowrap;
+}
+.tab-pill:hover {
+  background: var(--muted);
+  color: var(--foreground);
+}
+.tab-pill.active {
+  background: var(--foreground);
+  border-color: var(--foreground);
+  color: var(--background);
+}
+
+/* Selector grid */
+.selector-grid {
+  display: grid; gap: 0.375rem;
+  border-radius: 0.625rem; 
+  border: 1px solid var(--border);
+  background: var(--card); 
+  padding: 0.25rem;
+}
+.selector-grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+.selector-grid.cols-2 { grid-template-columns: repeat(2, 1fr); }
+.selector-option {
+  border-radius: 0.5rem; 
+  padding: 0.5rem 0.75rem; 
+  font-size: 0.8125rem;
+  font-weight: 500; 
+  cursor: pointer; 
+  border: 1px solid transparent;
+  background: transparent; 
+  color: var(--muted-foreground); 
+  font-family: inherit;
+  transition: all 150ms ease;
+}
+.selector-option:hover { 
+  background: var(--muted);
+  color: var(--foreground);
+}
+.selector-option.active {
+  background: var(--foreground);
+  color: var(--background);
+}
+
+.lang-option {
+  border-radius: 0.625rem; 
+  border: 1px solid var(--border);
+  background: var(--card); 
+  padding: 0.75rem; 
+  font-size: 0.875rem; font-weight: 500;
+  color: var(--foreground); 
+  cursor: pointer; 
+  font-family: inherit; 
+  transition: all 150ms ease;
+}
+.lang-option:hover {
+  background: var(--muted);
+}
+.lang-option.active {
+  background: var(--foreground);
+  color: var(--background);
+}
+
+/* Stat card variant border */
+.stat-success { 
+  border-left: 3px solid var(--debt-given); 
+  background: var(--debt-given-light);
+}
+.stat-danger { 
+  border-left: 3px solid var(--destructive); 
+  background: var(--debt-overdue-light);
+}
+.stat-warning { 
+  border-left: 3px solid var(--debt-taken); 
+  background: var(--debt-taken-light);
+}
+
+/* Debt item card colours */
+.debt-given { 
+  background: var(--debt-given-light);
+  border: 1px solid rgba(21, 128, 61, 0.15);
+}
+.debt-taken { 
+  background: var(--debt-taken-light);
+  border: 1px solid rgba(161, 98, 7, 0.15);
+}
+.debt-overdue { 
+  background: var(--debt-overdue-light);
+  border: 1px solid rgba(185, 28, 28, 0.15);
+}
+.debt-paid-given { 
+  border: 1px solid rgba(21, 128, 61, 0.2); 
+  background: rgba(21, 128, 61, 0.05);
+  position: relative; 
+  overflow: hidden;
+}
+.debt-paid-taken { 
+  border: 1px solid rgba(185, 28, 28, 0.2); 
+  background: rgba(185, 28, 28, 0.05);
+  position: relative; 
+  overflow: hidden;
+}
+
+/* Confirmation banner cards */
+.confirm-banner { 
+  border-radius: 0.625rem; 
+  padding: 1rem; 
+  border: 1px solid;
+}
+.confirm-banner.pending { 
+  border-color: rgba(161, 98, 7, 0.2); 
+  background: var(--debt-taken-light);
+}
+.confirm-banner.confirmed { 
+  border-color: rgba(21, 128, 61, 0.2); 
+  background: var(--debt-given-light);
+}
+.confirm-banner.denied { 
+  border-color: rgba(185, 28, 28, 0.2); 
+  background: var(--debt-overdue-light);
+}
+
+/* Avatar utilities */
+.avatar { 
+  display: flex; align-items: center; justify-content: center; 
+  border-radius: 9999px; font-weight: 500; flex-shrink: 0;
+}
+.avatar-sm { width: 2.5rem; height: 2.5rem; font-size: 0.875rem; }
+.avatar-lg { width: 3rem; height: 3rem; font-size: 1rem; }
+.avatar-xl { width: 4rem; height: 4rem; font-size: 1.5rem; }
+.avatar-sky { background: #e0e7ff; color: #3730a3; }
+.avatar-emerald { background: #d1fae5; color: #065f46; }
+.avatar-amber { background: #fef3c7; color: #92400e; }
+.avatar-rose { background: #ffe4e6; color: #9f1239; }
+.avatar-indigo { background: #e0e7ff; color: #3730a3; }
+.avatar-teal { background: #ccfbf1; color: #115e59; }
+.avatar-gradient { 
+  background: var(--foreground); 
+  color: var(--background); 
+  font-weight: 600;
+}
+
+/* Profile stats tiles */
+.profile-stat-tile {
+  border-radius: 0.625rem; 
+  border: 1px solid var(--border); 
+  padding: 0.75rem;
+  background: var(--card);
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+.profile-stat-tile:hover {
+  background: var(--muted);
+}
+.profile-stat-tile.given { border-left: 3px solid var(--debt-given); }
+.profile-stat-tile.taken { border-left: 3px solid var(--debt-taken); }
+.profile-stat-tile.overdue { border-left: 3px solid var(--debt-taken); }
+.profile-stat-tile.paid { border-left: 3px solid var(--debt-given); }
+.profile-stat-tile.contacts {
+  border-left: 3px solid var(--muted-foreground);
+  grid-column: span 2; 
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0.75rem 1rem;
+}
+
+/* Error box */
+.error-box {
+  border-radius: 0.625rem; 
+  border: 1px solid rgba(185, 28, 28, 0.2);
+  padding: 1rem; font-size: 0.875rem;
+  background: var(--debt-overdue-light);
+  color: var(--destructive);
+}
+
+/* Toggle pill */
+.toggle-pill {
+  display: inline-flex; min-width: 3.5rem; justify-content: center;
+  border-radius: 9999px; 
+  border: 1px solid; 
+  padding: 0.25rem 0.625rem;
+  font-size: 0.75rem; font-weight: 500; 
+}
+.toggle-pill.on { 
+  border-color: rgba(21, 128, 61, 0.2); 
+  background: var(--debt-given-light);
+  color: var(--debt-given); 
+}
+.toggle-pill.off { 
+  border-color: var(--border); 
+  background: var(--card);
+  color: var(--muted-foreground); 
+}
+
+/* ═══════════════════════════════════════════════════════
+   SHOWCASE LAYOUT
+   ═══════════════════════════════════════════════════════ */
+.showcase-wrapper { 
+  position: relative; z-index: 1; 
+  max-width: 56rem; margin: 0 auto; 
+  padding: 2rem 1rem 6rem; 
+}
+.showcase-title { 
+  font-size: 1.75rem; font-weight: 700; 
+  margin-bottom: 0.5rem;
+  color: var(--foreground);
+}
+.showcase-subtitle { 
+  font-size: 0.9375rem; 
+  color: var(--muted-foreground); 
+  margin-bottom: 2rem; 
+}
+.section { margin-bottom: 3rem; }
+.section-title { 
+  font-size: 1.25rem; font-weight: 600; 
+  margin-bottom: 1rem; 
+  border-bottom: 1px solid var(--border); 
+  padding-bottom: 0.5rem;
+  color: var(--foreground);
+}
+.sub-title { 
+  font-size: 0.8125rem; font-weight: 500; 
+  color: var(--muted-foreground); 
+  margin: 1rem 0 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+.row { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: flex-start; }
+.col { display: flex; flex-direction: column; gap: 0.5rem; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.5rem; }
+.phone-frame {
+  width: 100%; max-width: 28rem; margin: 0 auto;
+  border: 1px solid var(--border); 
+  border-radius: 1rem;
+  overflow: hidden; position: relative;
+  background: linear-gradient(180deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
+  min-height: 600px;
+}
+.phone-content { position: relative; z-index: 1; padding: 1rem; padding-bottom: 5rem; }
+.space-y-2 > * + * { margin-top: 0.5rem; }
+.space-y-3 > * + * { margin-top: 0.75rem; }
+.space-y-4 > * + * { margin-top: 1rem; }
+.space-y-6 > * + * { margin-top: 1.5rem; }
+.text-sm { font-size: 0.875rem; }
+.text-xs { font-size: 0.75rem; }
+.text-lg { font-size: 1.125rem; }
+.text-xl { font-size: 1.25rem; }
+.text-2xl { font-size: 1.5rem; }
+.text-3xl { font-size: 1.875rem; }
+.font-bold { font-weight: 700; }
+.font-semibold { font-weight: 600; }
+.font-extrabold { font-weight: 800; }
+.text-muted { color: var(--muted-foreground); }
+.text-green { color: var(--debt-given); }
+.text-red { color: var(--destructive); }
+.text-emerald { color: var(--debt-given); }
+.text-rose { color: var(--destructive); }
+.truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.flex { display: flex; }
+.items-center { align-items: center; }
+.items-start { align-items: flex-start; }
+.justify-between { justify-content: space-between; }
+.justify-center { justify-content: center; }
+.gap-1 { gap: 0.25rem; }
+.gap-2 { gap: 0.5rem; }
+.gap-3 { gap: 0.75rem; }
+.gap-4 { gap: 1rem; }
+.min-w-0 { min-width: 0; }
+.flex-1 { flex: 1; }
+.w-full { width: 100%; }
+
+/* Theme toggle button */
+#themeToggle {
+  position: fixed; top: 1rem; right: 1rem; z-index: 100;
+  border-radius: 9999px; 
+  border: 1px solid var(--border);
+  background: var(--card); 
+  padding: 0.5rem 1rem; 
+  font-size: 0.875rem; font-weight: 500;
+  color: var(--foreground); 
+  cursor: pointer; 
+  font-family: inherit;
+  transition: background-color 150ms ease;
+}
+#themeToggle:hover {
+  background: var(--muted);
+}
+</style>
+</head>
+<body>
+<div class="app-bg" aria-hidden="true"><div class="app-bg-gradient"></div></div>
+
+<button id="themeToggle" onclick="document.documentElement.classList.toggle('dark')">🌙 / ☀️</button>
+
+<div class="showcase-wrapper">
+
+<h1 class="showcase-title">Debt Manager — Design Showcase</h1>
+<p class="showcase-subtitle">Visual mirror of the real UI patterns. Edit styles here, then apply back to the project.</p>
+
+<!-- ╔══════════════════════════════════════════════════╗
+     ║  1. BUTTONS                                     ║
+     ╚══════════════════════════════════════════════════╝ -->
+<div class="section" id="buttons">
+  <h2 class="section-title">Buttons</h2>
+
+  <div class="sub-title" style="margin-top:0;">Button (button.tsx variants)</div>
+  <div class="row">
+    <button class="btn btn-default btn-md">Default</button>
+    <button class="btn btn-destructive btn-md">Destructive</button>
+    <button class="btn btn-outline btn-md">Outline</button>
+    <button class="btn btn-secondary btn-md">Secondary</button>
+    <button class="btn btn-ghost btn-md">Ghost</button>
+  </div>
+  <div class="sub-title">Button sizes</div>
+  <div class="row">
+    <button class="btn btn-default btn-sm">Small</button>
+    <button class="btn btn-default btn-md">Medium</button>
+    <button class="btn btn-default btn-lg">Large</button>
+    <button class="btn btn-default btn-icon">✕</button>
+  </div>
+  <div class="sub-title">Disabled</div>
+  <div class="row">
+    <button class="btn btn-default btn-md" disabled>Disabled</button>
+    <button class="btn btn-destructive btn-md" disabled>Disabled</button>
+  </div>
+
+  <div class="sub-title">GlassButton (GlassButton.tsx variants)</div>
+  <div class="row">
+    <button class="glass-btn glass-btn-primary">Primary</button>
+    <button class="glass-btn glass-btn-danger">Danger</button>
+    <button class="glass-btn glass-btn-success">Success</button>
+    <button class="glass-btn glass-btn-glass">Glass</button>
+  </div>
+  <div class="sub-title">GlassButton — Add debt (as used in Dashboard)</div>
+  <div class="row">
+    <button class="glass-btn glass-btn-glass" style="height:3rem;padding:0 1.5rem;font-size:0.9375rem;font-weight:500;">+ Qarz qo'shish</button>
+  </div>
+</div>
+
+<!-- ╔══════════════════════════════════════════════════╗
+     ║  2. BADGES & STATUS INDICATORS                  ║
+     ╚══════════════════════════════════════════════════╝ -->
+<div class="section" id="badges">
+  <h2 class="section-title">Badges / Status Indicators</h2>
+  <div class="sub-title" style="margin-top:0;">Badge variants (badge.tsx)</div>
+  <div class="row">
+    <span class="badge badge-default">Default / Paid</span>
+    <span class="badge badge-secondary">Secondary / Info</span>
+    <span class="badge badge-destructive">Destructive</span>
+    <span class="badge badge-outline">Outline / Warning</span>
+  </div>
+  <div class="sub-title">Confirmation status badges (DebtItem.tsx)</div>
+  <div class="row">
+    <span class="confirm-pending">⏳ Tasdiq kutilmoqda</span>
+    <span class="confirm-confirmed">✅ Tasdiqlangan</span>
+    <span class="confirm-denied">⚠️ Rad etilgan</span>
+  </div>
+  <div class="sub-title">Paid badge on card (green & red)</div>
+  <div class="row">
+    <span class="badge" style="background:var(--debt-given);color:white;border:none;">To'langan (given)</span>
+    <span class="badge" style="background:var(--destructive);color:white;border:none;">To'langan (taken)</span>
+  </div>
+  <div class="sub-title">Contact active debts badge (ContactCard.tsx)</div>
+  <div class="row">
+    <span class="badge" style="border:1px solid var(--border);background:var(--card);color:var(--foreground);">3 faol qarzlar</span>
+    <span class="badge badge-destructive">5 faol qarzlar</span>
+  </div>
+  <div class="sub-title">Toggle pill (notifications)</div>
+  <div class="row">
+    <span class="toggle-pill on">Yoqilgan</span>
+    <span class="toggle-pill off">O'chirilgan</span>
+  </div>
+</div>
+
+<!-- ╔══════════════════════════════════════════════════╗
+     ║  3. FORMS                                       ║
+     ╚══════════════════════════════════════════════════╝ -->
+<div class="section" id="forms">
+  <h2 class="section-title">Forms</h2>
+  <div style="max-width:28rem;">
+    <div class="col space-y-3">
+      <div class="sub-title" style="margin-top:0;">Text input (input.tsx)</div>
+      <input class="glass-input input" placeholder="Ismingiz..." />
+
+      <div class="sub-title">Disabled input</div>
+      <input class="glass-input input" value="123456789" disabled />
+
+      <div class="sub-title">Phone input with prefix (Profile.tsx)</div>
+      <div style="position:relative;">
+        <span style="position:absolute;left:0.875rem;top:50%;transform:translateY(-50%);font-size:0.875rem;font-weight:500;color:var(--foreground);opacity:0.7;pointer-events:none;">+998</span>
+        <input class="glass-input input" placeholder="90 123 45 67" type="tel" style="padding-left:3.25rem;" />
+      </div>
+
+      <div class="sub-title">Select trigger (select.tsx)</div>
+      <div class="glass-input select-trigger">
+        <span>UZS — so'm</span>
+        <span style="color:var(--muted-foreground);">▾</span>
+      </div>
+
+      <div class="sub-title">Textarea (textarea.tsx)</div>
+      <textarea class="glass-input textarea" placeholder="Izoh yozing..."></textarea>
+
+      <div class="sub-title">Date input style</div>
+      <input class="glass-input input" type="date" value="2026-05-01" />
+
+      <div class="sub-title">Search input with icon (Contacts.tsx)</div>
+      <div class="glass-card" style="padding:0.25rem;position:relative;">
+        <span style="position:absolute;left:0.875rem;top:50%;transform:translateY(-50%);color:var(--muted-foreground);font-size:0.875rem;">🔍</span>
+        <input class="glass-input input" placeholder="Kontakt qidirish..." style="background:transparent;border:none;padding-left:2.25rem;height:2.25rem;" />
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ╔══════════════════════════════════════════════════╗
+     ║  4. CARDS                                       ║
+     ╚══════════════════════════════════════════════════╝ -->
+<div class="section" id="cards">
+  <h2 class="section-title">Cards</h2>
+
+  <div class="sub-title" style="margin-top:0;">GlassCard (GlassCard.tsx) — light variant</div>
+  <div style="max-width:28rem;">
+    <div class="glass-card" style="padding:1rem;">
+      <p class="font-semibold">GlassCard light variant</p>
+      <p class="text-sm text-muted" style="margin-top:0.25rem;">Used across the app for containers</p>
+    </div>
+  </div>
+
+  <div class="sub-title">Card with glass-surface (card.tsx)</div>
+  <div style="max-width:28rem;">
+    <div class="card glass-surface">
+      <div class="card-header">
+        <div class="card-title">Card Title</div>
+        <div class="text-sm text-muted">Card description text</div>
+      </div>
+      <div class="card-content">
+        <p>Card content area</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="sub-title">StatCard variants (StatCard.tsx)</div>
+  <div style="max-width:28rem;" class="col space-y-2">
+    <div class="glass-card stat-success" style="border-radius:0.625rem;padding:0;">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:0.5rem 0.875rem 0.25rem;">
+        <span class="font-semibold" style="font-size:14px;">Berilgan</span>
+        <span style="border-radius:9999px;border:1px solid var(--border);background:var(--card);padding:0.125rem 0.5rem;font-size:0.875rem;font-weight:500;line-height:1;">8 ta</span>
+      </div>
+      <div style="padding:0 0.875rem 0.5rem;">
+        <span class="numeric-text font-bold" style="font-size:1.125rem;color:var(--debt-given);">15 200 000 so'm</span>
+      </div>
+    </div>
+    <div class="glass-card stat-danger" style="border-radius:0.625rem;padding:0;">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:0.5rem 0.875rem 0.25rem;">
+        <span class="font-semibold" style="font-size:14px;">Olingan</span>
+        <span style="border-radius:9999px;border:1px solid var(--border);background:var(--card);padding:0.125rem 0.5rem;font-size:0.875rem;font-weight:500;line-height:1;">3 ta</span>
+      </div>
+      <div style="padding:0 0.875rem 0.5rem;">
+        <span class="numeric-text font-bold" style="font-size:1.125rem;color:var(--destructive);">4 500 000 so'm</span>
+      </div>
+    </div>
+    <div class="glass-card stat-warning" style="border-radius:0.625rem;padding:0;">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:0.5rem 0.875rem 0.25rem;">
+        <span class="font-semibold" style="font-size:14px;">Muddati o'tgan</span>
+        <span style="border-radius:9999px;border:1px solid var(--border);background:var(--card);padding:0.125rem 0.5rem;font-size:0.875rem;font-weight:500;line-height:1;">2 ta</span>
+      </div>
+      <div style="padding:0 0.875rem 0.5rem;">
+        <span class="numeric-text font-bold" style="font-size:1.125rem;color:var(--debt-taken);">3 000 000 so'm</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ╔══════════════════════════════════════════════════╗
+     ║  5. LISTS — Debt Items                          ║
+     ╚══════════════════════════════════════════════════╝ -->
+<div class="section" id="lists">
+  <h2 class="section-title">Lists — Debt Items</h2>
+  <div style="max-width:28rem;" class="col space-y-3">
+
+    <!-- Given debt (active) -->
+    <div class="sub-title" style="margin:0;">Given (active, confirmed)</div>
+    <div class="glass-card debt-given" style="cursor:pointer;">
+      <div class="card-content" style="display:flex;align-items:center;justify-content:space-between;gap:0.75rem;">
+        <div>
+          <p class="font-semibold" style="font-size:0.9375rem;">Aziz Karimov</p>
+          <p class="text-xs text-muted">Qaytarish: 2026-05-01</p>
+          <p class="text-xs text-green">15 kun qoldi</p>
+          <span class="confirm-confirmed" style="margin-top:0.25rem;">✅ Tasdiqlangan</span>
+        </div>
+        <div style="text-align:right;">
+          <p class="numeric-text font-bold text-green" style="font-size:1.125rem;">2 500 000 so'm</p>
+          <p class="text-xs text-muted">Berilgan</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Taken debt (active) -->
+    <div class="sub-title" style="margin:0;">Taken (active, pending confirm)</div>
+    <div class="glass-card debt-taken" style="cursor:pointer;">
+      <div class="card-content" style="display:flex;align-items:center;justify-content:space-between;gap:0.75rem;">
+        <div>
+          <p class="font-semibold" style="font-size:0.9375rem;">Bahrom Toshmatov</p>
+          <p class="text-xs text-muted">Qaytarish: 2026-04-20</p>
+          <p class="text-xs" style="color:var(--debt-taken);">7 kun qoldi</p>
+          <span class="confirm-pending" style="margin-top:0.25rem;">⏳ Tasdiq kutilmoqda</span>
+        </div>
+        <div style="text-align:right;">
+          <p class="numeric-text font-bold text-red" style="font-size:1.125rem;">1 800 000 so'm</p>
+          <p class="text-xs text-muted">Olingan</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Overdue debt -->
+    <div class="sub-title" style="margin:0;">Overdue</div>
+    <div class="glass-card debt-overdue" style="cursor:pointer;">
+      <div class="card-content" style="display:flex;align-items:center;justify-content:space-between;gap:0.75rem;">
+        <div>
+          <p class="font-semibold" style="font-size:0.9375rem;">Sardor Aliyev</p>
+          <p class="text-xs text-muted">Qaytarish: 2026-03-01</p>
+          <p class="text-xs text-red">43 kun kechikkan</p>
+          <span class="confirm-denied" style="margin-top:0.25rem;">⚠️ Rad etilgan</span>
+        </div>
+        <div style="text-align:right;">
+          <p class="numeric-text font-bold text-red" style="font-size:1.125rem;">5 000 000 so'm</p>
+          <p class="text-xs text-muted">Berilgan</p>
+          <button class="btn btn-outline btn-sm" style="margin-top:0.25rem;font-size:0.6875rem;height:1.75rem;padding:0 0.625rem;">Eslatish</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Paid debt (given) -->
+    <div class="sub-title" style="margin:0;">Paid (given)</div>
+    <div class="glass-card debt-paid-given" style="cursor:pointer;">
+      <div style="position:absolute;inset:0;z-index:2;display:flex;justify-content:center;padding-top:0.75rem;background:rgba(250,250,249,0.7);backdrop-filter:blur(8px);">
+        <div style="text-align:center;">
+          <span style="font-size:1.25rem;">✅</span>
+          <p class="font-semibold" style="color:var(--debt-given);font-size:0.875rem;">To'langan</p>
+          <p class="text-xs text-muted">10.04.2026</p>
+        </div>
+      </div>
+      <div class="card-content" style="display:flex;align-items:center;justify-content:space-between;gap:0.75rem;opacity:0.4;">
+        <div>
+          <p class="font-semibold">Nodira Xasanova</p>
+          <p class="text-xs text-muted">Berilgan</p>
+        </div>
+        <p class="numeric-text font-bold" style="font-size:1.125rem;">500 000 so'm</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ╔══════════════════════════════════════════════════╗
+     ║  6. CONTACT CARDS                               ║
+     ╚══════════════════════════════════════════════════╝ -->
+<div class="section" id="contact-cards">
+  <h2 class="section-title">Contact Cards</h2>
+  <div style="max-width:28rem;" class="col space-y-3">
+
+    <div class="glass-card" style="cursor:pointer;">
+      <div class="card-content" style="padding:0;">
+        <div class="flex items-center justify-between gap-3">
+          <div class="flex items-center gap-3 min-w-0">
+            <div class="avatar avatar-sm avatar-sky">AK</div>
+            <div class="min-w-0">
+              <p class="font-semibold text-sm truncate">Aziz Karimov</p>
+              <p class="text-xs text-muted truncate">+998 90 123 45 67</p>
+              <p class="text-xs text-muted truncate">@aziz_k</p>
+            </div>
+          </div>
+          <div class="col" style="align-items:flex-end;gap:0.25rem;">
+            <span class="badge" style="border:1px solid var(--border);background:var(--card);color:var(--foreground);font-size:0.6875rem;">3 faol qarzlar</span>
+            <span class="numeric-text text-xs" style="font-weight:500;color:var(--muted-foreground);">5 200 000 so'm</span>
+            <button class="glass-btn glass-btn-glass" style="padding:0.375rem 0.75rem;font-size:0.8125rem;">+ Qarz</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="glass-card" style="cursor:pointer;">
+      <div class="card-content" style="padding:0;">
+        <div class="flex items-center justify-between gap-3">
+          <div class="flex items-center gap-3 min-w-0">
+            <div class="avatar avatar-sm avatar-emerald">BT</div>
+            <div class="min-w-0">
+              <p class="font-semibold text-sm truncate">Bahrom Toshmatov</p>
+              <p class="text-xs text-muted truncate">Telefon raqami yo'q</p>
+            </div>
+          </div>
+          <div class="col" style="align-items:flex-end;gap:0.25rem;">
+            <span class="badge badge-destructive" style="font-size:0.6875rem;">1 faol qarzlar</span>
+            <span class="numeric-text text-xs" style="font-weight:500;color:var(--muted-foreground);">1 800 000 so'm</span>
+            <button class="glass-btn glass-btn-glass" style="padding:0.375rem 0.75rem;font-size:0.8125rem;">+ Qarz</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ╔══════════════════════════════════════════════════╗
+     ║  7. PROFILE BLOCKS                              ║
+     ╚══════════════════════════════════════════════════╝ -->
+<div class="section" id="profile">
+  <h2 class="section-title">Profile Blocks</h2>
+  <div style="max-width:28rem;" class="col space-y-4">
+
+    <!-- UserAvatarCard -->
+    <div class="sub-title" style="margin:0;">UserAvatarCard</div>
+    <div class="glass-card" style="overflow:hidden;padding:0.75rem;">
+      <div class="flex items-start gap-4">
+        <div class="avatar avatar-xl avatar-gradient">SS</div>
+        <div class="min-w-0 flex-1 col" style="gap:0.5rem;">
+          <div>
+            <h1 class="font-bold text-lg truncate">Suhrob Soatov</h1>
+            <p class="text-sm text-muted">@ssuhrob</p>
+          </div>
+          <a style="display:flex;align-items:center;gap:0.25rem;font-size:0.875rem;color:var(--foreground);opacity:0.8;text-decoration:none;">
+            <span>📞</span> <span>+998 90 123 45 67</span>
+          </a>
+          <div class="flex items-center gap-2" style="flex-wrap:wrap;">
+            <span class="badge" style="padding:0.25rem 1rem;font-size:0.75rem;color:var(--foreground);border:1px solid var(--border);">ID: 123456789</span>
+            <span class="text-xs text-muted">Ro'yxatdan: 1-yanvar 2026</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- StatsCard grid -->
+    <div class="sub-title">Profile Statistics Card</div>
+    <div class="glass-card" style="padding:1rem;">
+      <h2 class="text-base font-semibold" style="margin-bottom:0.5rem;">Statistika</h2>
+      <div class="grid-2" style="gap:0.5rem;">
+        <div class="profile-stat-tile given">
+          <p style="font-size:0.875rem;">📤 Berilgan</p>
+          <p class="text-sm font-semibold" style="margin-top:0.25rem;">15 200 000 so'm</p>
+        </div>
+        <div class="profile-stat-tile taken">
+          <p style="font-size:0.875rem;">📥 Olingan</p>
+          <p class="text-sm font-semibold" style="margin-top:0.25rem;">4 500 000 so'm</p>
+        </div>
+        <div class="profile-stat-tile overdue">
+          <p style="font-size:0.875rem;">⚠️ Muddati o'tgan</p>
+          <p class="text-sm font-semibold" style="margin-top:0.25rem;">2</p>
+        </div>
+        <div class="profile-stat-tile paid">
+          <p style="font-size:0.875rem;">✅ To'langan</p>
+          <p class="text-sm font-semibold" style="margin-top:0.25rem;">5</p>
+        </div>
+        <div class="profile-stat-tile contacts">
+          <p style="font-size:0.875rem;">👤 Kontaktlarim</p>
+          <p class="font-semibold" style="font-size:1rem;">12</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Theme selector -->
+    <div class="sub-title">Theme Selector</div>
+    <div class="glass-card" style="padding:1rem;">
+      <div class="flex items-center gap-2" style="margin-bottom:0.625rem;">
+        <span class="text-muted">🎨</span>
+        <h2 class="text-sm font-semibold">Mavzu</h2>
+      </div>
+      <div class="selector-grid cols-3">
+        <button class="selector-option">☀️ Yorug'</button>
+        <button class="selector-option active">🌙 Tungi</button>
+        <button class="selector-option">💻 Tizim</button>
+      </div>
+    </div>
+
+    <!-- Language selector -->
+    <div class="sub-title">Language Selector</div>
+    <div class="glass-card" style="padding:1rem;">
+      <div class="flex items-center gap-2" style="margin-bottom:0.625rem;">
+        <span class="text-muted">🌐</span>
+        <h2 class="text-sm font-semibold">Til</h2>
+      </div>
+      <div class="grid-2" style="gap:0.5rem;">
+        <button class="lang-option active">🇺🇿 O'zbek</button>
+        <button class="lang-option">🇷🇺 Русский</button>
+      </div>
+    </div>
+
+    <!-- Settings items -->
+    <div class="sub-title">Settings Items</div>
+    <div class="col space-y-2">
+      <button class="settings-item">
+        <span class="settings-item-left"><span style="font-size:1rem;">🔔</span> <span class="text-sm" style="font-weight:500;">Bildirishnomalar</span></span>
+        <span class="settings-item-right"><span class="toggle-pill on">Yoqilgan</span></span>
+      </button>
+      <button class="settings-item">
+        <span class="settings-item-left"><span style="font-size:1rem;">ℹ️</span> <span class="text-sm" style="font-weight:500;">Dastur haqida</span></span>
+        <span class="settings-item-right">›</span>
+      </button>
+      <button class="settings-item">
+        <span class="settings-item-left"><span style="font-size:1rem;">🛡️</span> <span class="text-sm" style="font-weight:500;">Maxfiylik siyosati</span></span>
+        <span class="settings-item-right">›</span>
+      </button>
+      <button class="settings-item danger">
+        <span class="settings-item-left"><span style="font-size:1rem;">🚪</span> <span class="text-sm" style="font-weight:500;">Chiqish</span></span>
+        <span class="settings-item-right">›</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ╔══════════════════════════════════════════════════╗
+     ║  8. NAVIGATION                                  ║
+     ╚══════════════════════════════════════════════════╝ -->
+<div class="section" id="navigation">
+  <h2 class="section-title">Navigation</h2>
+
+  <div class="sub-title" style="margin-top:0;">Bottom Navigation (BottomNav.tsx)</div>
+  <div style="max-width:28rem;position:relative;">
+    <div style="border:1px solid var(--border);border-radius:0 0 1rem 1rem;overflow:hidden;">
+      <div class="bottom-nav" style="position:relative;">
+        <div class="bottom-nav-inner">
+          <button class="nav-item active"><span class="nav-icon">📲</span><span class="nav-label">Bosh sahifa</span></button>
+          <button class="nav-item"><span class="nav-icon">🧮</span><span class="nav-label">Qarzlar</span></button>
+          <button class="nav-item"><span class="nav-icon">👨🏻‍🤝‍👨🏻</span><span class="nav-label">Kontaktlar</span></button>
+          <button class="nav-item"><span class="nav-icon">🙋🏻‍♂️</span><span class="nav-label">Profil</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sub-title">Tab pills / Segmented control (Debts.tsx)</div>
+  <div style="max-width:28rem;">
+    <div class="tab-pills">
+      <button class="tab-pill active">Hammasi</button>
+      <button class="tab-pill">Berilgan</button>
+      <button class="tab-pill">Olingan</button>
+      <button class="tab-pill">Kechikkan</button>
+      <button class="tab-pill">To'langan</button>
+    </div>
+  </div>
+
+  <div class="sub-title">Back button pattern (BackButton.tsx)</div>
+  <div style="max-width:28rem;">
+    <button class="btn btn-ghost" style="gap:0.25rem;height:2rem;padding:0 0.625rem;font-size:0.8125rem;border-radius:0.5rem;">
+      ← Ortga
+    </button>
+  </div>
+</div>
+
+<!-- ╔══════════════════════════════════════════════════╗
+     ║  9. POPUPS / OVERLAYS                           ║
+     ╚══════════════════════════════════════════════════╝ -->
+<div class="section" id="popups">
+  <h2 class="section-title">Popups / Overlays</h2>
+
+  <div class="sub-title" style="margin-top:0;">Dialog (dialog.tsx)</div>
+  <div style="max-width:28rem;position:relative;min-height:14rem;">
+    <div style="position:absolute;inset:0;border-radius:1rem;overflow:hidden;">
+      <div class="glass-overlay" style="position:absolute;inset:0;"></div>
+      <div class="glass-surface" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:90%;max-width:360px;border-radius:0.75rem;padding:1.25rem;">
+        <div class="col" style="gap:0.375rem;">
+          <h3 class="font-semibold">Qarzni o'chirish</h3>
+          <p class="text-sm text-muted">Haqiqatan ham bu qarzni o'chirishni xohlaysizmi?</p>
+        </div>
+        <div class="flex gap-2" style="margin-top:1.25rem;">
+          <button class="btn btn-outline btn-md w-full">Bekor qilish</button>
+          <button class="btn btn-destructive btn-md w-full">O'chirish</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sub-title">Bottom Sheet (sheet.tsx)</div>
+  <div style="max-width:28rem;position:relative;min-height:18rem;">
+    <div style="position:absolute;inset:0;border-radius:1rem;overflow:hidden;">
+      <div class="glass-overlay" style="position:absolute;inset:0;"></div>
+      <div class="glass-surface" style="position:absolute;bottom:0;left:0;right:0;border-radius:1rem 1rem 0 0;padding:1.25rem 1rem;">
+        <div style="width:2rem;height:0.25rem;border-radius:9999px;background:var(--border);margin:0 auto 1rem;"></div>
+        <h3 class="font-semibold" style="font-size:1rem;margin-bottom:0.375rem;">Dastur haqida</h3>
+        <p class="text-sm text-muted" style="margin-bottom:0.75rem;">Qarz Boshqaruvchisi v2.0.0</p>
+        <p class="text-sm text-muted">Telegram Mini App orqali qarzlarni boshqarish tizimi.</p>
+        <button class="btn btn-ghost" style="position:absolute;top:0.75rem;right:0.75rem;width:2rem;height:2rem;border-radius:9999px;padding:0;font-size:1rem;">✕</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="sub-title">Confirmation banners (DebtDetail.tsx)</div>
+  <div style="max-width:28rem;" class="col space-y-2">
+    <div class="confirm-banner pending">
+      <p class="font-semibold" style="color:var(--debt-taken);">⏳ Tasdiq kutilmoqda</p>
+      <p class="text-xs text-muted" style="margin-top:0.25rem;">Amal qilish muddati: 2026-04-20</p>
+      <button class="btn btn-outline btn-md w-full" style="margin-top:0.625rem;">Qayta yuborish</button>
+    </div>
+    <div class="confirm-banner confirmed">
+      <p class="font-semibold" style="color:var(--debt-given);">✅ Tasdiqlangan</p>
+      <p class="text-xs text-muted" style="margin-top:0.25rem;">Qabul qiluvchi tomonidan tasdiqlangan</p>
+      <p class="text-xs text-muted">🔗 Bog'langan qarz</p>
+    </div>
+    <div class="confirm-banner denied">
+      <p class="font-semibold" style="color:var(--destructive);">⚠️ Rad etilgan</p>
+      <p class="text-xs text-muted" style="margin-top:0.25rem;">Qabul qiluvchi rad etgan</p>
+      <button class="btn btn-outline btn-md w-full" style="margin-top:0.625rem;">Qayta yuborish</button>
+    </div>
+  </div>
+</div>
+
+<!-- ╔══════════════════════════════════════════════════╗
+     ║  10. EMPTY / LOADING STATES                     ║
+     ╚══════════════════════════════════════════════════╝ -->
+<div class="section" id="empty-loading">
+  <h2 class="section-title">Empty / Loading States</h2>
+
+  <div class="sub-title" style="margin-top:0;">Empty state (EmptyState.tsx)</div>
+  <div style="max-width:28rem;">
+    <div class="card glass-surface" style="border-style:dashed;">
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2.5rem 1.5rem;text-align:center;">
+        <div style="font-size:3rem;margin-bottom:1rem;opacity:0.5;">📊</div>
+        <h3 class="text-base font-semibold" style="margin-bottom:0.375rem;">Hali qarz yo'q</h3>
+        <p class="text-muted text-sm" style="margin-bottom:1.25rem;max-width:24rem;">Birinchi qarzingizni qo'shing va hamma narsani kuzatib boring</p>
+        <button class="glass-btn glass-btn-primary">+ Qarz qo'shish</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="sub-title">Skeleton cards (skeleton-card.tsx)</div>
+  <div style="max-width:28rem;" class="col space-y-2">
+    <div class="card glass-surface">
+      <div class="card-header">
+        <div class="skeleton" style="height:0.875rem;width:75%;"></div>
+        <div class="skeleton" style="height:1.75rem;width:50%;margin-top:0.25rem;"></div>
+      </div>
+      <div class="card-content col space-y-2">
+        <div class="skeleton" style="height:0.875rem;width:100%;"></div>
+        <div class="skeleton" style="height:0.875rem;width:66%;"></div>
+      </div>
+    </div>
+    <div class="card glass-surface">
+      <div class="card-header">
+        <div class="skeleton" style="height:0.875rem;width:60%;"></div>
+        <div class="skeleton" style="height:1.75rem;width:40%;margin-top:0.25rem;"></div>
+      </div>
+      <div class="card-content col space-y-2">
+        <div class="skeleton" style="height:0.875rem;width:100%;"></div>
+        <div class="skeleton" style="height:0.875rem;width:50%;"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sub-title">Loading spinner (LoadingScreen.tsx)</div>
+  <div style="max-width:28rem;display:flex;flex-direction:column;align-items:center;padding:2rem;">
+    <div class="spinner" style="margin-bottom:1rem;"></div>
+    <p class="text-lg" style="font-weight:500;color:var(--foreground);">Yuklanmoqda...</p>
+  </div>
+
+  <div class="sub-title">Inline loading placeholder (Contacts.tsx)</div>
+  <div style="max-width:28rem;" class="col space-y-2">
+    <div class="skeleton" style="height:4.5rem;border-radius:0.625rem;"></div>
+    <div class="skeleton" style="height:4.5rem;border-radius:0.625rem;"></div>
+    <div class="skeleton" style="height:4.5rem;border-radius:0.625rem;"></div>
+  </div>
+
+  <div class="sub-title">Error box</div>
+  <div style="max-width:28rem;">
+    <div class="error-box">
+      Kontaktlarni yuklashda xatolik yuz berdi
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     FULL PAGE MOCK PREVIEWS
+     ═══════════════════════════════════════════════════════ -->
+
+<div class="section" id="full-pages">
+  <h2 class="section-title">Full Page Previews</h2>
+
+  <!-- ──────── Dashboard ──────── -->
+  <div class="sub-title" style="margin-top:0;">Dashboard</div>
+  <div class="phone-frame">
+    <div class="phone-content col space-y-5">
+      <div style="display:flex;justify-content:center;padding:0.25rem 0;">
+        <button class="glass-btn glass-btn-glass" style="height:2.75rem;padding:0 1.5rem;font-size:0.9375rem;font-weight:500;">+ Qarz qo'shish</button>
+      </div>
+      <div class="col" style="gap:0.5rem;">
+        <div class="glass-card stat-success" style="border-radius:0.625rem;padding:0;">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:0.5rem 0.875rem 0.25rem;">
+            <span class="font-semibold" style="font-size:14px;">Berilgan</span>
+            <span style="border-radius:9999px;border:1px solid var(--border);background:var(--card);padding:0.125rem 0.5rem;font-size:0.875rem;font-weight:500;line-height:1;">8 ta</span>
+          </div>
+          <div style="padding:0 0.875rem 0.5rem;">
+            <span class="numeric-text font-bold" style="font-size:1.125rem;color:var(--debt-given);">15 200 000 so'm</span>
+          </div>
+        </div>
+        <div class="glass-card stat-danger" style="border-radius:0.625rem;padding:0;">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:0.5rem 0.875rem 0.25rem;">
+            <span class="font-semibold" style="font-size:14px;">Olingan</span>
+            <span style="border-radius:9999px;border:1px solid var(--border);background:var(--card);padding:0.125rem 0.5rem;font-size:0.875rem;font-weight:500;line-height:1;">3 ta</span>
+          </div>
+          <div style="padding:0 0.875rem 0.5rem;">
+            <span class="numeric-text font-bold" style="font-size:1.125rem;color:var(--destructive);">4 500 000 so'm</span>
+          </div>
+        </div>
+        <div class="glass-card stat-warning" style="border-radius:0.625rem;padding:0;">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:0.5rem 0.875rem 0.25rem;">
+            <span class="font-semibold" style="font-size:14px;">Muddati o'tgan</span>
+            <span style="border-radius:9999px;border:1px solid var(--border);background:var(--card);padding:0.125rem 0.5rem;font-size:0.875rem;font-weight:500;line-height:1;">2 ta</span>
+          </div>
+          <div style="padding:0 0.875rem 0.5rem;">
+            <span class="numeric-text font-bold" style="font-size:1.125rem;color:var(--debt-taken);">3 000 000 so'm</span>
+          </div>
+        </div>
+      </div>
+      <div class="col space-y-3">
+        <h2 class="text-base font-semibold">So'nggi qarzlar</h2>
+        <div class="col space-y-2">
+          <div class="glass-card debt-given" style="cursor:pointer;">
+            <div class="card-content" style="display:flex;align-items:center;justify-content:space-between;gap:0.75rem;">
+              <div><p class="font-semibold">Aziz Karimov</p><p class="text-xs text-muted">2026-05-01</p><p class="text-xs text-green">15 kun</p></div>
+              <div style="text-align:right;"><p class="numeric-text font-bold text-green" style="font-size:1rem;">2 500 000 so'm</p></div>
+            </div>
+          </div>
+          <div class="glass-card debt-taken" style="cursor:pointer;">
+            <div class="card-content" style="display:flex;align-items:center;justify-content:space-between;gap:0.75rem;">
+              <div><p class="font-semibold">Bahrom Toshmatov</p><p class="text-xs text-muted">2026-04-20</p><p class="text-xs" style="color:var(--debt-taken);">7 kun</p></div>
+              <div style="text-align:right;"><p class="numeric-text font-bold text-red" style="font-size:1rem;">1 800 000 so'm</p></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="bottom-nav" style="border-radius:0;">
+      <div class="bottom-nav-inner">
+        <button class="nav-item active"><span class="nav-icon">📲</span><span class="nav-label">Bosh sahifa</span></button>
+        <button class="nav-item"><span class="nav-icon">🧮</span><span class="nav-label">Qarzlar</span></button>
+        <button class="nav-item"><span class="nav-icon">👨🏻‍🤝‍👨🏻</span><span class="nav-label">Kontaktlar</span></button>
+        <button class="nav-item"><span class="nav-icon">🙋🏻‍♂️</span><span class="nav-label">Profil</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ──────── Debts page ──────── -->
+  <div class="sub-title">Debts Page</div>
+  <div class="phone-frame">
+    <div class="phone-content col space-y-3">
+      <div class="col space-y-2">
+        <button class="btn btn-ghost" style="gap:0.25rem;height:2rem;padding:0 0.625rem;font-size:0.8125rem;border-radius:0.5rem;align-self:flex-start;">← Ortga</button>
+        <div class="flex items-center justify-between gap-3">
+          <h1 class="text-xl font-semibold">Qarzlar</h1>
+          <button class="glass-btn glass-btn-glass" style="height:2.5rem;padding:0 1rem;font-size:0.8125rem;font-weight:500;">+ Qarz qo'shish</button>
+        </div>
+        <div class="tab-pills">
+          <button class="tab-pill active">Hammasi</button>
+          <button class="tab-pill">Berilgan</button>
+          <button class="tab-pill">Olingan</button>
+          <button class="tab-pill">Kechikkan</button>
+          <button class="tab-pill">To'langan</button>
+        </div>
+      </div>
+      <div class="col space-y-2">
+        <div class="glass-card debt-overdue" style="cursor:pointer;">
+          <div class="card-content" style="display:flex;align-items:center;justify-content:space-between;gap:0.75rem;">
+            <div><p class="font-semibold">Sardor Aliyev</p><p class="text-xs text-muted">2026-03-01</p><p class="text-xs text-red">43 kun kechikkan</p></div>
+            <div style="text-align:right;"><p class="numeric-text font-bold text-red" style="font-size:1rem;">5 000 000 so'm</p><button class="btn btn-outline btn-sm" style="margin-top:0.25rem;font-size:0.625rem;height:1.5rem;padding:0 0.5rem;">Eslatish</button></div>
+          </div>
+        </div>
+        <div class="glass-card debt-given" style="cursor:pointer;">
+          <div class="card-content" style="display:flex;align-items:center;justify-content:space-between;gap:0.75rem;">
+            <div><p class="font-semibold">Aziz Karimov</p><p class="text-xs text-muted">2026-05-01</p><p class="text-xs text-green">15 kun qoldi</p><span class="confirm-confirmed" style="margin-top:0.25rem;">✅ Tasdiqlangan</span></div>
+            <div style="text-align:right;"><p class="numeric-text font-bold text-green" style="font-size:1rem;">2 500 000 so'm</p></div>
+          </div>
+        </div>
+        <div class="glass-card debt-taken" style="cursor:pointer;">
+          <div class="card-content" style="display:flex;align-items:center;justify-content:space-between;gap:0.75rem;">
+            <div><p class="font-semibold">Bahrom Toshmatov</p><p class="text-xs text-muted">2026-04-20</p><p class="text-xs" style="color:var(--debt-taken);">7 kun qoldi</p><span class="confirm-pending" style="margin-top:0.25rem;">⏳ Kutilmoqda</span></div>
+            <div style="text-align:right;"><p class="numeric-text font-bold text-red" style="font-size:1rem;">1 800 000 so'm</p></div>
+          </div>
+        </div>
+        <div class="glass-card debt-paid-given" style="cursor:pointer;">
+          <div style="position:absolute;inset:0;z-index:2;display:flex;justify-content:center;padding-top:0.625rem;background:rgba(250,250,249,0.7);backdrop-filter:blur(8px);">
+            <div style="text-align:center;"><span style="font-size:1.25rem;">✅</span><p class="font-semibold" style="color:var(--debt-given);font-size:0.8125rem;">To'langan</p><p class="text-xs text-muted">10.04.2026</p></div>
+          </div>
+          <div class="card-content" style="display:flex;align-items:center;justify-content:space-between;gap:0.75rem;opacity:0.4;">
+            <div><p class="font-semibold">Nodira Xasanova</p><p class="text-xs text-muted">Berilgan</p></div>
+            <p class="numeric-text font-bold">500 000 so'm</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="bottom-nav" style="border-radius:0;">
+      <div class="bottom-nav-inner">
+        <button class="nav-item"><span class="nav-icon">📲</span><span class="nav-label">Bosh sahifa</span></button>
+        <button class="nav-item active"><span class="nav-icon">🧮</span><span class="nav-label">Qarzlar</span></button>
+        <button class="nav-item"><span class="nav-icon">👨🏻‍🤝‍👨🏻</span><span class="nav-label">Kontaktlar</span></button>
+        <button class="nav-item"><span class="nav-icon">🙋🏻‍♂️</span><span class="nav-label">Profil</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ──────── Debt Detail ──────── -->
+  <div class="sub-title">Debt Detail</div>
+  <div class="phone-frame">
+    <div class="phone-content col space-y-3">
+      <button class="btn btn-ghost" style="gap:0.25rem;height:2rem;padding:0 0.625rem;font-size:0.8125rem;border-radius:0.5rem;align-self:flex-start;">← Ortga</button>
+      <div class="card glass-surface" style="gap:0.5rem;">
+        <div class="flex items-center justify-between gap-2">
+          <h1 class="text-base font-semibold">Aziz Karimov</h1>
+          <span class="badge badge-secondary">Faol</span>
+        </div>
+        <div class="flex items-center justify-between gap-2">
+          <p class="text-lg font-bold">2 500 000 so'm</p>
+          <button class="btn btn-outline" style="height:2.25rem;padding:0 0.75rem;font-size:0.8125rem;">Eslatish</button>
+        </div>
+        <p class="text-sm text-muted">Berilgan sana: 2026-01-15</p>
+        <p class="text-sm text-muted">Qaytarish sanasi: 2026-05-01</p>
+        <button class="btn btn-outline btn-md w-full" style="margin-top:0.5rem;">Tasdiqlash uchun yuborish</button>
+      </div>
+      <div class="confirm-banner pending">
+        <p class="font-semibold" style="color:var(--debt-taken);">⏳ Tasdiq kutilmoqda</p>
+        <p class="text-xs text-muted" style="margin-top:0.25rem;">Amal qilish muddati: 2026-04-20</p>
+        <button class="btn btn-outline btn-md w-full" style="margin-top:0.625rem;">Qayta yuborish</button>
+      </div>
+    </div>
+    <div class="bottom-nav" style="border-radius:0;">
+      <div class="bottom-nav-inner">
+        <button class="nav-item"><span class="nav-icon">📲</span><span class="nav-label">Bosh sahifa</span></button>
+        <button class="nav-item active"><span class="nav-icon">🧮</span><span class="nav-label">Qarzlar</span></button>
+        <button class="nav-item"><span class="nav-icon">👨🏻‍🤝‍👨🏻</span><span class="nav-label">Kontaktlar</span></button>
+        <button class="nav-item"><span class="nav-icon">🙋🏻‍♂️</span><span class="nav-label">Profil</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ──────── Contacts page ──────── -->
+  <div class="sub-title">Contacts</div>
+  <div class="phone-frame">
+    <div class="phone-content col space-y-3">
+      <div class="col space-y-2">
+        <button class="btn btn-ghost" style="gap:0.25rem;height:2rem;padding:0 0.625rem;font-size:0.8125rem;border-radius:0.5rem;align-self:flex-start;">← Ortga</button>
+        <div class="flex items-center justify-between gap-3" style="flex-wrap:wrap;">
+          <h1 class="text-xl font-semibold">Kontaktlar</h1>
+          <div class="flex gap-2">
+            <button class="glass-btn glass-btn-glass" style="height:2.5rem;padding:0 0.875rem;font-size:0.8125rem;font-weight:500;">🔄 Yangilash</button>
+            <button class="glass-btn glass-btn-glass" style="height:2.5rem;padding:0 1rem;font-size:0.8125rem;font-weight:500;">+ Qo'shish</button>
+          </div>
+        </div>
+      </div>
+      <div class="glass-card" style="padding:0.25rem;position:relative;">
+        <span style="position:absolute;left:0.875rem;top:50%;transform:translateY(-50%);color:var(--muted-foreground);font-size:0.875rem;">🔍</span>
+        <input class="glass-input input" placeholder="Kontakt qidirish..." style="background:transparent;border:none;padding-left:2.25rem;height:2.25rem;" />
+      </div>
+      <div class="col space-y-2">
+        <div class="glass-card" style="cursor:pointer;">
+          <div class="card-content" style="padding:0;">
+            <div class="flex items-center justify-between gap-3">
+              <div class="flex items-center gap-3 min-w-0">
+                <div class="avatar avatar-sm avatar-sky">AK</div>
+                <div class="min-w-0"><p class="font-semibold text-sm truncate">Aziz Karimov</p><p class="text-xs text-muted">+998 90 123 45 67</p></div>
+              </div>
+              <div class="col" style="align-items:flex-end;gap:0.25rem;">
+                <span class="badge" style="border:1px solid var(--border);background:var(--card);color:var(--foreground);font-size:0.625rem;">3 faol</span>
+                <span class="numeric-text text-xs" style="font-weight:500;color:var(--muted-foreground);">5 200 000 so'm</span>
+                <button class="glass-btn glass-btn-glass" style="padding:0.25rem 0.625rem;font-size:0.75rem;">+ Qarz</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="glass-card" style="cursor:pointer;">
+          <div class="card-content" style="padding:0;">
+            <div class="flex items-center justify-between gap-3">
+              <div class="flex items-center gap-3 min-w-0">
+                <div class="avatar avatar-sm avatar-emerald">BT</div>
+                <div class="min-w-0"><p class="font-semibold text-sm truncate">Bahrom Toshmatov</p><p class="text-xs text-muted">Telefon raqami yo'q</p></div>
+              </div>
+              <div class="col" style="align-items:flex-end;gap:0.25rem;">
+                <span class="badge badge-destructive" style="font-size:0.625rem;">1 faol</span>
+                <span class="numeric-text text-xs" style="font-weight:500;color:var(--muted-foreground);">1 800 000 so'm</span>
+                <button class="glass-btn glass-btn-glass" style="padding:0.25rem 0.625rem;font-size:0.75rem;">+ Qarz</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="glass-card" style="cursor:pointer;">
+          <div class="card-content" style="padding:0;">
+            <div class="flex items-center justify-between gap-3">
+              <div class="flex items-center gap-3 min-w-0">
+                <div class="avatar avatar-sm avatar-amber">SA</div>
+                <div class="min-w-0"><p class="font-semibold text-sm truncate">Sardor Aliyev</p><p class="text-xs text-muted">+998 91 456 78 90</p></div>
+              </div>
+              <div class="col" style="align-items:flex-end;gap:0.25rem;">
+                <span class="badge badge-destructive" style="font-size:0.625rem;">1 faol</span>
+                <span class="numeric-text text-xs" style="font-weight:500;color:var(--muted-foreground);">5 000 000 so'm</span>
+                <button class="glass-btn glass-btn-glass" style="padding:0.25rem 0.625rem;font-size:0.75rem;">+ Qarz</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="bottom-nav" style="border-radius:0;">
+      <div class="bottom-nav-inner">
+        <button class="nav-item"><span class="nav-icon">📲</span><span class="nav-label">Bosh sahifa</span></button>
+        <button class="nav-item"><span class="nav-icon">🧮</span><span class="nav-label">Qarzlar</span></button>
+        <button class="nav-item active"><span class="nav-icon">👨🏻‍🤝‍👨🏻</span><span class="nav-label">Kontaktlar</span></button>
+        <button class="nav-item"><span class="nav-icon">🙋🏻‍♂️</span><span class="nav-label">Profil</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ──────── Contact Detail ──────── -->
+  <div class="sub-title">Contact Detail</div>
+  <div class="phone-frame">
+    <div class="phone-content col space-y-3">
+      <div class="flex items-center justify-between gap-2">
+        <button class="btn btn-ghost" style="gap:0.25rem;height:2rem;padding:0 0.625rem;font-size:0.8125rem;border-radius:0.5rem;">← Ortga</button>
+        <button class="glass-btn glass-btn-primary" style="height:2.5rem;padding:0 1rem;font-size:0.8125rem;font-weight:500;">+ Qarz qo'shish</button>
+      </div>
+      <div class="card glass-surface" style="gap:0.625rem;">
+        <div class="flex items-start justify-between gap-3">
+          <div class="flex items-center gap-3 min-w-0">
+            <div class="avatar avatar-lg avatar-sky">AK</div>
+            <div class="min-w-0">
+              <h1 class="text-base font-semibold truncate">Aziz Karimov</h1>
+              <a style="font-size:0.875rem;color:var(--foreground);text-decoration:none;">+998 90 123 45 67</a>
+            </div>
+          </div>
+          <span class="badge badge-destructive">3 faol qarzlar</span>
+        </div>
+      </div>
+      <div class="grid-3" style="gap:0.5rem;">
+        <div class="card glass-surface" style="padding:0.625rem;gap:0.25rem;">
+          <p class="text-xs text-muted" style="font-size:11px;">Berilgan</p>
+          <p class="numeric-text text-sm font-semibold text-emerald">3 200 000 so'm</p>
+        </div>
+        <div class="card glass-surface" style="padding:0.625rem;gap:0.25rem;">
+          <p class="text-xs text-muted" style="font-size:11px;">Olingan</p>
+          <p class="numeric-text text-sm font-semibold text-rose">2 000 000 so'm</p>
+        </div>
+        <div class="card glass-surface" style="padding:0.625rem;gap:0.25rem;">
+          <p class="text-xs text-muted" style="font-size:11px;">Faol qarzlar</p>
+          <p class="numeric-text text-sm font-semibold">3</p>
+        </div>
+      </div>
+      <div class="flex items-center justify-between">
+        <h2 class="font-semibold text-sm">Qarzlar</h2>
+      </div>
+      <div class="col space-y-2">
+        <div class="glass-card debt-given" style="cursor:pointer;">
+          <div class="card-content" style="display:flex;align-items:center;justify-content:space-between;gap:0.75rem;">
+            <div><p class="font-semibold">Aziz Karimov</p><p class="text-xs text-muted">2026-05-01</p><p class="text-xs text-green">15 kun</p></div>
+            <div style="text-align:right;"><p class="numeric-text font-bold text-green" style="font-size:1rem;">2 500 000 so'm</p></div>
+          </div>
+        </div>
+      </div>
+      <div class="row" style="gap:0.5rem;margin-top:0.5rem;">
+        <button class="glass-btn glass-btn-glass flex-1" style="font-size:0.8125rem;">Tahrirlash</button>
+        <button class="glass-btn glass-btn-danger flex-1" style="font-size:0.8125rem;">O'chirish</button>
+      </div>
+    </div>
+    <div class="bottom-nav" style="border-radius:0;">
+      <div class="bottom-nav-inner">
+        <button class="nav-item"><span class="nav-icon">📲</span><span class="nav-label">Bosh sahifa</span></button>
+        <button class="nav-item"><span class="nav-icon">🧮</span><span class="nav-label">Qarzlar</span></button>
+        <button class="nav-item active"><span class="nav-icon">👨🏻‍🤝‍👨🏻</span><span class="nav-label">Kontaktlar</span></button>
+        <button class="nav-item"><span class="nav-icon">🙋🏻‍♂️</span><span class="nav-label">Profil</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ──────── Profile page ──────── -->
+  <div class="sub-title">Profile</div>
+  <div class="phone-frame">
+    <div class="phone-content col space-y-3">
+      <div class="col" style="gap:0;">
+        <button class="btn btn-ghost" style="gap:0.25rem;height:2rem;padding:0 0.625rem;font-size:0.8125rem;border-radius:0.5rem;align-self:flex-start;">← Ortga</button>
+        <h1 class="text-2xl font-semibold">Profil</h1>
+        <p class="text-base text-muted">Shaxsiy sozlamalar va ma'lumotlar</p>
+      </div>
+
+      <!-- Avatar card -->
+      <div class="glass-card" style="overflow:hidden;padding:0.625rem;">
+        <div class="flex items-start gap-3">
+          <div class="avatar avatar-xl avatar-gradient">SS</div>
+          <div class="min-w-0 flex-1 col" style="gap:0.375rem;">
+            <div><h2 class="font-semibold text-lg truncate">Suhrob Soatov</h2><p class="text-sm text-muted">@ssuhrob</p></div>
+            <span style="display:flex;align-items:center;gap:0.25rem;font-size:0.875rem;opacity:0.8;">📞 +998 90 123 45 67</span>
+            <div class="flex items-center gap-2" style="flex-wrap:wrap;">
+              <span class="badge" style="padding:0.25rem 1rem;font-size:0.75rem;color:var(--foreground);border:1px solid var(--border);">ID: 123456789</span>
+              <span class="text-xs text-muted">Ro'yxatdan: 1-yanvar 2026</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Collapsible profile edit -->
+      <div class="glass-card col space-y-2" style="padding:0.875rem;">
+        <button style="display:flex;width:100%;align-items:center;justify-content:space-between;border:none;background:none;cursor:pointer;padding:0;color:var(--foreground);font-family:inherit;">
+          <h2 class="text-sm font-semibold">Profil ma'lumotlari</h2>
+          <span class="text-muted">▾</span>
+        </button>
+        <div class="col space-y-2">
+          <div><label class="text-xs text-muted">Ism</label><input class="glass-input input" value="Suhrob" /></div>
+          <div><label class="text-xs text-muted">Familiya</label><input class="glass-input input" value="Soatov" /></div>
+          <div><label class="text-xs text-muted">Username</label><input class="glass-input input" value="@ssuhrob" /></div>
+          <div>
+            <label class="text-xs text-muted">Telefon</label>
+            <div style="position:relative;">
+              <span style="position:absolute;left:0.875rem;top:50%;transform:translateY(-50%);font-size:0.875rem;font-weight:500;color:var(--foreground);opacity:0.7;pointer-events:none;">+998</span>
+              <input class="glass-input input" value="901234567" type="tel" style="padding-left:3.25rem;" />
+            </div>
+          </div>
+          <div><label class="text-xs text-muted">Telegram ID (o'qish uchun)</label><input class="glass-input input" value="123456789" disabled /></div>
+          <button class="glass-btn glass-btn-primary w-full">Saqlash</button>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="glass-card" style="padding:1rem;">
+        <h2 class="text-base font-semibold" style="margin-bottom:0.5rem;">Statistika</h2>
+        <div class="grid-2" style="gap:0.5rem;">
+          <div class="profile-stat-tile given"><p style="font-size:0.875rem;">📤 Berilgan</p><p class="text-sm font-semibold" style="margin-top:0.25rem;">15 200 000 so'm</p></div>
+          <div class="profile-stat-tile taken"><p style="font-size:0.875rem;">📥 Olingan</p><p class="text-sm font-semibold" style="margin-top:0.25rem;">4 500 000 so'm</p></div>
+          <div class="profile-stat-tile overdue"><p style="font-size:0.875rem;">⚠️ Muddati o'tgan</p><p class="text-sm font-semibold" style="margin-top:0.25rem;">2</p></div>
+          <div class="profile-stat-tile paid"><p style="font-size:0.875rem;">✅ To'langan</p><p class="text-sm font-semibold" style="margin-top:0.25rem;">5</p></div>
+          <div class="profile-stat-tile contacts"><p style="font-size:0.875rem;">👤 Kontaktlarim</p><p class="font-semibold" style="font-size:1rem;">12</p></div>
+        </div>
+      </div>
+
+      <!-- Theme -->
+      <div class="glass-card" style="padding:1rem;">
+        <div class="flex items-center gap-2" style="margin-bottom:0.625rem;"><span class="text-muted">🎨</span><h2 class="text-sm font-semibold">Mavzu</h2></div>
+        <div class="selector-grid cols-3">
+          <button class="selector-option">☀️ Yorug'</button>
+          <button class="selector-option active">🌙 Tungi</button>
+          <button class="selector-option">💻 Tizim</button>
+        </div>
+      </div>
+
+      <!-- Language -->
+      <div class="glass-card" style="padding:1rem;">
+        <div class="flex items-center gap-2" style="margin-bottom:0.625rem;"><span class="text-muted">🌐</span><h2 class="text-sm font-semibold">Til</h2></div>
+        <div class="grid-2" style="gap:0.5rem;">
+          <button class="lang-option active">🇺🇿 O'zbek</button>
+          <button class="lang-option">🇷🇺 Русский</button>
+        </div>
+      </div>
+
+      <!-- Settings items -->
+      <div class="glass-card col space-y-2" style="padding:0.875rem;">
+        <h2 class="text-sm font-semibold" style="padding:0 0.125rem;">Hisob amallari</h2>
+        <button class="settings-item">
+          <span class="settings-item-left"><span style="font-size:1rem;">🔔</span> <span class="text-sm" style="font-weight:500;">Bildirishnomalar</span></span>
+          <span class="settings-item-right"><span class="toggle-pill on">Yoqilgan</span></span>
+        </button>
+        <button class="settings-item">
+          <span class="settings-item-left"><span style="font-size:1rem;">ℹ️</span> <span class="text-sm" style="font-weight:500;">Dastur haqida</span></span>
+          <span class="settings-item-right">›</span>
+        </button>
+        <button class="settings-item danger">
+          <span class="settings-item-left"><span style="font-size:1rem;">🚪</span> <span class="text-sm" style="font-weight:500;">Chiqish</span></span>
+          <span class="settings-item-right">›</span>
+        </button>
+      </div>
+    </div>
+    <div class="bottom-nav" style="border-radius:0;">
+      <div class="bottom-nav-inner">
+        <button class="nav-item"><span class="nav-icon">📲</span><span class="nav-label">Bosh sahifa</span></button>
+        <button class="nav-item"><span class="nav-icon">🧮</span><span class="nav-label">Qarzlar</span></button>
+        <button class="nav-item"><span class="nav-icon">👨🏻‍🤝‍👨🏻</span><span class="nav-label">Kontaktlar</span></button>
+        <button class="nav-item active"><span class="nav-icon">🙋🏻‍♂️</span><span class="nav-label">Profil</span></button>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /full-pages -->
+
+</div><!-- /showcase-wrapper -->
+
+</body>
+</html>

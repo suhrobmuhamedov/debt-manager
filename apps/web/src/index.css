@@ -1,0 +1,566 @@
+@import "tailwindcss";
+
+@layer base {
+  html,
+  body,
+  #root {
+    min-height: 100%;
+  }
+
+  :root {
+    color-scheme: light;
+    --background: #f5f5f4;
+    --foreground: #44403c;
+    --card: #fafaf9;
+    --card-foreground: #44403c;
+    --primary: #57534e;
+    --primary-foreground: #fafaf9;
+    --secondary: #e7e5e4;
+    --secondary-foreground: #57534e;
+    --muted: #e7e5e4;
+    --muted-foreground: #78716c;
+    --accent: #d6d3d1;
+    --accent-foreground: #44403c;
+    --destructive: #b91c1c;
+    --destructive-foreground: #fafaf9;
+    --border: #d6d3d1;
+    --input: #e7e5e4;
+    --ring: rgba(120, 113, 108, 0.14);
+    --radius: 0.75rem;
+
+    --glass-bg: rgba(250, 250, 249, 0.84);
+    --glass-border: rgba(214, 211, 209, 0.6);
+    --glass-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+
+    --debt-given: #15803d;
+    --debt-given-light: rgba(21, 128, 61, 0.08);
+    --debt-taken: #a16207;
+    --debt-taken-light: rgba(161, 98, 7, 0.08);
+    --debt-overdue: #b91c1c;
+    --debt-overdue-light: rgba(185, 28, 28, 0.08);
+
+    --bg-gradient-start: #f5f5f4;
+    --bg-gradient-end: #e7e5e4;
+  }
+
+  .dark {
+    color-scheme: dark;
+    --background: #1c1917;
+    --foreground: #d6d3d1;
+    --card: #292524;
+    --card-foreground: #e7e5e4;
+    --primary: #a8a29e;
+    --primary-foreground: #1c1917;
+    --secondary: #44403c;
+    --secondary-foreground: #d6d3d1;
+    --muted: #44403c;
+    --muted-foreground: #a8a29e;
+    --accent: #57534e;
+    --accent-foreground: #e7e5e4;
+    --destructive: #dc2626;
+    --destructive-foreground: #fafaf9;
+    --border: #44403c;
+    --input: #44403c;
+    --ring: rgba(168, 162, 158, 0.18);
+
+    --glass-bg: rgba(41, 37, 36, 0.9);
+    --glass-border: rgba(87, 83, 78, 0.4);
+    --glass-shadow: 0 1px 3px rgba(0, 0, 0, 0.24);
+
+    --debt-given: #22c55e;
+    --debt-given-light: rgba(34, 197, 94, 0.1);
+    --debt-taken: #eab308;
+    --debt-taken-light: rgba(234, 179, 8, 0.1);
+    --debt-overdue: #ef4444;
+    --debt-overdue-light: rgba(239, 68, 68, 0.1);
+
+    --bg-gradient-start: #1c1917;
+    --bg-gradient-end: #292524;
+  }
+
+  * {
+    border-color: var(--border);
+  }
+
+  body {
+    margin: 0;
+    background: linear-gradient(180deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
+    background-attachment: fixed;
+    color: var(--foreground);
+    font-size: 15px;
+    line-height: 1.5;
+    font-family:
+      Inter,
+      ui-sans-serif,
+      system-ui,
+      -apple-system,
+      BlinkMacSystemFont,
+      "Segoe UI",
+      sans-serif;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    transition:
+      background-color 160ms ease,
+      color 160ms ease,
+      border-color 160ms ease;
+  }
+
+  button,
+  input,
+  textarea,
+  select {
+    font: inherit;
+  }
+
+  a {
+    color: inherit;
+  }
+
+  #root {
+    min-height: 100vh;
+  }
+}
+
+::view-transition-group(*),
+::view-transition-old(*),
+::view-transition-new(*) {
+  animation-duration: 0.01ms;
+  animation-timing-function: linear;
+}
+
+@keyframes dialogIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -49%) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@keyframes dialogOut {
+  from {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, -49%) scale(0.985);
+  }
+}
+
+@keyframes sheetUpIn {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes sheetUpOut {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+
+@keyframes dropdownIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes overlayIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@layer components {
+  .theme-smooth {
+    transition:
+      background-color 120ms ease,
+      border-color 120ms ease,
+      color 120ms ease;
+  }
+
+  .numeric-text {
+    font-variant-numeric: tabular-nums;
+  }
+
+  .safe-area-pb {
+    padding-bottom: env(safe-area-inset-bottom, 20px);
+  }
+
+  .app-bg {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  .app-bg-gradient {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
+  }
+
+  .glass-overlay {
+    background: rgba(0, 0, 0, 0.5);
+  }
+
+  .dark .glass-overlay {
+    background: rgba(0, 0, 0, 0.7);
+  }
+
+  .glass-surface {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+    backdrop-filter: blur(12px);
+    color: var(--foreground);
+    border-radius: var(--radius);
+  }
+
+  .glass-card {
+    border-radius: var(--radius);
+    border: 1px solid var(--glass-border);
+    padding: 0.75rem;
+    background: var(--glass-bg);
+    box-shadow: var(--glass-shadow);
+    backdrop-filter: blur(12px);
+  }
+
+  .glass-input {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 0.625rem;
+    color: var(--foreground);
+    transition:
+      border-color 150ms ease,
+      box-shadow 150ms ease,
+      background-color 150ms ease;
+  }
+
+  .glass-input:hover,
+  .glass-input:focus,
+  .glass-input:focus-visible {
+    border-color: var(--muted-foreground);
+  }
+
+  .glass-input:focus,
+  .glass-input:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--ring);
+  }
+
+  .glass-input::placeholder {
+    color: color-mix(in srgb, var(--muted-foreground) 76%, transparent);
+  }
+
+  .dialog-open {
+    animation: dialogIn 140ms ease-out forwards;
+  }
+
+  .dialog-closed {
+    animation: dialogOut 120ms ease-out forwards;
+  }
+
+  .sheet-open {
+    animation: sheetUpIn 180ms ease-out forwards;
+  }
+
+  .sheet-closed {
+    animation: sheetUpOut 140ms ease-out forwards;
+  }
+
+  .dropdown-open {
+    animation: dropdownIn 120ms ease-out forwards;
+  }
+
+  .overlay-open {
+    animation: overlayIn 100ms linear forwards;
+  }
+
+  .tab-pills {
+    display: flex;
+    gap: 0.375rem;
+    flex-wrap: wrap;
+  }
+
+  .tab-pill {
+    flex: 1;
+    min-width: fit-content;
+    border-radius: 9999px;
+    border: 1px solid var(--border);
+    background: var(--card);
+    padding: 0.5rem 0.875rem;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--muted-foreground);
+    cursor: pointer;
+    transition:
+      background-color 150ms ease,
+      color 150ms ease,
+      border-color 150ms ease;
+    white-space: nowrap;
+  }
+
+  .tab-pill:hover {
+    background: var(--muted);
+    color: var(--foreground);
+  }
+
+  .tab-pill[data-active="true"] {
+    background: var(--foreground);
+    border-color: var(--foreground);
+    color: var(--background);
+  }
+
+  .selector-grid {
+    display: grid;
+    gap: 0.375rem;
+    border-radius: 0.625rem;
+    border: 1px solid var(--border);
+    background: var(--card);
+    padding: 0.25rem;
+  }
+
+  .selector-grid.cols-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .selector-grid.cols-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .selector-option {
+    border-radius: 0.5rem;
+    border: 1px solid transparent;
+    background: transparent;
+    padding: 0.6rem 0.75rem;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--muted-foreground);
+    cursor: pointer;
+    transition:
+      background-color 150ms ease,
+      color 150ms ease,
+      border-color 150ms ease;
+  }
+
+  .selector-option:hover {
+    background: var(--muted);
+    color: var(--foreground);
+  }
+
+  .selector-option[data-active="true"] {
+    background: var(--foreground);
+    color: var(--background);
+    border-color: var(--foreground);
+  }
+
+  .settings-item {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+    border-radius: 0.625rem;
+    border: 1px solid var(--border);
+    background: var(--card);
+    padding: 0.875rem 1rem;
+    text-align: left;
+    cursor: pointer;
+    color: var(--foreground);
+    transition: background-color 150ms ease;
+  }
+
+  .settings-item:hover {
+    background: var(--muted);
+  }
+
+  .settings-item[data-danger="true"] {
+    border-color: rgba(185, 28, 28, 0.2);
+    background: var(--debt-overdue-light);
+    color: var(--destructive);
+  }
+
+  .settings-item[data-danger="true"]:hover {
+    background: color-mix(in srgb, var(--debt-overdue-light) 82%, var(--destructive) 18%);
+  }
+
+  .confirm-banner {
+    border-radius: 0.625rem;
+    border: 1px solid;
+    padding: 1rem;
+  }
+
+  .confirm-banner--pending {
+    border-color: rgba(161, 98, 7, 0.2);
+    background: var(--debt-taken-light);
+  }
+
+  .confirm-banner--confirmed {
+    border-color: rgba(21, 128, 61, 0.2);
+    background: var(--debt-given-light);
+  }
+
+  .confirm-banner--denied {
+    border-color: rgba(185, 28, 28, 0.2);
+    background: var(--debt-overdue-light);
+  }
+
+  .status-chip {
+    display: inline-flex;
+    width: fit-content;
+    align-items: center;
+    gap: 0.375rem;
+    border-radius: 9999px;
+    border: 1px solid transparent;
+    padding: 0.25rem 0.625rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  .status-chip--pending {
+    background: var(--debt-taken-light);
+    border-color: rgba(161, 98, 7, 0.2);
+    color: var(--debt-taken);
+  }
+
+  .status-chip--confirmed {
+    background: var(--debt-given-light);
+    border-color: rgba(21, 128, 61, 0.2);
+    color: var(--debt-given);
+  }
+
+  .status-chip--denied {
+    background: var(--debt-overdue-light);
+    border-color: rgba(185, 28, 28, 0.2);
+    color: var(--destructive);
+  }
+
+  .status-chip--neutral {
+    background: color-mix(in srgb, var(--foreground) 8%, transparent);
+    border-color: var(--border);
+    color: var(--foreground);
+  }
+
+  .stat-success {
+    border-left: 3px solid var(--debt-given);
+    background: var(--debt-given-light);
+  }
+
+  .stat-danger {
+    border-left: 3px solid var(--destructive);
+    background: var(--debt-overdue-light);
+  }
+
+  .stat-warning {
+    border-left: 3px solid var(--debt-taken);
+    background: var(--debt-taken-light);
+  }
+
+  .debt-given {
+    background: var(--debt-given-light);
+    border: 1px solid rgba(21, 128, 61, 0.15);
+  }
+
+  .debt-taken {
+    background: var(--debt-taken-light);
+    border: 1px solid rgba(161, 98, 7, 0.15);
+  }
+
+  .debt-overdue {
+    background: var(--debt-overdue-light);
+    border: 1px solid rgba(185, 28, 28, 0.15);
+  }
+
+  .debt-paid-given {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid rgba(21, 128, 61, 0.2);
+    background: rgba(21, 128, 61, 0.05);
+  }
+
+  .debt-paid-taken {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid rgba(185, 28, 28, 0.2);
+    background: rgba(185, 28, 28, 0.05);
+  }
+
+  .profile-stat-tile {
+    border-radius: 0.625rem;
+    border: 1px solid var(--border);
+    padding: 0.875rem;
+    background: var(--card);
+    cursor: pointer;
+    transition:
+      background-color 150ms ease,
+      transform 150ms ease;
+  }
+
+  .profile-stat-tile:hover {
+    background: var(--muted);
+    transform: translateY(-1px);
+  }
+
+  .profile-stat-tile.given {
+    border-left: 3px solid var(--debt-given);
+  }
+
+  .profile-stat-tile.taken {
+    border-left: 3px solid var(--debt-taken);
+  }
+
+  .profile-stat-tile.overdue {
+    border-left: 3px solid var(--destructive);
+  }
+
+  .profile-stat-tile.paid {
+    border-left: 3px solid var(--debt-given);
+  }
+
+  .profile-stat-tile.contacts {
+    border-left: 3px solid var(--foreground);
+  }
+
+  .loading-spinner {
+    width: 2.5rem;
+    height: 2.5rem;
+    border: 2px solid var(--border);
+    border-top-color: var(--muted-foreground);
+    border-radius: 9999px;
+    animation: spin 1s linear infinite;
+  }
+
+  .stagger-item {
+    opacity: 1;
+    transform: none;
+    animation: none;
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "packageManager": "npm@10.0.0",
+  "workspaces": ["apps/*", "packages/*"],
+  "scripts": {
+    "frontend:dev": "npm --workspace apps/web run dev",
+    "frontend:design": "npm --workspace apps/web run dev:design",
+    "frontend:build": "npm --workspace apps/web run build"
+  }
+}

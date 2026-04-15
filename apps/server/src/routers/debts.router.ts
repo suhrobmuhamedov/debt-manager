@@ -1,0 +1,1056 @@
+import { TRPCError } from '@trpc/server';
+import crypto from 'crypto';
+import { z } from 'zod';
+import { eq, and, isNull, inArray, sql, lt } from 'drizzle-orm';
+import { protectedProcedure, publicProcedure, router } from '../trpc';
+import { db } from '../db';
+import { debts, contacts, payments, users } from '../db/schema';
+import {
+  buildDirectReminderMessage,
+  buildForwardableReminderMessage,
+  sendTelegramHtmlMessage,
+} from '../services/notification.service';
+
+type ConfirmActor = {
+  telegramId: string;
+  firstName?: string;
+  lastName?: string;
+  username?: string;
+};
+
+const toDateOnly = (value: string): Date => {
+  const date = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(date.getTime())) {
+    throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid date format' });
+  }
+  return date;
+};
+
+const getTodayStart = (): Date => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return today;
+};
+
+const isExpired = (expiresAt: Date | null): boolean => {
+  if (!expiresAt) {
+    return true;
+  }
+  return expiresAt.getTime() < Date.now();
+};
+
+const DEFAULT_BOT_USERNAME = 'QarzTrust_bot';
+
+const resolveBotUsername = (): string => {
+  const raw = (process.env.BOT_USERNAME || DEFAULT_BOT_USERNAME).trim();
+  return raw.replace(/^@+/, '');
+};
+
+const buildMiniAppDebtLink = (debtId: number): string => {
+  const botUsername = resolveBotUsername();
+  return `https://t.me/${botUsername}?startapp=debt_${debtId}`;
+};
+
+const validateReturnDate = ({
+  givenDate,
+  returnDate,
+}: {
+  givenDate: Date;
+  returnDate: Date;
+}) => {
+  const normalizedGivenDate = new Date(givenDate);
+  normalizedGivenDate.setHours(0, 0, 0, 0);
+  const normalizedReturnDate = new Date(returnDate);
+  normalizedReturnDate.setHours(0, 0, 0, 0);
+
+  const today = getTodayStart();
+  if (normalizedReturnDate < today) {
+    throw new TRPCError({ code: 'BAD_REQUEST', message: 'debts.returnDatePast' });
+  }
+
+  if (normalizedReturnDate <= normalizedGivenDate) {
+    throw new TRPCError({ code: 'BAD_REQUEST', message: 'debts.returnDateAfterGiven' });
+  }
+};
+
+const formatDebtDate = (date: Date | string | null): string => {
+  if (!date) {
+    return '-';
+  }
+  const d = new Date(date);
+  return d.toLocaleDateString('uz-UZ', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+};
+
+const getFullName = (firstName?: string | null, lastName?: string | null): string => {
+  return [firstName, lastName].filter(Boolean).join(' ').trim() || 'Foydalanuvchi';
+};
+
+const sendTelegramText = async (telegramId: string, text: string): Promise<void> => {
+  const botToken = process.env.BOT_TOKEN;
+  if (!botToken || !telegramId) {
+    return;
+  }
+
+  try {
+    await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: telegramId, text }),
+    });
+  } catch (error) {
+    console.error('Telegram notification failed:', error);
+  }
+};
+
+const sendTelegramConfirmationMessage = async ({
+  telegramId,
+  text,
+}: {
+  telegramId: string;
+  text: string;
+}): Promise<void> => {
+  const botToken = process.env.BOT_TOKEN;
+  if (!botToken || !telegramId) {
+    return;
+  }
+
+  try {
+    const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: telegramId,
+        text,
+        parse_mode: 'HTML',
+        disable_web_page_preview: true,
+      }),
+    });
+
+    if (!response.ok) {
+      const bodyText = await response.text();
+      throw new Error(`Telegram API error: ${response.status} ${bodyText}`);
+    }
+  } catch (error) {
+    console.error('Telegram confirmation notification failed:', error);
+    throw error;
+  }
+};
+
+const getOrCreateUserByTelegramId = async (actor: ConfirmActor) => {
+  const [existing] = await db
+    .select()
+    .from(users)
+    .where(eq(users.telegramId, actor.telegramId))
+    .limit(1);
+
+  if (existing) {
+    return existing;
+  }
+
+  await db.insert(users).values({
+    telegramId: actor.telegramId,
+    firstName: actor.firstName?.trim() || 'Telegram User',
+    lastName: actor.lastName?.trim() || null,
+    username: actor.username?.trim() || null,
+  });
+
+  const [created] = await db
+    .select()
+    .from(users)
+    .where(eq(users.telegramId, actor.telegramId))
+    .limit(1);
+
+  if (!created) {
+    throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to create receiver account' });
+  }
+
+  return created;
+};
+
+export const debtsRouter = router({
+  getAll: protectedProcedure
+    .input(
+      z.object({
+        cursor: z.number().optional(),
+        limit: z.number().min(1).max(500).default(50),
+        status: z.enum(['pending', 'partial', 'paid']).optional(),
+        type: z.enum(['given', 'taken']).optional(),
+      })
+    )
+    .query(async ({ input, ctx }) => {
+      const userId = ctx.userId!;
+
+      const whereClauses: any[] = [eq(debts.userId, userId), isNull(debts.deletedAt)];
+      if (input.status) whereClauses.push(eq(debts.status, input.status));
+      if (input.type) whereClauses.push(eq(debts.type, input.type));
+      if (input.cursor) {
+        const cursorDate = new Date(input.cursor);
+        whereClauses.push(lt(debts.createdAt, cursorDate));
+      }
+
+      const items = await db
+        .select({
+          debt: debts,
+          contactName: contacts.name,
+        })
+        .from(debts)
+        .leftJoin(contacts, eq(debts.contactId, contacts.id))
+        .where(and(...whereClauses))
+        .orderBy(sql`${debts.createdAt} DESC`)
+        .limit(input.limit + 1);
+
+      const hasMore = items.length > input.limit;
+      const sliced = hasMore ? items.slice(0, input.limit) : items;
+      const lastDebt = hasMore ? sliced[sliced.length - 1]?.debt : null;
+      const nextCursor = lastDebt?.createdAt ? lastDebt.createdAt.getTime() : null;
+
+      const debtIds = sliced.map((row) => row.debt.id);
+      const paidAtRows = debtIds.length
+        ? await db
+            .select({
+              debtId: payments.debtId,
+              paidAt: sql<Date | null>`MAX(${payments.paymentDate})`,
+            })
+            .from(payments)
+            .where(inArray(payments.debtId, debtIds))
+            .groupBy(payments.debtId)
+        : [];
+
+      const paidAtByDebtId = new Map<number, Date | null>(
+        paidAtRows.map((row) => [row.debtId, row.paidAt])
+      );
+
+      return {
+        items: sliced.map((row) => {
+          const paidAt = paidAtByDebtId.get(row.debt.id) ?? (row.debt.status === 'paid' ? row.debt.updatedAt : null);
+          return {
+            ...row.debt,
+            contactName: row.contactName,
+            paidAt: paidAt ? new Date(paidAt).toISOString().split('T')[0] : null,
+          };
+        }),
+        nextCursor,
+      };
+    }),
+
+  getById: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .query(async ({ input, ctx }) => {
+      const userId = ctx.userId!;
+
+      const [debt] = await db
+        .select()
+        .from(debts)
+        .where(and(eq(debts.id, input.id), eq(debts.userId, userId), isNull(debts.deletedAt)))
+        .limit(1);
+
+      if (!debt) {
+        throw new TRPCError({ code: 'NOT_FOUND' });
+      }
+
+      const [contact] = await db
+        .select()
+        .from(contacts)
+        .where(eq(contacts.id, debt.contactId))
+        .limit(1);
+
+      const paymentHistory = await db
+        .select()
+        .from(payments)
+        .where(eq(payments.debtId, debt.id))
+        .orderBy(sql`${payments.paymentDate} DESC`);
+
+      return { debt, contact, payments: paymentHistory };
+    }),
+
+  getOverdue: protectedProcedure.query(async ({ ctx }) => {
+    const userId = ctx.userId!;
+    const now = new Date();
+
+    const overdue = await db
+      .select({ debt: debts, contactName: contacts.name })
+      .from(debts)
+      .leftJoin(contacts, eq(debts.contactId, contacts.id))
+      .where(
+        and(
+          eq(debts.userId, userId),
+          isNull(debts.deletedAt),
+          lt(debts.returnDate, now),
+          inArray(debts.status, ['pending', 'partial'])
+        )
+      )
+      .orderBy(debts.returnDate);
+
+    return overdue.map((row) => ({ ...row.debt, contactName: row.contactName }));
+  }),
+
+  sendReminder: protectedProcedure
+    .input(z.object({ debtId: z.number() }))
+    .mutation(async ({ input, ctx }) => {
+      const userId = ctx.userId!;
+
+      const [row] = await db
+        .select({
+          debt: debts,
+          contact: contacts,
+          owner: users,
+        })
+        .from(debts)
+        .innerJoin(users, eq(users.id, debts.userId))
+        .leftJoin(contacts, eq(contacts.id, debts.contactId))
+        .where(and(eq(debts.id, input.debtId), eq(debts.userId, userId), isNull(debts.deletedAt)))
+        .limit(1);
+
+      if (!row) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Debt not found' });
+      }
+
+      if (row.debt.status === 'paid') {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Paid debt does not need reminder' });
+      }
+
+      if (!row.owner.telegramId || !row.owner.botStartedAt) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Botda /start bosilmagan. Avval botni ishga tushiring.' });
+      }
+
+      const remainingAmount = Math.max(Number(row.debt.amount) - Number(row.debt.paidAmount), 0);
+      const ownerName = getFullName(row.owner.firstName, row.owner.lastName);
+
+      let counterparty:
+        | {
+            telegramId: string;
+            firstName: string;
+            lastName: string | null;
+            username: string | null;
+            botStartedAt: Date | null;
+          }
+        | null = null;
+
+      if (row.debt.linkedDebtId) {
+        const [linkedRow] = await db
+          .select({
+            telegramId: users.telegramId,
+            firstName: users.firstName,
+            lastName: users.lastName,
+            username: users.username,
+            botStartedAt: users.botStartedAt,
+          })
+          .from(debts)
+          .innerJoin(users, eq(users.id, debts.userId))
+          .where(and(eq(debts.id, row.debt.linkedDebtId), isNull(debts.deletedAt)))
+          .limit(1);
+
+        counterparty = linkedRow || null;
+      }
+
+      if (
+        row.debt.type === 'given' &&
+        row.debt.confirmationStatus === 'confirmed' &&
+        counterparty?.telegramId &&
+        counterparty.botStartedAt
+      ) {
+        try {
+          await sendTelegramHtmlMessage(
+            counterparty.telegramId,
+            buildDirectReminderMessage({
+              ownerName,
+              ownerPhone: row.owner.phone,
+              ownerUsername: row.owner.username,
+              amount: remainingAmount,
+              currency: row.debt.currency,
+              returnDate: new Date(row.debt.returnDate),
+            })
+          );
+
+          return {
+            success: true as const,
+            sentTo: 'counterparty' as const,
+            recipientName: getFullName(counterparty.firstName, counterparty.lastName),
+          };
+        } catch (error) {
+          console.error(`[debts.sendReminder] direct send failed for debtId=${row.debt.id}`, error);
+        }
+      }
+
+      await sendTelegramHtmlMessage(
+        row.owner.telegramId,
+        buildForwardableReminderMessage({
+          contactName: row.contact?.name || 'Noma\'lum',
+          contactPhone: row.contact?.phone || null,
+          contactUsername: counterparty?.username || null,
+          ownerFirstName: row.owner.firstName,
+          ownerLastName: row.owner.lastName,
+          amount: remainingAmount,
+          currency: row.debt.currency,
+          returnDate: new Date(row.debt.returnDate),
+          type: row.debt.type,
+          debtUrl: buildMiniAppDebtLink(row.debt.id),
+        })
+      );
+
+      return {
+        success: true as const,
+        sentTo: 'self' as const,
+        recipientName: ownerName,
+      };
+    }),
+
+  create: protectedProcedure
+    .input(
+      z.object({
+        contactId: z.number(),
+        amount: z.number().positive().max(999_999_999),
+        currency: z.enum(['UZS', 'USD', 'EUR']).default('UZS'),
+        type: z.enum(['given', 'taken']),
+        givenDate: z.string(),
+        returnDate: z.string().min(1, 'debts.returnDateRequired'),
+        note: z.string().max(500).optional(),
+        twoWayConfirmation: z.boolean().default(false),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const requestId = crypto.randomUUID();
+      const userId = ctx.userId!;
+      const givenDate = toDateOnly(input.givenDate);
+      const returnDate = toDateOnly(input.returnDate);
+      validateReturnDate({ givenDate, returnDate });
+
+      const [contact] = await db
+        .select()
+        .from(contacts)
+        .where(and(eq(contacts.id, input.contactId), eq(contacts.userId, userId), isNull(contacts.deletedAt)))
+        .limit(1);
+
+      if (!contact) {
+        throw new TRPCError({ code: 'NOT_FOUND' });
+      }
+
+      const createdDebtUuid = crypto.randomUUID();
+      const requiresTwoWayConfirmation = input.twoWayConfirmation;
+      const confirmationToken = requiresTwoWayConfirmation
+        ? crypto.randomUUID().replace(/-/g, '')
+        : null;
+      const confirmationExpiresAt = requiresTwoWayConfirmation
+        ? new Date(Date.now() + 48 * 60 * 60 * 1000)
+        : null;
+
+      try {
+        await db
+          .insert(debts)
+          .values({
+            uuid: createdDebtUuid,
+            userId,
+            contactId: input.contactId,
+            amount: input.amount.toString(),
+            paidAmount: '0',
+            currency: input.currency,
+            type: input.type,
+            status: 'pending',
+            confirmationStatus: requiresTwoWayConfirmation ? 'pending' : 'not_required',
+            confirmationToken,
+            confirmationExpiresAt,
+            givenDate,
+            returnDate,
+            note: input.note,
+          })
+          .execute();
+      } catch (error) {
+        console.error(`[debts.create:${requestId}] insert failed`, error);
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Debt create failed' });
+      }
+
+      const [inserted] = await db
+        .select()
+        .from(debts)
+        .where(and(eq(debts.uuid, createdDebtUuid), eq(debts.userId, userId), isNull(debts.deletedAt)))
+        .limit(1);
+
+      if (!inserted) {
+        console.error(`[debts.create:${requestId}] created debt not found after insert`);
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Debt created but not readable' });
+      }
+
+      let telegramNotification: {
+        attempted: boolean;
+        sent: boolean;
+        reason: string | null;
+      } = {
+        attempted: false,
+        sent: false,
+        reason: null,
+      };
+
+      if (requiresTwoWayConfirmation && confirmationToken) {
+        telegramNotification.attempted = true;
+
+        const [creator] = await db
+          .select()
+          .from(users)
+          .where(eq(users.id, userId))
+          .limit(1);
+
+        if (!creator?.telegramId) {
+          telegramNotification.reason = 'creator_telegram_missing';
+          console.warn(`[debts.create:${requestId}] creator telegram id missing (userId=${userId})`);
+        } else {
+          try {
+            const senderName = creator?.firstName || 'Foydalanuvchi';
+            const contactNameDative = `${String(contact.name || '').trim()}ga`;
+            const amountText = Number(input.amount).toLocaleString('uz-UZ');
+            const currencyText = input.currency || 'UZS';
+            const returnDateText = formatDebtDate(returnDate);
+            const botUsername = resolveBotUsername();
+            const confirmLink = `https://t.me/${botUsername}?start=confirm_${confirmationToken}`;
+            const denyLink = `https://t.me/${botUsername}?start=deny_${confirmationToken}`;
+            const messageText = `Salom! ${senderName}dan ikki tomonlama tasdiqlash uchun tasdiqlash xabari yuborildi.\n${contactNameDative} ${amountText} ${currencyText} miqdorida qarz yozildi.\nQaytarish muddati: ${returnDateText}.\n<a href="${confirmLink}">Tasdiqlash</a> | <a href="${denyLink}">Inkor qilish</a>\nUshbu xabarni qarzdorga yuboring.`;
+
+            await sendTelegramConfirmationMessage({
+              telegramId: creator.telegramId,
+              text: messageText,
+            });
+
+            telegramNotification.sent = true;
+            console.info(
+              `[debts.create:${requestId}] confirmation message sent to creator telegramId=${creator.telegramId}`
+            );
+          } catch (error) {
+            telegramNotification.reason = 'telegram_send_failed';
+            console.error(`[debts.create:${requestId}] confirmation message failed`, error);
+          }
+        }
+      }
+
+      return {
+        ...inserted,
+        confirmation: {
+          required: requiresTwoWayConfirmation,
+          token: confirmationToken,
+          expiresAt: confirmationExpiresAt,
+          telegramNotification,
+        },
+      };
+    }),
+
+  update: protectedProcedure
+    .input(
+      z.object({
+        id: z.number(),
+        returnDate: z.string().min(1, 'debts.returnDateRequired'),
+        note: z.string().max(500).optional(),
+        amount: z.number().positive().max(999_999_999).optional(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const userId = ctx.userId!;
+
+      const [existing] = await db
+        .select()
+        .from(debts)
+        .where(and(eq(debts.id, input.id), eq(debts.userId, userId), isNull(debts.deletedAt)))
+        .limit(1);
+
+      if (!existing) {
+        throw new TRPCError({ code: 'NOT_FOUND' });
+      }
+
+      if (existing.status === 'paid') {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Paid debt cannot be updated' });
+      }
+
+      const isConfirmedTwoWay = existing.confirmationStatus === 'confirmed' && !!existing.linkedDebtId;
+      if (isConfirmedTwoWay && existing.type !== 'given') {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Only lender can update confirmed debt' });
+      }
+
+      if (input.amount !== undefined && input.amount < Number(existing.paidAmount)) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Amount cannot be less than already paid amount' });
+      }
+
+      const givenDate = new Date(existing.givenDate);
+      const returnDate = toDateOnly(input.returnDate);
+      validateReturnDate({ givenDate, returnDate });
+
+      await db.transaction(async (tx) => {
+        const amountValue = input.amount !== undefined ? input.amount.toString() : existing.amount;
+        const paidValue = existing.paidAmount;
+        const nextStatus = Number(paidValue) <= 0
+          ? 'pending'
+          : Number(paidValue) >= Number(amountValue)
+            ? 'paid'
+            : 'partial';
+
+        await tx
+          .update(debts)
+          .set({
+            returnDate,
+            status: nextStatus,
+            ...(input.note !== undefined ? { note: input.note } : {}),
+            ...(input.amount !== undefined ? { amount: amountValue } : {}),
+          })
+          .where(eq(debts.id, input.id));
+
+        if (isConfirmedTwoWay && existing.linkedDebtId) {
+          await tx
+            .update(debts)
+            .set({
+              returnDate,
+              amount: amountValue,
+              paidAmount: paidValue,
+              status: nextStatus,
+              ...(input.note !== undefined ? { note: input.note } : {}),
+            })
+            .where(eq(debts.id, existing.linkedDebtId));
+        }
+      });
+
+      const [updated] = await db
+        .select()
+        .from(debts)
+        .where(eq(debts.id, input.id))
+        .limit(1);
+
+      if (!updated) {
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+      }
+
+      return updated;
+    }),
+
+  delete: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input, ctx }) => {
+      const userId = ctx.userId!;
+
+      const [existing] = await db
+        .select()
+        .from(debts)
+        .where(and(eq(debts.id, input.id), eq(debts.userId, userId), isNull(debts.deletedAt)))
+        .limit(1);
+
+      if (!existing) {
+        throw new TRPCError({ code: 'NOT_FOUND' });
+      }
+
+      const isConfirmedTwoWay = existing.confirmationStatus === 'confirmed' && !!existing.linkedDebtId;
+      if (isConfirmedTwoWay && existing.type !== 'given') {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Only lender can delete confirmed debt' });
+      }
+
+      await db.update(debts).set({ deletedAt: new Date() }).where(eq(debts.id, input.id));
+
+      return { success: true };
+    }),
+
+  getSummary: protectedProcedure.query(async ({ ctx }) => {
+    const userId = ctx.userId!;
+
+    const rows = await db
+      .select({
+        currency: debts.currency,
+        type: debts.type,
+        total: sql<number>`SUM(${debts.amount})`,
+      })
+      .from(debts)
+      .where(and(eq(debts.userId, userId), isNull(debts.deletedAt)))
+      .groupBy(debts.currency, debts.type);
+
+    const summary: Record<string, { given: number; taken: number }> = {};
+
+    rows.forEach((row) => {
+      const currencyKey = row.currency ?? 'UNKNOWN';
+      if (!summary[currencyKey]) summary[currencyKey] = { given: 0, taken: 0 };
+      summary[currencyKey][row.type] = Number(row.total);
+    });
+
+    return summary;
+  }),
+
+  generateConfirmationLink: protectedProcedure
+    .input(z.object({ debtId: z.number() }))
+    .mutation(async ({ input, ctx }) => {
+      const userId = ctx.userId!;
+
+      const [debtRow] = await db
+        .select({ debt: debts, contactName: contacts.name })
+        .from(debts)
+        .leftJoin(contacts, eq(debts.contactId, contacts.id))
+        .where(and(eq(debts.id, input.debtId), eq(debts.userId, userId), isNull(debts.deletedAt)))
+        .limit(1);
+
+      if (!debtRow) {
+        throw new TRPCError({ code: 'NOT_FOUND' });
+      }
+
+      if (debtRow.debt.confirmationStatus === 'confirmed') {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Debt already resolved' });
+      }
+
+      const token = crypto.randomUUID().replace(/-/g, '');
+      const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000);
+
+      await db
+        .update(debts)
+        .set({
+          confirmationToken: token,
+          confirmationExpiresAt: expiresAt,
+          confirmationStatus: 'pending',
+        })
+        .where(eq(debts.id, debtRow.debt.id));
+
+      const botUsername = resolveBotUsername();
+      const confirmLink = `https://t.me/${botUsername}?start=confirm_${token}`;
+      const denyLink = `https://t.me/${botUsername}?start=deny_${token}`;
+      const amountText = Number(debtRow.debt.amount).toLocaleString('uz-UZ');
+      const returnDateText = formatDebtDate(debtRow.debt.returnDate);
+      const shareText = `Salom! Men sizga ${amountText} ${debtRow.debt.currency ?? 'UZS'} qarz berdim.\nQaytarish muddati: ${returnDateText}.\n\n[Tasdiqlash](${confirmLink})\n[Inkor qilish](${denyLink})\n\nAgar markdown ishlamasa:\nTasdiqlash: ${confirmLink}\nInkor qilish: ${denyLink}`;
+
+      return { token, link: confirmLink, confirmLink, denyLink, shareText, expiresAt };
+    }),
+
+  getConfirmationDetails: publicProcedure
+    .input(z.object({ token: z.string().min(10) }))
+    .query(async ({ input }) => {
+      const [row] = await db
+        .select({ debt: debts, creator: users })
+        .from(debts)
+        .innerJoin(users, eq(users.id, debts.userId))
+        .where(and(eq(debts.confirmationToken, input.token), isNull(debts.deletedAt)))
+        .limit(1);
+
+      if (!row) {
+        throw new TRPCError({ code: 'NOT_FOUND' });
+      }
+
+      if (row.debt.confirmationStatus !== 'pending') {
+        return {
+          isValid: false as const,
+          isExpired: false as const,
+          status: row.debt.confirmationStatus,
+        };
+      }
+
+      if (isExpired(row.debt.confirmationExpiresAt)) {
+        return { isValid: false as const, isExpired: true as const };
+      }
+
+      const typeLabel = row.debt.type === 'given' ? 'Qarz olindi' : 'Qarz berildi';
+
+      return {
+        isValid: true as const,
+        isExpired: false as const,
+        creatorFirstName: row.creator.firstName,
+        amount: Number(row.debt.amount),
+        currency: row.debt.currency ?? 'UZS',
+        returnDate: row.debt.returnDate,
+        typeLabel,
+        status: row.debt.confirmationStatus,
+      };
+    }),
+
+  confirmDebt: publicProcedure
+    .input(
+      z.object({
+        token: z.string().min(10),
+        telegramId: z.string().min(5),
+        internalApiKey: z.string(),
+        firstName: z.string().optional(),
+        lastName: z.string().optional(),
+        username: z.string().optional(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      if (input.internalApiKey !== process.env.INTERNAL_API_KEY) {
+        throw new TRPCError({ code: 'UNAUTHORIZED' });
+      }
+
+      const [originalRow] = await db
+        .select({ debt: debts, creator: users })
+        .from(debts)
+        .innerJoin(users, eq(users.id, debts.userId))
+        .where(and(eq(debts.confirmationToken, input.token), isNull(debts.deletedAt)))
+        .limit(1);
+
+      if (!originalRow) {
+        throw new TRPCError({ code: 'NOT_FOUND' });
+      }
+
+      if (originalRow.debt.confirmationStatus !== 'pending') {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Token already used' });
+      }
+
+      if (isExpired(originalRow.debt.confirmationExpiresAt)) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'debts.confirmExpired' });
+      }
+
+      const receiverUser = await getOrCreateUserByTelegramId({
+        telegramId: input.telegramId,
+        firstName: input.firstName,
+        lastName: input.lastName,
+        username: input.username,
+      });
+
+      const creatorFullName = [originalRow.creator.firstName, originalRow.creator.lastName].filter(Boolean).join(' ').trim() || originalRow.creator.firstName;
+
+      const result = await db.transaction(async (tx) => {
+        await tx
+          .update(debts)
+          .set({
+            confirmationStatus: 'confirmed',
+            confirmedByTelegramId: input.telegramId,
+          })
+          .where(eq(debts.id, originalRow.debt.id));
+
+        let receiverContactId: number;
+
+        const [existingContact] = await tx
+          .select()
+          .from(contacts)
+          .where(and(eq(contacts.userId, receiverUser.id), eq(contacts.name, creatorFullName), isNull(contacts.deletedAt)))
+          .limit(1);
+
+        if (existingContact) {
+          receiverContactId = existingContact.id;
+        } else {
+          const insertResult = await tx
+            .insert(contacts)
+            .values({
+              userId: receiverUser.id,
+              name: creatorFullName,
+              phone: originalRow.creator.phone,
+              note: 'Auto-created from debt confirmation',
+            })
+            .execute();
+
+          receiverContactId = (insertResult as { insertId?: number }).insertId ?? 0;
+          if (!receiverContactId) {
+            const [createdContact] = await tx
+              .select()
+              .from(contacts)
+              .where(and(eq(contacts.userId, receiverUser.id), eq(contacts.name, creatorFullName), isNull(contacts.deletedAt)))
+              .limit(1);
+            receiverContactId = createdContact?.id ?? 0;
+          }
+
+          if (!receiverContactId) {
+            throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to create receiver contact' });
+          }
+        }
+
+        const mirrorType = originalRow.debt.type === 'given' ? 'taken' : 'given';
+        const mirrorUuid = crypto.randomUUID();
+
+        await tx
+          .insert(debts)
+          .values({
+            uuid: mirrorUuid,
+            userId: receiverUser.id,
+            contactId: receiverContactId,
+            amount: originalRow.debt.amount,
+            paidAmount: '0',
+            currency: originalRow.debt.currency,
+            type: mirrorType,
+            status: originalRow.debt.status,
+            confirmationStatus: 'confirmed',
+            linkedDebtId: originalRow.debt.id,
+            confirmedByTelegramId: input.telegramId,
+            givenDate: originalRow.debt.givenDate,
+            returnDate: originalRow.debt.returnDate,
+            note: originalRow.debt.note,
+          })
+          .execute();
+
+        const [mirrorDebt] = await tx
+          .select({ id: debts.id })
+          .from(debts)
+          .where(and(eq(debts.uuid, mirrorUuid), eq(debts.userId, receiverUser.id), isNull(debts.deletedAt)))
+          .limit(1);
+
+        const mirrorDebtId = mirrorDebt?.id;
+        if (!mirrorDebtId) {
+          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to create mirror debt' });
+        }
+
+        await tx
+          .update(debts)
+          .set({
+            linkedDebtId: mirrorDebtId,
+            confirmationExpiresAt: null,
+          })
+          .where(eq(debts.id, originalRow.debt.id));
+
+        return { mirrorDebtId };
+      });
+
+      if (originalRow.creator.telegramId) {
+        const receiverName = input.firstName || 'Qarzdor';
+        await sendTelegramText(
+          originalRow.creator.telegramId,
+          `✅ ${receiverName} qarzni tasdiqladi! Qarz ikki tomonlama qayd etildi.`
+        );
+      }
+
+      return { success: true as const, receiverUserId: receiverUser.id, mirrorDebtId: result.mirrorDebtId };
+    }),
+
+  denyDebt: publicProcedure
+    .input(
+      z.object({
+        token: z.string().min(10),
+        telegramId: z.string().min(5),
+        internalApiKey: z.string(),
+        denierName: z.string().optional(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      if (input.internalApiKey !== process.env.INTERNAL_API_KEY) {
+        throw new TRPCError({ code: 'UNAUTHORIZED' });
+      }
+
+      const [row] = await db
+        .select({ debt: debts, creator: users })
+        .from(debts)
+        .innerJoin(users, eq(users.id, debts.userId))
+        .where(and(eq(debts.confirmationToken, input.token), isNull(debts.deletedAt)))
+        .limit(1);
+
+      if (!row) {
+        throw new TRPCError({ code: 'NOT_FOUND' });
+      }
+
+      if (row.debt.confirmationStatus !== 'pending') {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Token already used' });
+      }
+
+      if (isExpired(row.debt.confirmationExpiresAt)) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'debts.confirmExpired' });
+      }
+
+      const denierUser = await getOrCreateUserByTelegramId({
+        telegramId: input.telegramId,
+        firstName: input.denierName,
+      });
+
+      const creatorFullName = [row.creator.firstName, row.creator.lastName].filter(Boolean).join(' ').trim() || row.creator.firstName;
+
+      await db.transaction(async (tx) => {
+        await tx
+          .update(debts)
+          .set({
+            confirmationStatus: 'denied',
+            confirmedByTelegramId: input.telegramId,
+            confirmationExpiresAt: null,
+          })
+          .where(eq(debts.id, row.debt.id));
+
+        let receiverContactId: number;
+
+        const [existingContact] = await tx
+          .select()
+          .from(contacts)
+          .where(and(eq(contacts.userId, denierUser.id), eq(contacts.name, creatorFullName), isNull(contacts.deletedAt)))
+          .limit(1);
+
+        if (existingContact) {
+          receiverContactId = existingContact.id;
+        } else {
+          const insertResult = await tx
+            .insert(contacts)
+            .values({
+              userId: denierUser.id,
+              name: creatorFullName,
+              phone: row.creator.phone,
+              note: 'Auto-created from debt denial',
+            })
+            .execute();
+
+          receiverContactId = (insertResult as { insertId?: number }).insertId ?? 0;
+          if (!receiverContactId) {
+            const [createdContact] = await tx
+              .select()
+              .from(contacts)
+              .where(and(eq(contacts.userId, denierUser.id), eq(contacts.name, creatorFullName), isNull(contacts.deletedAt)))
+              .limit(1);
+            receiverContactId = createdContact?.id ?? 0;
+          }
+
+          if (!receiverContactId) {
+            throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to create deny receiver contact' });
+          }
+        }
+
+        const [existingMirror] = await tx
+          .select()
+          .from(debts)
+          .where(and(eq(debts.linkedDebtId, row.debt.id), eq(debts.userId, denierUser.id), isNull(debts.deletedAt)))
+          .limit(1);
+
+        if (existingMirror) {
+          await tx
+            .update(debts)
+            .set({
+              confirmationStatus: 'denied',
+              confirmedByTelegramId: input.telegramId,
+              confirmationExpiresAt: null,
+            })
+            .where(eq(debts.id, existingMirror.id));
+
+          await tx
+            .update(debts)
+            .set({ linkedDebtId: existingMirror.id })
+            .where(eq(debts.id, row.debt.id));
+        } else {
+          const mirrorType = row.debt.type === 'given' ? 'taken' : 'given';
+          const mirrorUuid = crypto.randomUUID();
+
+          await tx
+            .insert(debts)
+            .values({
+              uuid: mirrorUuid,
+              userId: denierUser.id,
+              contactId: receiverContactId,
+              amount: row.debt.amount,
+              paidAmount: '0',
+              currency: row.debt.currency,
+              type: mirrorType,
+              status: row.debt.status,
+              confirmationStatus: 'denied',
+              linkedDebtId: row.debt.id,
+              confirmedByTelegramId: input.telegramId,
+              givenDate: row.debt.givenDate,
+              returnDate: row.debt.returnDate,
+              note: row.debt.note,
+            })
+            .execute();
+
+          const [mirrorDebt] = await tx
+            .select({ id: debts.id })
+            .from(debts)
+            .where(and(eq(debts.uuid, mirrorUuid), eq(debts.userId, denierUser.id), isNull(debts.deletedAt)))
+            .limit(1);
+
+          const mirrorDebtId = mirrorDebt?.id;
+          if (!mirrorDebtId) {
+            throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to create denied mirror debt' });
+          }
+
+          await tx
+            .update(debts)
+            .set({ linkedDebtId: mirrorDebtId })
+            .where(eq(debts.id, row.debt.id));
+        }
+      });
+
+      if (row.creator.telegramId) {
+        await sendTelegramText(
+          row.creator.telegramId,
+          `⚠️ ${input.denierName || 'Qarzdor'} qarzni inkor qildi. Qarz tasdiqlanmagan holda qoldi.`
+        );
+      }
+
+      return { success: true as const };
+    }),
+});
