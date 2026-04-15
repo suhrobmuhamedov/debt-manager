@@ -45,6 +45,8 @@ export const Dashboard = () => {
     navigate(`/debts${query}`)
   }
 
+  const getActiveCountSubtitle = (count: number) => t("dashboard.activeCount", { count })
+
   if (isLoading) {
     return (
       <AppLayout>
@@ -125,7 +127,7 @@ export const Dashboard = () => {
           <StatCard
             title={t("dashboard.given")}
             value={formatCurrency(stats.totalGiven, "UZS")}
-            subtitle={`${stats.givenCount} ta`}
+            subtitle={getActiveCountSubtitle(stats.givenCount)}
             icon={<ArrowUpRight className="size-4" />}
             variant="success"
             onClick={() => navigateToDebts("?tab=given")}
@@ -133,7 +135,7 @@ export const Dashboard = () => {
           <StatCard
             title={t("dashboard.taken")}
             value={formatCurrency(stats.totalTaken, "UZS")}
-            subtitle={`${stats.takenCount} ta`}
+            subtitle={getActiveCountSubtitle(stats.takenCount)}
             variant="danger"
             icon={<ArrowDownLeft className="size-4" />}
             onClick={() => navigateToDebts("?tab=taken")}
@@ -141,7 +143,7 @@ export const Dashboard = () => {
           <StatCard
             title={t("dashboard.overdue")}
             value={formatCurrency(stats.overdueAmount, "UZS")}
-            subtitle={`${stats.overdueCount} ta`}
+            subtitle={getActiveCountSubtitle(stats.overdueCount)}
             variant="warning"
             icon={<AlertTriangle className="size-4" />}
             onClick={() => navigateToDebts("?tab=overdue")}

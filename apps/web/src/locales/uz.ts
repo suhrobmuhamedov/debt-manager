@@ -20,6 +20,7 @@ export const uz = {
     newDebt: "Yangi qarz",
     firstDebtHint: "Birinchi qarzingizni qo'shish uchun tugmani bosing",
     pendingCount: 'ta qarz',
+    activeCount: '(aktiv) {{count}} ta',
   },
   contacts: {
     title: 'Kontaktlar',

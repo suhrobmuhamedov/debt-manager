@@ -20,6 +20,7 @@ export const ru = {
     newDebt: 'Новый долг',
     firstDebtHint: 'Нажмите кнопку, чтобы добавить первый долг',
     pendingCount: 'долгов',
+    activeCount: '(активные) {{count}} шт.',
   },
   contacts: {
     title: 'Контакты',
