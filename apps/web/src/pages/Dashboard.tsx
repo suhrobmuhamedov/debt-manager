@@ -1,4 +1,4 @@
-import { CirclePlus } from "lucide-react"
+import { AlertTriangle, ArrowDownLeft, ArrowUpRight, CirclePlus } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { useLocation } from "wouter"
 
@@ -128,6 +128,7 @@ export const Dashboard = () => {
             title={t("dashboard.given")}
             value={formatCurrency(stats.totalGiven, "UZS")}
             subtitle={`${stats.givenCount} ta`}
+            icon={<ArrowUpRight className="size-4" />}
             variant="success"
             onClick={() => navigateToDebts("?tab=given")}
           />
@@ -136,6 +137,7 @@ export const Dashboard = () => {
             value={formatCurrency(stats.totalTaken, "UZS")}
             subtitle={`${stats.takenCount} ta`}
             variant="danger"
+            icon={<ArrowDownLeft className="size-4" />}
             onClick={() => navigateToDebts("?tab=taken")}
           />
           <StatCard
@@ -143,6 +145,7 @@ export const Dashboard = () => {
             value={formatCurrency(stats.overdueAmount, "UZS")}
             subtitle={`${stats.overdueCount} ta`}
             variant="warning"
+            icon={<AlertTriangle className="size-4" />}
             onClick={() => navigateToDebts("?tab=overdue")}
           />
         </div>
