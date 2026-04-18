@@ -1,4 +1,5 @@
 import { Context } from 'telegraf';
+import { Markup } from 'telegraf';
 import { createAdminLinkToken } from '../utils/internal-api';
 
 const getAdminTelegramId = () => String(process.env.ADMIN_TELEGRAM_ID || '').trim();
@@ -51,6 +52,10 @@ export async function adminCommand(ctx: Context) {
 
     await ctx.reply(
       `Admin havolasi tayyor.\n\nHavola ${expiresMinutes} daqiqa ishlaydi:\n${adminLink}`
+    );
+    await ctx.reply(
+      'Admin panelni Telegram ichida ochish uchun tugmani bosing:',
+      Markup.inlineKeyboard([[Markup.button.webApp('🔐 Admin panelni ochish', adminLink)]])
     );
   } catch (error) {
     console.error('Admin link generate xatosi:', error);
