@@ -1,0 +1,448 @@
+**Roadmap**
+
+Quyidagi roadmap sizdagi hozirgi arxitekturaga mos: `apps/bot` free-text qabul qiladi, `apps/server` parse/validate/confirm/execute qiladi, `apps/web` esa kerak bo‘lsa ko‘rish va fallback tahrirlash oynasi bo‘lib qoladi.
+
+**1. Maqsad va Scope**
+- Telegram botga oddiy odam tili bilan yozib kontakt qo‘shish.
+- Qarz qo‘shish.
+- Qarzga to‘lov yozish yoki summani oshirish.
+- Kontakt yoki qarz haqida ma’lumot olish.
+- Noto‘g‘ri kiritish, imlo xatosi va noaniqliklarni xavfsiz boshqarish.
+- Hech bir write amal user tasdiqisiz darhol bazaga yozilmasligi.
+
+**2. Asosiy Prinsip**
+- `message -> normalize -> parse -> resolve -> validate -> preview -> confirm -> execute -> audit`
+- Bot matnni o‘zi mustaqil yozmasin.
+- Final write faqat serverdagi transaction orqali bo‘lsin.
+- Ambiguous holatda darhol aniqlashtirish so‘ralsin.
+- Har amal uchun audit trail bo‘lsin.
+
+**3. Phase 0: Functional Spec**
+Maqsad: aniq qoidalarni yozib olish.
+
+Deliverable:
+- Qo‘llab-quvvatlanadigan intentlar ro‘yxati:
+  - `add_contact`
+  - `add_debt`
+  - `add_payment`
+  - `increase_debt`
+  - `get_contact_info`
+  - `get_debt_info`
+  - `get_summary`
+  - `list_overdue`
+- Har intent uchun required fieldlar.
+- Har intent uchun user message misollari.
+- Har intent uchun noaniq holatlar ro‘yxati.
+- `payment` va `increase` farqi aniq hujjatlashtiriladi.
+
+Qabul mezoni:
+- “Sardorga 300000 so‘m qarz berdim”
+- “Sardor 50000 qaytardi”
+- “Sardorning qarzi qancha”
+- “Yangi kontakt qo‘sh: Sardor, 901234567”
+kabi misollar qanday ishlashi oldindan yozilgan bo‘ladi.
+
+**4. Phase 1: Data va Domain Model Tayyorlash**
+Maqsad: bot yozadigan amallar uchun xavfsiz oraliq model yaratish.
+
+Yangi jadvallar:
+- `bot_action_drafts`
+  - `id`
+  - `user_id`
+  - `telegram_id`
+  - `message_id`
+  - `raw_text`
+  - `intent`
+  - `parsed_payload_json`
+  - `resolution_json`
+  - `status` (`pending`, `awaiting_input`, `confirmed`, `cancelled`, `executed`, `failed`)
+  - `confidence`
+  - `confirmation_token`
+  - `expires_at`
+  - `executed_at`
+- `bot_conversation_state`
+  - `user_id`
+  - `telegram_id`
+  - `active_draft_id`
+  - `awaiting_field`
+  - `context_json`
+  - `updated_at`
+- `bot_audit_logs`
+  - `id`
+  - `user_id`
+  - `draft_id`
+  - `event_type`
+  - `payload_json`
+  - `created_at`
+
+Qo‘shimcha constraintlar:
+- `bot_action_drafts(message_id, telegram_id)` unique.
+- Draft token unique.
+- Audit log append-only.
+
+Qabul mezoni:
+- Har incoming message yozuvga tushadi.
+- Duplicate Telegram message ikki marta bajarilmaydi.
+
+**5. Phase 2: Server-Side Bot Engine**
+Maqsad: parsing va executionni server markaziga olib chiqish.
+
+Yangi server modullar:
+- `bot-normalizer.service.ts`
+- `bot-intent-parser.service.ts`
+- `bot-entity-resolver.service.ts`
+- `bot-draft.service.ts`
+- `bot-executor.service.ts`
+- `bot-response-builder.service.ts`
+
+Vazifalar:
+- Normalizer:
+  - lotin/kiril normalize
+  - `som/so'm/so‘m/сум` normalize
+  - `sardordga` kabi qo‘shimchali ismni ildizga yaqinlashtirish
+  - son formatlarini bir ko‘rinishga keltirish
+- Intent parser:
+  - rule-based boshlang
+  - regex + keyword + heuristics
+  - keyin xohlasangiz LLM fallback qo‘shiladi
+- Entity resolver:
+  - kontaktni exact match
+  - keyin fuzzy match
+  - keyin candidate list
+- Draft service:
+  - draft yaratish
+  - incomplete draftni saqlash
+  - missing field so‘rash
+- Executor:
+  - mavjud `contacts/debts/payments` routerlaridan foydalanish
+  - write oldidan final validation
+  - transaction
+
+Qabul mezoni:
+- Server bitta message’dan draft yasay oladi.
+- Draft complete bo‘lsa preview qaytaradi.
+- Incomplete bo‘lsa qaysi maydon yetishmayotganini aytadi.
+
+**6. Phase 3: Internal API Endpointlar**
+Maqsad: bot va server o‘rtasida aniq contract yaratish.
+
+Yangi internal endpointlar:
+- `POST /api/internal/bot/process-message`
+- `POST /api/internal/bot/confirm-draft`
+- `POST /api/internal/bot/cancel-draft`
+- `POST /api/internal/bot/choose-candidate`
+- `GET /api/internal/bot/draft/:token`
+- `GET /api/internal/bot/search-contact/:telegramId?q=...`
+
+Request ichida:
+- `telegramId`
+- `messageId`
+- `text`
+- `firstName`
+- `lastName`
+- `username`
+- `languageCode`
+
+Response turlari:
+- `preview`
+- `need_field`
+- `choose_candidate`
+- `info_result`
+- `error`
+
+Qabul mezoni:
+- Bot barcha free-text oqimni shu endpointlar orqali yurita oladi.
+- `x-internal-api-key` bilan himoyalangan bo‘ladi.
+
+**7. Phase 4: Telegram Bot UX**
+Maqsad: user uchun sodda, ishonchli, xato qilmaydigan oqim.
+
+Botdagi yangi oqimlar:
+- Oddiy text message handler.
+- Preview uchun inline button:
+  - `Tasdiqlash`
+  - `Bekor qilish`
+- Candidate tanlash uchun inline button:
+  - `Sardor`
+  - `Sardorbek`
+  - `Yangi kontakt sifatida yaratish`
+- Missing field uchun follow-up:
+  - `Qaytarish sanasi qachon?`
+  - `Telefon raqamini yuboring`
+  - `Bu to‘lovmi yoki qarzga qo‘shishmi?`
+
+Bot javoblari standarti:
+- Har doim strukturalangan.
+- Bot user yozganini “tushungan ko‘rinish”da qaytaradi.
+- Faqat tasdiqdan keyin write.
+
+Qabul mezoni:
+- User bir nechta gapda flow’ni davom ettira oladi.
+- Button bosmasdan hech narsa yozilmaydi.
+
+**8. Phase 5: Contact Resolution va Imlo Xatolari**
+Maqsad: inson omilini kamaytirish.
+
+Algoritm:
+- Exact name match.
+- Lowercase normalized match.
+- Suffix stripping:
+  - `-ga`, `-ni`, `-dan`, `-ning`
+- Fuzzy scoring:
+  - Levenshtein yoki trigram
+  - `Sardor`, `Sardorbek`, `Sardor aka`
+- Prioritization:
+  - oxirgi ishlatilgan kontakt
+  - active debt bor kontakt
+  - exact alias
+
+Qoidalar:
+- Score yuqori va bitta bo‘lsa auto-resolve.
+- 2 ta yaqin variant bo‘lsa userdan tanlatish.
+- Hech narsa topilmasa “yangi kontaktmi?” deb so‘rash.
+
+Qabul mezoni:
+- `Sardordga`, `Sardorga`, `Sardor aka`, `Sardorbekka`
+kabi yozuvlar boshqariladi.
+
+**9. Phase 6: Amount, Currency, Date Parsing**
+Maqsad: noto‘g‘ri formatdan to‘g‘ri strukturaga o‘tish.
+
+Qo‘llab-quvvatlash:
+- `300000`
+- `300 000`
+- `300ming`
+- `300 ming`
+- `1.2 mln`
+- `50$`
+- `100 usd`
+- `200 yevro`
+
+Date parsing:
+- `ertaga`
+- `indin`
+- `1 may`
+- `15/05`
+- `2026-05-01`
+
+Qoidalar:
+- Currency bo‘lmasa default `UZS`.
+- Amount parse bo‘lmasa write yo‘q.
+- Return date yo‘q bo‘lsa draft `awaiting_input`.
+- O‘tgan sana qabul qilinmaydi.
+- `givenDate` default bugun bo‘lishi mumkin, lekin userga preview’da ko‘rsatiladi.
+
+Qabul mezoni:
+- Parser son va valyutani ishonchli ajratadi.
+- Noto‘g‘ri sana bo‘lsa tushunarli xabar beradi.
+
+**10. Phase 7: Write Action Safety**
+Maqsad: noto‘g‘ri bazaga yozilishning oldini olish.
+
+Qoidalar:
+- `add_contact`:
+  - Telefon bo‘lmasa 2 variant:
+    - Phase 1 minimal versiyada telefon so‘raladi
+    - Phase 2 kengaytmada incomplete contact ruxsat etiladi
+- `add_debt`:
+  - `contact`, `amount`, `type`, `returnDate` bo‘lmasa execute yo‘q
+- `add_payment`:
+  - `payment <= remaining debt`
+- `increase_debt`:
+  - aniq `increase` ekanligi tasdiqlansin
+- `delete` yoki kamaytirish kabi xavfli amallarni Phase 1 ga kiritmang
+
+Muhim:
+- `payment` va `increase` bir xil ko‘rinmasin.
+- `ayirdim` degan so‘zga darhol write qilinmasin.
+
+Qabul mezoni:
+- User ambiguous yozsa bot aniqlashtiradi.
+- Server final validation’dan o‘tmagan payloadni yozmaydi.
+
+**11. Phase 8: Read-Only Querylar**
+Maqsad: avval foydali, xavfsiz featurelarni tez berish.
+
+Birinchi qo‘shiladigan read intentlar:
+- `Sardorning qarzi qancha`
+- `Menda kimlarning qarzi bor`
+- `Bugun muddati o‘tganlar`
+- `Umumiy holatim`
+- `Oxirgi qarzimni ko‘rsat`
+
+Read-only afzalligi:
+- Risk past
+- Foydalilik yuqori
+- Parserni mashq qildirish uchun yaxshi
+
+Qabul mezoni:
+- Bot summary va detaillarni aniq formatda qaytaradi.
+
+**12. Phase 9: Audit, Monitoring, Anti-Abuse**
+Maqsad: xatoni topish va rollbackni osonlashtirish.
+
+Kerak bo‘ladi:
+- Raw message log
+- Parsed intent log
+- Resolver confidence
+- User confirmation event
+- Final execution result
+- Error type analytics
+
+Qo‘shimcha:
+- Per-user rate limit
+- Failed parse count
+- Suspicious duplicate detection
+
+Admin uchun:
+- Eng ko‘p parse bo‘lmayotgan patternlar ro‘yxati
+- Eng ko‘p ambiguous contactlar
+
+Qabul mezoni:
+- Nega xato bo‘lganini logdan bilish mumkin bo‘ladi.
+
+**13. Phase 10: Testing Strategy**
+Maqsad: release oldidan oqimni ishonchli qilish.
+
+Test turlari:
+- Unit:
+  - normalizer
+  - amount parser
+  - date parser
+  - contact resolver
+- Integration:
+  - `process-message -> draft`
+  - `confirm-draft -> create debt`
+  - `confirm-draft -> add payment`
+- End-to-end:
+  - Telegram-style message flow
+- Regression fixtures:
+  - 50-100 real-life misol gaplar
+
+Majburiy test set:
+- Toza yozuv
+- Imlo xatoli yozuv
+- Ambiguous kontakt
+- Yetishmaydigan field
+- Duplicate message
+- Invalid amount
+- Invalid date
+
+Qabul mezoni:
+- Core intentlar uchun regressionsiz test set bor.
+
+**14. Phase 11: Rollout Plan**
+Maqsad: katta feature’ni xavfsiz chiqarish.
+
+1. Read-only intentlar.
+2. Draft-only mode.
+   - Bot preview qiladi, lekin write qilmaydi.
+3. Contact add.
+4. Debt add.
+5. Payment add.
+6. Increase debt.
+7. Kengaytirilgan fuzzy matching.
+8. LLM fallback kerak bo‘lsa oxirida.
+
+Feature flaglar:
+- `BOT_NL_ENABLED`
+- `BOT_WRITE_ENABLED`
+- `BOT_FUZZY_MATCH_ENABLED`
+- `BOT_LLM_FALLBACK_ENABLED`
+
+Qabul mezoni:
+- Har faza alohida yoqib-o‘chiriladi.
+
+**15. Phase 12: UX Copy va Tillar**
+Maqsad: foydalanuvchi xato qilsa ham o‘zini yo‘qotmasin.
+
+Bot copy qoidalari:
+- “Men shuni tushundim” preview
+- “Iltimos, buni aniqlashtiring”
+- “Tasdiqlamasangiz yozilmaydi”
+- “Siz nazarda tutgan kontakt qaysi?”
+
+Til:
+- avval `uz`
+- keyin `ru`
+
+Qabul mezoni:
+- Xato xabarlar texnik emas, insoncha bo‘ladi.
+
+**16. Tavsiya Qilingan Birinchi MVP**
+Eng to‘g‘ri minimal scope:
+- Read-only querylar
+- `add_debt`
+- `add_payment`
+- Preview + confirm
+- Exact + simple fuzzy contact match
+- Missing field follow-up
+- Audit log
+
+Hozircha kiritmang:
+- `delete`
+- erkin “ayirish”
+- ko‘p bosqichli murakkab natural language
+- avtomatik LLM-based write
+
+**17. Realistik Timeline**
+Agar bitta developer ishlasa:
+
+1. 2-3 kun
+Spec, intent mapping, draft schema, internal API contract.
+
+2. 3-5 kun
+Server bot engine, parser, resolver, draft flow.
+
+3. 2-3 kun
+Bot UX, preview, confirm/cancel, candidate tanlash.
+
+4. 2-4 kun
+Execution layer, audit, idempotency, safety checks.
+
+5. 2-4 kun
+Tests, regression fixtures, rollout flaglar.
+
+Jami:
+- MVP: 2 hafta atrofida
+- Ishonchli production variant: 3 hafta atrofida
+
+**18. Aniq Fayl Darajasidagi Ishlar**
+- `apps/bot/src/index.ts`
+  - free-text handler qo‘shish
+- `apps/bot/src/utils/internal-api.ts`
+  - yangi bot draft endpointlar
+- `apps/server/src/index.ts`
+  - internal bot route’lar
+- `apps/server/src/routers`
+  - kerak bo‘lsa `bot.router.ts` yoki alohida service layer
+- `apps/server/src/services`
+  - parser/resolver/draft/executor servislar
+- `apps/server/src/db/schema`
+  - `bot_action_drafts`
+  - `bot_conversation_state`
+  - `bot_audit_logs`
+- `apps/server/src/db/migrations`
+  - migrationlar
+- `apps/web`
+  - optional: draft/history ko‘rish yoki fallback edit oynasi
+
+**19. Acceptance Criteria**
+Feature tayyor deyish uchun:
+- User oddiy gap bilan qarz qo‘sha oladi.
+- Imlo xatoda bot to‘g‘ri candidate taklif qiladi.
+- Missing field bo‘lsa follow-up beradi.
+- User tasdiqisiz write bo‘lmaydi.
+- Duplicate message duplicate write qilmaydi.
+- Payment remaining debt’dan oshmaydi.
+- Har write audit log’da ko‘rinadi.
+- Rollback yoki undo yo‘li bor.
+
+**20. Eng Muhim Qarorlar**
+- Parsing markazi server bo‘ladi.
+- Write faqat tasdiqdan keyin.
+- Ambiguous holatlarda auto-write yo‘q.
+- `ayirish` Phase 1 da taqiqlanadi yoki majburiy aniqlashtiriladi.
+- LLM bo‘lsa ham faqat yordamchi, qaror beruvchi emas.
+
+Xohlasangiz keyingi xabarda men shu roadmapni yanada amaliy ko‘rinishga o‘tkazib, `Phase 1 backlog` qilib beraman: har taskga ticket nomi, fayl, estimate va dependency bilan.

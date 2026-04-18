@@ -11,6 +11,7 @@ import { eq, and, isNull } from 'drizzle-orm';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
 import { startRemindersJob } from './jobs/reminders.job';
+import { signAdminAccessToken } from './routers/admin.router';
 
 // Load env
 dotenv.config({ path: path.resolve(__dirname, '.env') });
@@ -328,6 +329,29 @@ app.get('/api/internal/user-profile/:telegramId', async (req, res) => {
   } catch (error) {
     console.error('Internal user profile error:', error);
     return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.post('/api/internal/admin/link-token', express.json(), async (req, res) => {
+  try {
+    if (!hasValidInternalApiKey(req)) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const telegramId = String(req.body?.telegramId || '').trim();
+    if (!telegramId) {
+      return res.status(400).json({ error: 'telegramId is required' });
+    }
+
+    const { token, expiresIn } = signAdminAccessToken(telegramId);
+    return res.json({ success: true, token, expiresIn });
+  } catch (error: any) {
+    const message = error?.message || 'Internal server error';
+    if (error?.code === 'FORBIDDEN') {
+      return res.status(403).json({ error: message });
+    }
+    console.error('Internal admin link token error:', error);
+    return res.status(500).json({ error: message });
   }
 });
 

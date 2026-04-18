@@ -74,3 +74,12 @@ export const getBotUserProfile = async (telegramId: string) => {
     phone?: string | null;
   };
 };
+
+export const createAdminLinkToken = async (telegramId: string) => {
+  const response = await internalClient.post('/api/internal/admin/link-token', { telegramId });
+  return response.data as {
+    success: boolean;
+    token: string;
+    expiresIn: number;
+  };
+};

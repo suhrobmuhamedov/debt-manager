@@ -294,11 +294,6 @@ export const Profile = () => {
           />
         </GlassCard>
 
-        <GlassCard className="space-y-1 p-4 text-center text-xs text-[color:var(--muted-foreground)]">
-          <p>{t("profile.appName")} v1.0.0</p>
-          <p>{t("profile.madeInUzbekistan")}</p>
-        </GlassCard>
-
         <AboutSheet open={sheetOpen} onOpenChange={setSheetOpen} mode={sheetMode} />
 
         <Dialog open={logoutDialogOpen} onOpenChange={setLogoutDialogOpen}>

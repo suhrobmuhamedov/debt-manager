@@ -15,6 +15,7 @@ const DebtDetail = lazy(() => import("./pages/DebtDetail").then((module) => ({ d
 const Contacts = lazy(() => import("./pages/Contacts").then((module) => ({ default: module.Contacts })))
 const ContactDetail = lazy(() => import("./pages/ContactDetail").then((module) => ({ default: module.ContactDetail })))
 const Profile = lazy(() => import("./pages/Profile").then((module) => ({ default: module.Profile })))
+const Admin = lazy(() => import("./pages/Admin").then((module) => ({ default: module.Admin })))
 const NotFound = lazy(() => import("./pages/NotFound").then((module) => ({ default: module.NotFound })))
 const ModalRenderer = lazy(() =>
   import("./components/modals/ModalRenderer").then((module) => ({ default: module.ModalRenderer }))
@@ -90,6 +91,7 @@ function AppRoutes() {
           <Route path="/contacts" component={Contacts} />
           <Route path="/contacts/:id" component={ContactDetail} />
           <Route path="/profile" component={Profile} />
+          <Route path="/a-panel" component={Admin} />
           <Route component={NotFound} />
         </Switch>
       </Suspense>

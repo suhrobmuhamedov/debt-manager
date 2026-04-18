@@ -22,6 +22,7 @@ import { balanceCommand } from './commands/balance.command';
 import { handleDebtConfirmCallback, handleDebtDenyCallback } from './commands/debt-confirm.command';
 import { getBotUserProfile } from './utils/internal-api';
 import { helpText } from './utils/keyboards';
+import { adminCommand } from './commands/admin.command';
 
 const bot = new Telegraf(process.env.BOT_TOKEN!);
 let isLaunching = false;
@@ -54,6 +55,7 @@ const isSlashCommandMessage = (message: unknown): boolean => {
 bot.start(startCommand);
 bot.help(helpCommand);
 bot.command('balance', balanceCommand);
+bot.command('admin', adminCommand);
 
 bot.on('message', async (ctx) => {
   if (!adminForwardTelegramId) {
